@@ -92,21 +92,95 @@ module core.typ where
 
   _≁_ : (τ τ' : Typ) → Set
   _≁_ = λ (τ τ' : Typ) → ¬(τ ~ τ')
-  
-  -- Slices
+
+  -- Consistency is an equivalence relation
+
+  -- Slices (Precision)
   data _⊑t_ : Typ → Typ → Set where
     ⊑? : ∀ {τ} → □ ⊑t τ
     ⊑* : * ⊑t *
     ⊑Var : ∀ {n} → ⟨ n ⟩ ⊑t ⟨ n ⟩
-    ⊑?ᵣ : ∀ {τ} → τ ⊑t □
-    ⊑?ₗ : ∀ {τ} → □ ⊑t τ
     ⊑+ : ∀ {τ₁ τ₂ τ₁' τ₂'} → τ₁ ⊑t τ₁' → τ₂ ⊑t τ₂' → τ₁ + τ₂ ⊑t τ₁' + τ₂'
     ⊑× : ∀ {τ₁ τ₂ τ₁' τ₂'} → τ₁ ⊑t τ₁' → τ₂ ⊑t τ₂' → τ₁ × τ₂ ⊑t τ₁' × τ₂'
     ⊑⇒ : ∀ {τ₁ τ₂ τ₁' τ₂'} → τ₁ ⊑t τ₁' → τ₂ ⊑t τ₂' → τ₁ ⇒ τ₂ ⊑t τ₁' ⇒ τ₂'
     ⊑∀ : ∀ {τ τ'} → τ ⊑t τ' → ∀· τ ⊑t ∀· τ'
 
-  -- Slices are preorders
-  
-  -- Slices are meet semi-lattices
+  infix 4 _⊑t_
 
-  -- Slices OF a term are full lattices
+  -- Slices form a partial order
+  -- TODO
+
+  -- Slices OF a term
+  ⌊_⌋ : Typ → Set
+  ⌊ τ ⌋ = ∃[ τ' ] τ' ⊑t τ
+
+  _↓ : ∀ {τ} → ⌊ τ ⌋ → Typ
+  υ ↓ = proj₁ υ
+
+  infix 50 _↓
+
+  _slice : ∀ {τ} → (υ : ⌊ τ ⌋) → υ ↓ ⊑t τ
+  υ slice = proj₂ υ
+
+  -- Relating consistency and precision
+  ~to⊑1 : ∀ {τ τ'} → τ ~ τ' → τ ⊑t τ'
+  ~to⊑1 cons = {!!}
+  ~to⊑2 : ∀ {τ τ'} → τ ~ τ' → τ' ⊑t τ'
+  ~to⊑2 cons = {!!}
+  ⊑to~1 : ∀ {τ τ'} → τ ⊑t τ' → τ ~ τ'
+  ⊑to~1 cons = {!!}
+  ⊑to~2 : ∀ {τ τ'} → τ' ⊑t τ → τ ~ τ'
+  ⊑to~2 cons = {!!}
+
+  -- Meets. Note: order theoretic. NOT necessarily type consistent
+  _⊓t_ : Typ → Typ → Typ
+  τ₁ + τ₂ ⊓t τ₁' + τ₂' = (τ₁ ⊓t τ₁') + (τ₂ ⊓t τ₂')
+  τ₁ × τ₂ ⊓t τ₁' × τ₂' = (τ₁ ⊓t τ₁') × (τ₂ ⊓t τ₂')
+  τ₁ ⇒ τ₂ ⊓t τ₁' ⇒ τ₂' = (τ₁ ⊓t τ₁') ⇒ (τ₂ ⊓t τ₂')
+  ∀· τ₂ ⊓t ∀· τ₂' = ∀· (τ₂ ⊓t τ₂')
+  τ ⊓t τ' with τ ≟t τ'
+  ...    | yes τ≡τ' = τ
+  ...    | no τ≢τ' = □
+
+  infixl 6 _⊓t_
+
+  -- Meets preserve precision
+  ⊓t-preserves-⊑ : ∀ {τ₁ τ₁' τ₂ τ₂'} → τ₁' ⊑t τ₁ → τ₂' ⊑t τ₂ → τ₁' ⊓t τ₂' ⊑t τ₁ ⊓t τ₂
+  ⊓t-preserves-⊑ s1 s2 = {!!}
+
+  -- In particular when τ₁ = τ₂ then we get the same notion as the slice joins below
+  ⊓t-preserves-⊑-spec : ∀ {τ₁ τ₂ τ : Typ} → τ₁ ⊑t τ → τ₂ ⊑t τ → τ₁ ⊓t τ₂ ⊑t τ
+  ⊓t-preserves-⊑-spec = {!!}
+
+  -- Inconsistent Types have trivial meets
+  ⊓t-consistent : ∀ {τ τ'} → τ ⊓t τ' ≢ □ → τ ~ τ'
+  ⊓t-consistent neq = {!!}
+
+  -- contrapositive
+  ⊓t-inconsistent : ∀ {τ τ'} → τ ≁ τ' → τ ⊓t τ' ≡ □
+  ⊓t-inconsistent incon = {!!}
+
+  -- Meets form a bounded semi-lattice
+  -- TODO
+
+  -- Meets (of slices of some type)
+  _⊓tₛ_ : ∀ {τ} → ⌊ τ ⌋ → ⌊ τ ⌋ → ⌊ τ ⌋
+  υ ⊓tₛ υ' = υ ↓ ⊓t υ' ↓ , ⊓t-preserves-⊑-spec (υ slice) (υ' slice)
+
+  infixl 6 _⊓tₛ_
+
+  -- Joins (of slices of some type)
+  _⊔tₛ_ : ∀ {τ} → ⌊ τ ⌋ → ⌊ τ ⌋ → ⌊ τ ⌋
+  (τ₁ + τ₂ , s) ⊔tₛ (τ₁' + τ₂' , s') = {!!} , {!!}
+  (τ₁ × τ₂ , s) ⊔tₛ (τ₁' × τ₂' , s') = {!!} , {!!}
+  (τ₁ ⇒ τ₂ , s) ⊔tₛ (τ₁' ⇒ τ₂' , s') = {!!} , {!!}
+  (∀· τ₂ , s) ⊔tₛ (∀· τ₂' , s') = {!!} , {!!}
+  υ ⊔tₛ υ' with υ ↓ ≟t υ' ↓
+  ...    | yes τ≡τ' = υ
+  ...    | no τ≢τ' = {!!} -- Impossible case, maybe difficult to prove in this particular layout
+
+  infixl 7 _⊔tₛ_
+
+  -- Meets & Joins (of slices of some type) form a bounded lattice
+  -- TODO
+  
