@@ -1,8 +1,12 @@
 open import Data.Nat using (ℕ; _≟_)
-open import Data.Product using (_,_; curry; uncurry)
+open import Data.Maybe.Base
+open import Data.Bool using (_∨_)
+open import Data.Product using (_,_; ∃-syntax; curry; uncurry; proj₁; proj₂)
 
 open import Relation.Binary.PropositionalEquality as Eq
 open Eq.≡-Reasoning
+
+open import Function using (_⇔_)
 
 open import Relation.Binary using (Poset)
 import Relation.Binary.Reasoning.PartialOrder as PosetReasoning
@@ -15,73 +19,66 @@ module core.typ where
   -- Types
   data Typ : Set where
     ⟨_⟩ : ℕ → Typ  -- Type variables (nats)
-    * : Typ
-    □ : Typ
+    *   : Typ
+    □   : Typ
     _+_ : Typ → Typ → Typ
     _×_ : Typ → Typ → Typ
     _⇒_ : Typ → Typ → Typ
-    ∀· : Typ → Typ
+    ∀·  : Typ → Typ
     
   infixl 23  _+_
   infixl 24  _×_
   infixr 25  _⇒_
  
   -- (Decidable) Equality
+  data _same-kind_ : Typ → Typ → Set where 
+    kindVar : ∀ m n →           ⟨ m ⟩   same-kind ⟨ n ⟩
+    kind*   :                   *       same-kind *
+    kind□   :                   □       same-kind □
+    kind+   : ∀ τ₁ τ₂ τ₁' τ₂' → τ₁ + τ₂ same-kind τ₁' + τ₂'
+    kind×   : ∀ τ₁ τ₂ τ₁' τ₂' → τ₁ × τ₂ same-kind τ₁' × τ₂'
+    kind⇒   : ∀ τ₁ τ₂ τ₁' τ₂' → τ₁ ⇒ τ₂ same-kind τ₁' ⇒ τ₂'
+    kind∀   : ∀ τ  τ'         → ∀· τ    same-kind ∀· τ' 
+
+  diag : (τ τ' : Typ) → Maybe (τ same-kind τ')
+  diag *          *          = just kind*
+  diag □         □           = just kind□
+  diag ⟨ m ⟩     ⟨ n ⟩       = just (kindVar m n)
+  diag (τ₁ + τ₂) (τ₁' + τ₂') = just (kind+ τ₁ τ₂ τ₁' τ₂')
+  diag (τ₁ × τ₂) (τ₁' × τ₂') = just (kind× τ₁ τ₂ τ₁' τ₂')
+  diag (τ₁ ⇒ τ₂) (τ₁' ⇒ τ₂') = just (kind⇒ τ₁ τ₂ τ₁' τ₂')
+  diag (∀· τ)    (∀· τ')     = just (kind∀ τ τ')
+  diag _         _           = nothing
+
+  shallow-disequality : (τ : Typ) → ¬(diag τ τ ≡ nothing)
+  shallow-disequality ⟨ x ⟩    = λ ()
+  shallow-disequality *        = λ ()
+  shallow-disequality □        = λ ()
+  shallow-disequality (τ + τ₁) = λ ()
+  shallow-disequality (τ × τ₁) = λ ()
+  shallow-disequality (τ ⇒ τ₁) = λ ()
+  shallow-disequality (∀· τ)   = λ ()
+
   _≟t_ : (τ τ' : Typ) → Dec (τ ≡ τ')
-  *      ≟t *        = yes refl
-  □      ≟t □        = yes refl
-  ⟨ m ⟩  ≟t ⟨ n ⟩    = map′ (cong ⟨_⟩) (λ {refl → refl}) (m ≟ n)
-  τ₁ + τ₂ ≟t τ₁' + τ₂' = map′ (uncurry (cong₂ _+_)) (λ {refl → refl , refl})
+  τ ≟t τ' with diag τ τ'                  | inspect (diag τ) τ'
+  ...        | just kind*                 | _ = yes refl
+  ...        | just kind□                 | _ = yes refl
+  ...        | just (kindVar m n)         | _
+               = map′ (cong ⟨_⟩) (λ {refl → refl}) (m ≟ n)
+  ...        | just (kind+ τ₁ τ₂ τ₁' τ₂') | _
+               = map′ (uncurry (cong₂ _+_)) (λ where refl → refl , refl)
+                      (τ₁ ≟t τ₁' ×-dec τ₂ ≟t τ₂') 
+  ...        | just (kind× τ₁ τ₂ τ₁' τ₂') | _
+               = map′ (uncurry (cong₂ _×_)) (λ where refl → refl , refl)
+                      (τ₁ ≟t τ₁' ×-dec τ₂ ≟t τ₂') 
+  ...        | just (kind⇒ τ₁ τ₂ τ₁' τ₂') | _
+               = map′ (uncurry (cong₂ _⇒_)) (λ where refl → refl , refl)
                             (τ₁ ≟t τ₁' ×-dec τ₂ ≟t τ₂') 
-  τ₁ × τ₂ ≟t τ₁' × τ₂' = map′ (uncurry (cong₂ _×_)) (λ {refl → refl , refl})
-                            (τ₁ ≟t τ₁' ×-dec τ₂ ≟t τ₂') 
-  τ₁ ⇒ τ₂ ≟t τ₁' ⇒ τ₂' = map′ (uncurry (cong₂ _⇒_)) (λ {refl → refl , refl})
-                            (τ₁ ≟t τ₁' ×-dec τ₂ ≟t τ₂') 
-  ∀· τ   ≟t ∀· τ'    = map′ (cong ∀·) (λ {refl → refl}) (τ ≟t τ')
-  -- This is sad :(
-  *      ≟t □        = no λ ()
-  *      ≟t ⟨ _ ⟩    = no λ ()
-  *      ≟t _ + _    = no λ ()
-  *      ≟t _ × _    = no λ ()
-  *      ≟t _ ⇒ _    = no λ ()  
-  *      ≟t ∀· _     = no λ ()
-  □      ≟t *        = no λ ()
-  □      ≟t ⟨ _ ⟩    = no λ ()
-  □      ≟t _ + _    = no λ ()
-  □      ≟t _ × _    = no λ ()
-  □      ≟t _ ⇒ _    = no λ ()
-  □      ≟t ∀· _     = no λ ()
-  ⟨ _ ⟩  ≟t *        = no λ ()
-  ⟨ _ ⟩  ≟t □        = no λ ()
-  ⟨ _ ⟩  ≟t _ + _    = no λ ()
-  ⟨ _ ⟩  ≟t _ × _    = no λ ()
-  ⟨ _ ⟩  ≟t _ ⇒ _    = no λ ()
-  ⟨ _ ⟩  ≟t ∀· _     = no λ ()
-  _ + _  ≟t *        = no λ ()
-  _ + _  ≟t □        = no λ ()
-  _ + _  ≟t ⟨ _ ⟩    = no λ ()
-  _ + _  ≟t _ × _    = no λ ()
-  _ + _  ≟t _ ⇒ _    = no λ ()
-  _ + _  ≟t ∀· _     = no λ ()
-  _ × _  ≟t *        = no λ ()
-  _ × _  ≟t □        = no λ ()
-  _ × _  ≟t ⟨ _ ⟩    = no λ ()
-  _ × _  ≟t _ + _    = no λ ()
-  _ × _  ≟t _ ⇒ _    = no λ ()
-  _ × _  ≟t ∀· _     = no λ ()
-  _ ⇒ _  ≟t *        = no λ ()
-  _ ⇒ _  ≟t □        = no λ ()
-  _ ⇒ _  ≟t ⟨ _ ⟩    = no λ ()
-  _ ⇒ _  ≟t _ + _    = no λ ()
-  _ ⇒ _  ≟t _ × _    = no λ ()
-  _ ⇒ _  ≟t ∀· _     = no λ ()
-  ∀· _   ≟t *        = no λ ()
-  ∀· _   ≟t □        = no λ ()
-  ∀· _   ≟t ⟨ _ ⟩    = no λ ()
-  ∀· _   ≟t _ + _    = no λ ()
-  ∀· _   ≟t _ × _    = no λ ()
-  ∀· _   ≟t _ ⇒ _    = no λ ()
-  
+  ...        | just (kind∀ τ τ')          | _
+               = map′ (cong ∀·) (λ where refl → refl) (τ ≟t τ')
+  ...        | nothing                    | [ isnothing ]
+               = no λ where refl → shallow-disequality τ isnothing 
+
   -- Type Consistency
   data _~_ : Typ → Typ → Set where
     ~* : * ~ *
