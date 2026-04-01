@@ -31,26 +31,28 @@ module core.typ where
   infixr 25  _⇒_
  
   -- (Decidable) Equality
-  data _same-kind_ : Typ → Typ → Set where 
-    kindVar : ∀ m n →           ⟨ m ⟩   same-kind ⟨ n ⟩
-    kind*   :                   *       same-kind *
-    kind□   :                   □       same-kind □
-    kind+   : ∀ τ₁ τ₂ τ₁' τ₂' → τ₁ + τ₂ same-kind τ₁' + τ₂'
-    kind×   : ∀ τ₁ τ₂ τ₁' τ₂' → τ₁ × τ₂ same-kind τ₁' × τ₂'
-    kind⇒   : ∀ τ₁ τ₂ τ₁' τ₂' → τ₁ ⇒ τ₂ same-kind τ₁' ⇒ τ₂'
-    kind∀   : ∀ τ  τ'         → ∀· τ    same-kind ∀· τ' 
+  -- Classify types by their 'kinds' i.e. the kind of their top-most constructor
+  data _kind?_ : Typ → Typ → Set where 
+    kindVar   : ∀ {m n}           → ⟨ m ⟩   kind? ⟨ n ⟩
+    kind*     :                     *       kind? *
+    kind□     :                     □       kind? □
+    kind+     : ∀ {τ₁ τ₂ τ₁' τ₂'} → τ₁ + τ₂ kind? τ₁' + τ₂'
+    kind×     : ∀ {τ₁ τ₂ τ₁' τ₂'} → τ₁ × τ₂ kind? τ₁' × τ₂'
+    kind⇒     : ∀ {τ₁ τ₂ τ₁' τ₂'} → τ₁ ⇒ τ₂ kind? τ₁' ⇒ τ₂'
+    kind∀     : ∀ {τ  τ'}         → ∀· τ    kind? ∀· τ'
+    diff : ∀ {τ  τ'}         → τ       kind? τ'
 
-  diag : (τ τ' : Typ) → Maybe (τ same-kind τ')
-  diag *          *          = just kind*
-  diag □         □           = just kind□
-  diag ⟨ m ⟩     ⟨ n ⟩       = just (kindVar m n)
-  diag (τ₁ + τ₂) (τ₁' + τ₂') = just (kind+ τ₁ τ₂ τ₁' τ₂')
-  diag (τ₁ × τ₂) (τ₁' × τ₂') = just (kind× τ₁ τ₂ τ₁' τ₂')
-  diag (τ₁ ⇒ τ₂) (τ₁' ⇒ τ₂') = just (kind⇒ τ₁ τ₂ τ₁' τ₂')
-  diag (∀· τ)    (∀· τ')     = just (kind∀ τ τ')
-  diag _         _           = nothing
+  diag : (τ τ' : Typ) → τ kind? τ'
+  diag *          *          = kind*
+  diag □         □           = kind□
+  diag ⟨ m ⟩     ⟨ n ⟩       = kindVar
+  diag (τ₁ + τ₂) (τ₁' + τ₂') = kind+
+  diag (τ₁ × τ₂) (τ₁' × τ₂') = kind×
+  diag (τ₁ ⇒ τ₂) (τ₁' ⇒ τ₂') = kind⇒
+  diag (∀· τ)    (∀· τ')     = kind∀
+  diag τ         τ'          = diff
 
-  shallow-disequality : (τ : Typ) → ¬(diag τ τ ≡ nothing)
+  shallow-disequality : (τ : Typ) → ¬(diag τ τ ≡ diff)
   shallow-disequality ⟨ x ⟩    = λ ()
   shallow-disequality *        = λ ()
   shallow-disequality □        = λ ()
@@ -60,26 +62,25 @@ module core.typ where
   shallow-disequality (∀· τ)   = λ ()
 
   _≟t_ : (τ τ' : Typ) → Dec (τ ≡ τ')
-  τ ≟t τ' with diag τ τ'                  | inspect (diag τ) τ'
-  ...        | just kind*                 | _ = yes refl
-  ...        | just kind□                 | _ = yes refl
-  ...        | just (kindVar m n)         | _
-               = map′ (cong ⟨_⟩) (λ {refl → refl}) (m ≟ n)
-  ...        | just (kind+ τ₁ τ₂ τ₁' τ₂') | _
-               = map′ (uncurry (cong₂ _+_)) (λ where refl → refl , refl)
-                      (τ₁ ≟t τ₁' ×-dec τ₂ ≟t τ₂') 
-  ...        | just (kind× τ₁ τ₂ τ₁' τ₂') | _
-               = map′ (uncurry (cong₂ _×_)) (λ where refl → refl , refl)
-                      (τ₁ ≟t τ₁' ×-dec τ₂ ≟t τ₂') 
-  ...        | just (kind⇒ τ₁ τ₂ τ₁' τ₂') | _
-               = map′ (uncurry (cong₂ _⇒_)) (λ where refl → refl , refl)
-                            (τ₁ ≟t τ₁' ×-dec τ₂ ≟t τ₂') 
-  ...        | just (kind∀ τ τ')          | _
-               = map′ (cong ∀·) (λ where refl → refl) (τ ≟t τ')
-  ...        | nothing                    | [ isnothing ]
-               = no λ where refl → shallow-disequality τ isnothing 
+  τ       ≟t τ'   with diag τ τ'   | inspect (diag τ) τ'
+  ...                  | kind*   | _     = yes refl
+  ...                  | kind□   | _     = yes refl
+  ⟨ m ⟩   ≟t ⟨ n ⟩     | kindVar | _     = map′ (cong ⟨_⟩)
+                                                (λ {refl → refl}) (m ≟ n)
+  τ₁ + τ₂ ≟t τ₁' + τ₂' | kind+   | _     = map′ (uncurry (cong₂ _+_))
+                                                (λ where refl → refl , refl)
+                                                (τ₁ ≟t τ₁' ×-dec τ₂ ≟t τ₂') 
+  τ₁ × τ₂ ≟t τ₁' × τ₂' | kind×   | _     = map′ (uncurry (cong₂ _×_))
+                                                (λ where refl → refl , refl)
+                                                (τ₁ ≟t τ₁' ×-dec τ₂ ≟t τ₂') 
+  τ₁ ⇒ τ₂ ≟t τ₁' ⇒ τ₂' | kind⇒   | _     = map′ (uncurry (cong₂ _⇒_))
+                                                (λ where refl → refl , refl)
+                                                (τ₁ ≟t τ₁' ×-dec τ₂ ≟t τ₂') 
+  ∀· τ    ≟t ∀· τ'     | kind∀   | _     = map′ (cong ∀·)
+                                                (λ where refl → refl) (τ ≟t τ')
+  ...                  | diff    | [ as ] = no λ where refl → shallow-disequality τ as 
 
-  -- Type Consistency
+  -- (Decidable) Type Consistency
   data _~_ : Typ → Typ → Set where
     ~* : * ~ *
     ~Var : ∀ {n} → ⟨ n ⟩ ~ ⟨ n ⟩
