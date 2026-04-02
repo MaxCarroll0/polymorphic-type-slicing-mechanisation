@@ -52,21 +52,21 @@ module core.typ where
   diag (∀· τ)    (∀· τ')     = kind∀
   diag τ         τ'          = diff
 
-  shallow-disequality : (τ : Typ) → ¬(diag τ τ ≡ diff)
-  shallow-disequality ⟨ x ⟩    = λ ()
-  shallow-disequality *        = λ ()
-  shallow-disequality □        = λ ()
-  shallow-disequality (τ + τ₁) = λ ()
-  shallow-disequality (τ × τ₁) = λ ()
-  shallow-disequality (τ ⇒ τ₁) = λ ()
-  shallow-disequality (∀· τ)   = λ ()
+  shallow-disequality : {τ : Typ} → ¬(diag τ τ ≡ diff)
+  shallow-disequality {⟨ x ⟩}    = λ ()
+  shallow-disequality {*}        = λ ()
+  shallow-disequality {□}        = λ ()
+  shallow-disequality {(τ + τ₁)} = λ ()
+  shallow-disequality {(τ × τ₁)} = λ ()
+  shallow-disequality {(τ ⇒ τ₁)} = λ ()
+  shallow-disequality {(∀· τ)}   = λ ()
 
   _≟t_ : (τ τ' : Typ) → Dec (τ ≡ τ')
-  τ       ≟t τ'   with diag τ τ'   | inspect (diag τ) τ'
+  τ       ≟t τ' with diag τ τ'   | inspect (diag τ) τ'
   ...                  | kind*   | _     = yes refl
   ...                  | kind□   | _     = yes refl
   ⟨ m ⟩   ≟t ⟨ n ⟩     | kindVar | _     = map′ (cong ⟨_⟩)
-                                                (λ {refl → refl}) (m ≟ n)
+                                                (λ where refl → refl) (m ≟ n)
   τ₁ + τ₂ ≟t τ₁' + τ₂' | kind+   | _     = map′ (uncurry (cong₂ _+_))
                                                 (λ where refl → refl , refl)
                                                 (τ₁ ≟t τ₁' ×-dec τ₂ ≟t τ₂') 
@@ -78,7 +78,7 @@ module core.typ where
                                                 (τ₁ ≟t τ₁' ×-dec τ₂ ≟t τ₂') 
   ∀· τ    ≟t ∀· τ'     | kind∀   | _     = map′ (cong ∀·)
                                                 (λ where refl → refl) (τ ≟t τ')
-  ...                  | diff    | [ as ] = no λ where refl → shallow-disequality τ as 
+  ...                  | diff    | [ as ] = no λ where refl → shallow-disequality as
 
   -- (Decidable) Type Consistency
   data _~_ : Typ → Typ → Set where
