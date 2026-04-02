@@ -40,7 +40,7 @@ module core.typ where
     kind×     : ∀ {τ₁ τ₂ τ₁' τ₂'} → τ₁ × τ₂ kind? τ₁' × τ₂'
     kind⇒     : ∀ {τ₁ τ₂ τ₁' τ₂'} → τ₁ ⇒ τ₂ kind? τ₁' ⇒ τ₂'
     kind∀     : ∀ {τ  τ'}         → ∀· τ    kind? ∀· τ'
-    diff : ∀ {τ  τ'}         → τ       kind? τ'
+    diff : ∀ {τ  τ'}              → τ       kind? τ'
 
   diag : (τ τ' : Typ) → τ kind? τ'
   diag *          *          = kind*
@@ -116,22 +116,22 @@ module core.typ where
                                                 (λ where (~∀ τ~τ') → τ~τ')
                                                 (τ ~? τ') 
   ...                  | diff | [ as ] with τ ≟t □ | τ' ≟t □
-  ...                                      | yes τ≡□ | _  rewrite τ≡□ = yes ~?ₗ
-  ...                                      | _ | yes τ'≡□ rewrite τ'≡□ = yes ~?ᵣ
-  ...                                      | no τ≢□  | no τ'≢□
+  ...                                      | yes τ≡□ | _        rewrite τ≡□  = yes ~?ₗ
+  ...                                      | _       | yes τ'≡□ rewrite τ'≡□ = yes ~?ᵣ
+  ...                                      | no  τ≢□ | no  τ'≢□
                                              = no λ τ~τ' → shallow-inconsistency τ~τ' τ≢□ τ'≢□ as 
  
   -- Consistency is an equivalence relation
 
   -- Slices (Precision)
   data _⊑t_ : Typ → Typ → Set where
-    ⊑? : ∀ {τ} → □ ⊑t τ
-    ⊑* : * ⊑t *
-    ⊑Var : ∀ {n} → ⟨ n ⟩ ⊑t ⟨ n ⟩
-    ⊑+ : ∀ {τ₁ τ₂ τ₁' τ₂'} → τ₁ ⊑t τ₁' → τ₂ ⊑t τ₂' → τ₁ + τ₂ ⊑t τ₁' + τ₂'
-    ⊑× : ∀ {τ₁ τ₂ τ₁' τ₂'} → τ₁ ⊑t τ₁' → τ₂ ⊑t τ₂' → τ₁ × τ₂ ⊑t τ₁' × τ₂'
-    ⊑⇒ : ∀ {τ₁ τ₂ τ₁' τ₂'} → τ₁ ⊑t τ₁' → τ₂ ⊑t τ₂' → τ₁ ⇒ τ₂ ⊑t τ₁' ⇒ τ₂'
-    ⊑∀ : ∀ {τ τ'} → τ ⊑t τ' → ∀· τ ⊑t ∀· τ'
+    ⊑?   : ∀ {τ}                                     → □       ⊑t τ
+    ⊑*   :                                             *       ⊑t *
+    ⊑Var : ∀ {n}                                     → ⟨ n ⟩   ⊑t ⟨ n ⟩
+    ⊑+   : ∀ {τ₁ τ₂ τ₁' τ₂'} → τ₁ ⊑t τ₁' → τ₂ ⊑t τ₂' → τ₁ + τ₂ ⊑t τ₁' + τ₂'
+    ⊑×   : ∀ {τ₁ τ₂ τ₁' τ₂'} → τ₁ ⊑t τ₁' → τ₂ ⊑t τ₂' → τ₁ × τ₂ ⊑t τ₁' × τ₂'
+    ⊑⇒   : ∀ {τ₁ τ₂ τ₁' τ₂'} → τ₁ ⊑t τ₁' → τ₂ ⊑t τ₂' → τ₁ ⇒ τ₂ ⊑t τ₁' ⇒ τ₂'
+    ⊑∀   : ∀ {τ τ'}          → τ  ⊑t τ'              → ∀· τ    ⊑t ∀· τ'
 
   infix 4 _⊑t_
 
@@ -143,7 +143,7 @@ module core.typ where
   record SliceOf (τ : Typ) : Set where
     constructor _isSlice_
     field
-      ↓ : Typ
+      ↓     : Typ
       proof : ↓ ⊑t τ
 
   syntax SliceOf τ = ⌊ τ ⌋
@@ -164,10 +164,10 @@ module core.typ where
   τ₁ + τ₂ ⊓t τ₁' + τ₂' = (τ₁ ⊓t τ₁') + (τ₂ ⊓t τ₂')
   τ₁ × τ₂ ⊓t τ₁' × τ₂' = (τ₁ ⊓t τ₁') × (τ₂ ⊓t τ₂')
   τ₁ ⇒ τ₂ ⊓t τ₁' ⇒ τ₂' = (τ₁ ⊓t τ₁') ⇒ (τ₂ ⊓t τ₂')
-  ∀· τ₂ ⊓t ∀· τ₂' = ∀· (τ₂ ⊓t τ₂')
-  τ ⊓t τ' with τ ≟t τ'
-  ...    | yes τ≡τ' = τ
-  ...    | no τ≢τ' = □
+  ∀· τ₂   ⊓t ∀· τ₂'    = ∀· (τ₂ ⊓t τ₂')
+  τ       ⊓t τ'        with τ ≟t τ'
+  ...                      | yes τ≡τ' = τ
+  ...                      | no τ≢τ' = □
 
   infixl 6 _⊓t_
 
@@ -203,10 +203,10 @@ module core.typ where
   (τ₁ + τ₂ isSlice s) ⊔tₛ (τ₁' + τ₂' isSlice s') = {!!} isSlice {!!}
   (τ₁ × τ₂ isSlice s) ⊔tₛ (τ₁' × τ₂' isSlice s') = {!!} isSlice {!!}
   (τ₁ ⇒ τ₂ isSlice s) ⊔tₛ (τ₁' ⇒ τ₂' isSlice s') = {!!} isSlice {!!}
-  (∀· τ₂ isSlice s) ⊔tₛ (∀· τ₂' isSlice s') = τ₂ isSlice {!!}
+  (∀· τ₂ isSlice s)   ⊔tₛ (∀· τ₂' isSlice s')    = {!!} isSlice {!!}
   υ ⊔tₛ υ' with υ .↓ ≟t υ' .↓
-  ...    | yes τ≡τ' = υ
-  ...    | no τ≢τ' = υ -- Impossible case, maybe difficult to prove in this particular layout
+  ...         | yes τ≡τ' = υ
+  ...         | no τ≢τ' = υ -- Impossible case, maybe difficult to prove in this particular layout
 
   infixl 7 _⊔tₛ_
 
