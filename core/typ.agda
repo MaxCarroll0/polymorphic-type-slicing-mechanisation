@@ -20,29 +20,29 @@ module core.typ where
 
   -- Types
   data Typ : Set where
-    ⟨_⟩ : ℕ → Typ  -- Type variables (nats)
+    ⟨_⟩ : ℕ → Typ  -- Type variables (nats: de Bruijn)
     *   : Typ
     □   : Typ
     _+_ : Typ → Typ → Typ
     _×_ : Typ → Typ → Typ
     _⇒_ : Typ → Typ → Typ
     ∀·  : Typ → Typ
-    
-  infixl 23  _+_
-  infixl 24  _×_
-  infixr 25  _⇒_
- 
+
+  infixl 23 _+_
+  infixl 24 _×_
+  infixr 25 _⇒_
+
   -- (Decidable) Equality
   -- Classify types by their 'kinds' i.e. the kind of their top-most constructor
-  data _kind?_ : Typ → Typ → Set where 
-    kindVar   : ∀ {m n}           → ⟨ m ⟩   kind? ⟨ n ⟩
-    kind*     :                     *       kind? *
-    kind□     :                     □       kind? □
-    kind+     : ∀ {τ₁ τ₂ τ₁' τ₂'} → τ₁ + τ₂ kind? τ₁' + τ₂'
-    kind×     : ∀ {τ₁ τ₂ τ₁' τ₂'} → τ₁ × τ₂ kind? τ₁' × τ₂'
-    kind⇒     : ∀ {τ₁ τ₂ τ₁' τ₂'} → τ₁ ⇒ τ₂ kind? τ₁' ⇒ τ₂'
-    kind∀     : ∀ {τ  τ'}         → ∀· τ    kind? ∀· τ'
-    diff : ∀ {τ  τ'}              → τ       kind? τ'
+  data _kind?_ : Typ → Typ → Set where
+    kindVar : ∀ {m n}           → ⟨ m ⟩   kind? ⟨ n ⟩
+    kind*   :                     *       kind? *
+    kind□   :                     □       kind? □
+    kind+   : ∀ {τ₁ τ₂ τ₁' τ₂'} → τ₁ + τ₂ kind? τ₁' + τ₂'
+    kind×   : ∀ {τ₁ τ₂ τ₁' τ₂'} → τ₁ × τ₂ kind? τ₁' × τ₂'
+    kind⇒   : ∀ {τ₁ τ₂ τ₁' τ₂'} → τ₁ ⇒ τ₂ kind? τ₁' ⇒ τ₂'
+    kind∀   : ∀ {τ τ'}          → ∀· τ    kind? ∀· τ'
+    diff    : ∀ {τ τ'}          → τ       kind? τ'
 
   diag : (τ τ' : Typ) → τ kind? τ'
   diag *          *          = kind*
@@ -71,27 +71,27 @@ module core.typ where
                                                 (λ where refl → refl) (m ≟ n)
   τ₁ + τ₂ ≟t τ₁' + τ₂' | kind+   | _     = map′ (uncurry (cong₂ _+_))
                                                 (λ where refl → refl , refl)
-                                                (τ₁ ≟t τ₁' ×-dec τ₂ ≟t τ₂') 
+                                                (τ₁ ≟t τ₁' ×-dec τ₂ ≟t τ₂')
   τ₁ × τ₂ ≟t τ₁' × τ₂' | kind×   | _     = map′ (uncurry (cong₂ _×_))
                                                 (λ where refl → refl , refl)
-                                                (τ₁ ≟t τ₁' ×-dec τ₂ ≟t τ₂') 
+                                                (τ₁ ≟t τ₁' ×-dec τ₂ ≟t τ₂')
   τ₁ ⇒ τ₂ ≟t τ₁' ⇒ τ₂' | kind⇒   | _     = map′ (uncurry (cong₂ _⇒_))
                                                 (λ where refl → refl , refl)
-                                                (τ₁ ≟t τ₁' ×-dec τ₂ ≟t τ₂') 
+                                                (τ₁ ≟t τ₁' ×-dec τ₂ ≟t τ₂')
   ∀· τ    ≟t ∀· τ'     | kind∀   | _     = map′ (cong ∀·)
                                                 (λ where refl → refl) (τ ≟t τ')
   ...                  | diff    | [ as ] = no λ where refl → shallow-disequality as
 
   -- (Decidable) Type Consistency
   data _~_ : Typ → Typ → Set where
-    ~* : * ~ *
-    ~Var : ∀ {n} → ⟨ n ⟩ ~ ⟨ n ⟩
-    ~?ᵣ : ∀ {τ} → τ ~ □
-    ~?ₗ : ∀ {τ} → □ ~ τ
-    ~+ : ∀ {τ₁ τ₂ τ₁' τ₂'} → τ₁ ~ τ₁' → τ₂ ~ τ₂' → τ₁ + τ₂ ~ τ₁' + τ₂'
-    ~× : ∀ {τ₁ τ₂ τ₁' τ₂'} → τ₁ ~ τ₁' → τ₂ ~ τ₂' → τ₁ × τ₂ ~ τ₁' × τ₂'
-    ~⇒ : ∀ {τ₁ τ₂ τ₁' τ₂'} → τ₁ ~ τ₁' → τ₂ ~ τ₂' → τ₁ ⇒ τ₂ ~ τ₁' ⇒ τ₂'
-    ~∀ : ∀ {τ τ'} → τ ~ τ' → ∀· τ ~ ∀· τ'
+    ~*   :                                             *       ~ *
+    ~Var : ∀ {n}             →                         ⟨ n ⟩   ~ ⟨ n ⟩
+    ~?ᵣ  : ∀ {τ}             →                         τ       ~ □
+    ~?ₗ  : ∀ {τ}             →                         □       ~ τ
+    ~+   : ∀ {τ₁ τ₂ τ₁' τ₂'} → τ₁ ~ τ₁' → τ₂ ~ τ₂'  → τ₁ + τ₂ ~ τ₁' + τ₂'
+    ~×   : ∀ {τ₁ τ₂ τ₁' τ₂'} → τ₁ ~ τ₁' → τ₂ ~ τ₂'  → τ₁ × τ₂ ~ τ₁' × τ₂'
+    ~⇒   : ∀ {τ₁ τ₂ τ₁' τ₂'} → τ₁ ~ τ₁' → τ₂ ~ τ₂'  → τ₁ ⇒ τ₂ ~ τ₁' ⇒ τ₂'
+    ~∀   : ∀ {τ τ'}          → τ ~ τ'                → ∀· τ    ~ ∀· τ'
 
   _≁_ : (τ τ' : Typ) → Set
   _≁_ = λ (τ τ' : Typ) → ¬(τ ~ τ')
@@ -107,22 +107,22 @@ module core.typ where
   ⟨ m ⟩   ~? ⟨ n ⟩     | kindVar | _     = map′ (λ where refl → ~Var) (λ where ~Var → refl) (m ≟ n)
   τ₁ + τ₂ ~? τ₁' + τ₂' | kind+   | _     = map′ (uncurry ~+)
                                                 (λ where (~+ τ₁~τ₁' τ₂~τ₂') → τ₁~τ₁' , τ₂~τ₂')
-                                                (τ₁ ~? τ₁' ×-dec τ₂ ~? τ₂') 
+                                                (τ₁ ~? τ₁' ×-dec τ₂ ~? τ₂')
   τ₁ × τ₂ ~? τ₁' × τ₂' | kind×   | _     = map′ (uncurry ~×)
                                                 (λ where (~× τ₁~τ₁' τ₂~τ₂') → τ₁~τ₁' , τ₂~τ₂')
-                                                (τ₁ ~? τ₁' ×-dec τ₂ ~? τ₂') 
+                                                (τ₁ ~? τ₁' ×-dec τ₂ ~? τ₂')
   τ₁ ⇒ τ₂ ~? τ₁' ⇒ τ₂' | kind⇒   | _     = map′ (uncurry ~⇒)
                                                 (λ where (~⇒ τ₁~τ₁' τ₂~τ₂') → τ₁~τ₁' , τ₂~τ₂')
-                                                (τ₁ ~? τ₁' ×-dec τ₂ ~? τ₂') 
+                                                (τ₁ ~? τ₁' ×-dec τ₂ ~? τ₂')
   ∀· τ ~? ∀· τ'        | kind∀   | _     = map′ (~∀)
                                                 (λ where (~∀ τ~τ') → τ~τ')
-                                                (τ ~? τ') 
+                                                (τ ~? τ')
   ...                  | diff    | [ as ] with τ ≟t □ | τ' ≟t □
   ...                                     | yes τ≡□ | _        rewrite τ≡□  = yes ~?ₗ
   ...                                     | _       | yes τ'≡□ rewrite τ'≡□ = yes ~?ᵣ
   ...                                     | no  τ≢□ | no  τ'≢□
-                                            = no λ τ~τ' → shallow-inconsistency τ~τ' τ≢□ τ'≢□ as 
- 
+                                            = no λ τ~τ' → shallow-inconsistency τ~τ' τ≢□ τ'≢□ as
+
   -- Compatibility: reflexive and symmetric (but NOT transitive)
   record IsCompatibility {A : Set} (_∼_ : A → A → Set) : Set where
     field
@@ -158,13 +158,13 @@ module core.typ where
 
   -- Slices (Precision)
   data _⊑t_ : Typ → Typ → Set where
-    ⊑?   : ∀ {τ}                                     → □       ⊑t τ
+    ⊑?   : ∀ {τ}             →                         □       ⊑t τ
     ⊑*   :                                             *       ⊑t *
-    ⊑Var : ∀ {n}                                     → ⟨ n ⟩   ⊑t ⟨ n ⟩
+    ⊑Var : ∀ {n}             →                         ⟨ n ⟩   ⊑t ⟨ n ⟩
     ⊑+   : ∀ {τ₁ τ₂ τ₁' τ₂'} → τ₁ ⊑t τ₁' → τ₂ ⊑t τ₂' → τ₁ + τ₂ ⊑t τ₁' + τ₂'
     ⊑×   : ∀ {τ₁ τ₂ τ₁' τ₂'} → τ₁ ⊑t τ₁' → τ₂ ⊑t τ₂' → τ₁ × τ₂ ⊑t τ₁' × τ₂'
     ⊑⇒   : ∀ {τ₁ τ₂ τ₁' τ₂'} → τ₁ ⊑t τ₁' → τ₂ ⊑t τ₂' → τ₁ ⇒ τ₂ ⊑t τ₁' ⇒ τ₂'
-    ⊑∀   : ∀ {τ τ'}          → τ  ⊑t τ'              → ∀· τ    ⊑t ∀· τ'
+    ⊑∀   : ∀ {τ τ'}          → τ ⊑t τ'               → ∀· τ    ⊑t ∀· τ'
 
   infix 4 _⊑t_
 
@@ -231,7 +231,6 @@ module core.typ where
                         → (⊑tₛ-weaken p υ) .↓ ≡ υ .↓
   ⊑tₛ-weaken-identity = refl
 
-
   infix 4 _⊑tₛ_
 
   -- Lifted partial order on slices of a type
@@ -255,15 +254,15 @@ module core.typ where
     ; antisym = λ {τ'} {τ} → ⊑t-antisym
     }
 
-  -- Slice are consistent
-  ⊑to~1 : ∀ {τ τ'} → τ ⊑t τ' → τ ~ τ'
-  ⊑to~1 ⊑? = ~?ₗ
-  ⊑to~1 ⊑* = ~*
-  ⊑to~1 ⊑Var = ~Var
-  ⊑to~1 (⊑+ τ⊑tτ' τ⊑tτ'') = ~+ (⊑to~1 τ⊑tτ') (⊑to~1 τ⊑tτ'')
-  ⊑to~1 (⊑× τ⊑tτ' τ⊑tτ'') = ~× (⊑to~1 τ⊑tτ') (⊑to~1 τ⊑tτ'')
-  ⊑to~1 (⊑⇒ τ⊑tτ' τ⊑tτ'') = ~⇒ (⊑to~1 τ⊑tτ') (⊑to~1 τ⊑tτ'')
-  ⊑to~1 (⊑∀ τ⊑tτ') = ~∀ (⊑to~1 τ⊑tτ')
+  -- Slices are consistent
+  ⊑to~ : ∀ {τ τ'} → τ ⊑t τ' → τ ~ τ'
+  ⊑to~ ⊑?         = ~?ₗ
+  ⊑to~ ⊑*         = ~*
+  ⊑to~ ⊑Var       = ~Var
+  ⊑to~ (⊑+ p₁ p₂) = ~+ (⊑to~ p₁) (⊑to~ p₂)
+  ⊑to~ (⊑× p₁ p₂) = ~× (⊑to~ p₁) (⊑to~ p₂)
+  ⊑to~ (⊑⇒ p₁ p₂) = ~⇒ (⊑to~ p₁) (⊑to~ p₂)
+  ⊑to~ (⊑∀ p)     = ~∀ (⊑to~ p)
 
   -- Meets. Note: order theoretic. NOT necessarily type consistent
   _⊓t_ : Typ → Typ → Typ
@@ -330,4 +329,4 @@ module core.typ where
 
   -- Meets & Joins (of slices of some type) form a bounded lattice
   -- TODO
-  
+
