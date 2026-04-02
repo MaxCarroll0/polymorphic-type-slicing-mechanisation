@@ -1,5 +1,6 @@
 open import Data.Nat using (ℕ; _≟_)
-open import Data.Maybe.Base
+open import Data.Maybe
+open import Data.Sum
 open import Data.Bool using (_∨_)
 open import Data.Product using (_,_; ∃-syntax; curry; uncurry; proj₁; proj₂)
 
@@ -149,15 +150,32 @@ module core.typ where
   syntax SliceOf τ = ⌊ τ ⌋
   infix 3 _isSlice_
 
-  -- Relating consistency and precision
-  ~to⊑1 : ∀ {τ τ'} → τ ~ τ' → τ ⊑t τ'
-  ~to⊑1 cons = {!!}
-  ~to⊑2 : ∀ {τ τ'} → τ ~ τ' → τ' ⊑t τ'
-  ~to⊑2 cons = {!!}
+  open SliceOf
+
+  -- Lifted precision on slices of the same type
+  _⊑tₛ_ : ∀ {τ} → ⌊ τ ⌋ → ⌊ τ ⌋ → Set
+  υ₁ ⊑tₛ υ₂ = υ₁ .↓ ⊑t υ₂ .↓
+
+  -- Slices can be weakened by transitivity
+  ⊑tₛ-weaken : ∀ {τ τ'} → τ' ⊑t τ → ⌊ τ' ⌋ → ⌊ τ ⌋
+  ⊑tₛ-weaken τ'⊑τ = λ υ' → υ' .↓ isSlice {!!}
+
+  ⊑tₛ-weaken-identity : ∀ {τ' τ} → {υ : ⌊ τ' ⌋} → {p : τ' ⊑t τ}
+                        → (⊑tₛ-weaken p υ) .↓ ≡ υ .↓
+  ⊑tₛ-weaken-identity = refl
+
+
+  infix 4 _⊑ₛ_
+
+  -- Slice are consistent
   ⊑to~1 : ∀ {τ τ'} → τ ⊑t τ' → τ ~ τ'
-  ⊑to~1 cons = {!!}
-  ⊑to~2 : ∀ {τ τ'} → τ' ⊑t τ → τ ~ τ'
-  ⊑to~2 cons = {!!}
+  ⊑to~1 ⊑? = ~?ₗ
+  ⊑to~1 ⊑* = ~*
+  ⊑to~1 ⊑Var = ~Var
+  ⊑to~1 (⊑+ τ⊑tτ' τ⊑tτ'') = ~+ (⊑to~1 τ⊑tτ') (⊑to~1 τ⊑tτ'')
+  ⊑to~1 (⊑× τ⊑tτ' τ⊑tτ'') = ~× (⊑to~1 τ⊑tτ') (⊑to~1 τ⊑tτ'')
+  ⊑to~1 (⊑⇒ τ⊑tτ' τ⊑tτ'') = ~⇒ (⊑to~1 τ⊑tτ') (⊑to~1 τ⊑tτ'')
+  ⊑to~1 (⊑∀ τ⊑tτ') = ~∀ (⊑to~1 τ⊑tτ')
 
   -- Meets. Note: order theoretic. NOT necessarily type consistent
   _⊓t_ : Typ → Typ → Typ
@@ -190,6 +208,16 @@ module core.typ where
   -- Meets form a bounded semi-lattice
   -- TODO
 
+  -- Joins. Note: only valid for consistent types
+  _⊔t_ : Typ → Typ → Typ
+  τ₁ + τ₂ ⊔t τ₁' + τ₂' = (τ₁ ⊔t τ₁') + (τ₂ ⊔t τ₂')
+  τ₁ × τ₂ ⊔t τ₁' × τ₂' = (τ₁ ⊔t τ₁') × (τ₂ ⊔t τ₂')
+  τ₁ ⇒ τ₂ ⊔t τ₁' ⇒ τ₂' = (τ₁ ⊔t τ₁') ⇒ (τ₂ ⊔t τ₂')
+  ∀· τ₂   ⊔t ∀· τ₂'    = ∀· (τ₂ ⊔t τ₂')
+  τ       ⊔t τ'        = τ
+
+  -- LUB property
+
   -- Meets (of slices of some type)
   open SliceOf
 
@@ -209,6 +237,8 @@ module core.typ where
   ...         | no τ≢τ' = υ -- Impossible case, maybe difficult to prove in this particular layout
 
   infixl 7 _⊔tₛ_
+
+  -- Consistent types have joins
 
   -- Meets & Joins (of slices of some type) form a bounded lattice
   -- TODO
