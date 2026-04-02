@@ -1,5 +1,4 @@
 
-{-# OPTIONS --allow-unsolved-metas #-}
 module core.Typ.Lattice where
 
 open import Data.Nat using (ℕ; _≟_)
@@ -59,14 +58,6 @@ _⊓t_ : Typ → Typ → Typ
 ...                          | no  _ = □
 
 infixl 6 _⊓t_
-
--- Inconsistent Types have trivial meets
-⊓t-consistent : ∀ {τ τ'} → τ ⊓t τ' ≢ □ → τ ~ τ'
-⊓t-consistent neq = {!!}
-
--- contrapositive
-⊓t-inconsistent : ∀ {τ τ'} → τ ≁ τ' → τ ⊓t τ' ≡ □
-⊓t-inconsistent incon = {!!}
 
 -- Meets form a bounded semi-lattice (GLB property)
 ⊓t-lb₁ : ∀ τ₁ τ₂ → τ₁ ⊓t τ₂ ⊑t τ₁
