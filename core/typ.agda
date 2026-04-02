@@ -371,16 +371,14 @@ module core.typ where
   ⊔t-identityₗ : ∀ τ → □ ⊔t τ ≡ τ
   ⊔t-identityₗ τ with diag □ τ
   ⊔t-identityₗ □         | kind□ = refl
-  ⊔t-identityₗ τ         | diff with □ ≟t □
-  ...                           | yes _ = refl
-  ...                           | no ¬p = ⊥-elim (¬p refl)
+  ⊔t-identityₗ _         | diff = refl
 
   ⊔t-identityᵣ : ∀ τ → τ ⊔t □ ≡ τ
   ⊔t-identityᵣ τ with diag τ □
   ⊔t-identityᵣ □         | kind□ = refl
   ⊔t-identityᵣ τ         | diff with τ ≟t □
   ...                           | yes refl = refl
-  ...                           | no _     = refl
+  ...                           | no  _    = refl
 
   -- Least upper bound (if consist)
   ⊔t-ub₁ : ∀ {τ₁ τ₂} → τ₁ ~ τ₂ → τ₁ ⊑t τ₁ ⊔t τ₂
