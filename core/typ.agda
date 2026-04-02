@@ -11,8 +11,8 @@ open Eq.≡-Reasoning
 open import Function using (_⇔_; _on_)
 
 open import Relation.Binary using (Poset; IsPartialOrder; IsPreorder; IsEquivalence)
-open import Relation.Binary.Definitions using (Reflexive; Symmetric; Transitive; Antisymmetric)
-open import Relation.Binary.Lattice.Structures using (IsMeetSemilattice; IsJoinSemilattice; IsLattice)
+open import Relation.Binary.Definitions using (Reflexive; Symmetric; Transitive; Antisymmetric; Maximum; Minimum)
+open import Relation.Binary.Lattice.Structures using (IsMeetSemilattice; IsJoinSemilattice; IsLattice; IsBoundedLattice)
 open import Relation.Binary.Lattice.Definitions using (Infimum; Supremum)
 import Relation.Binary.Reasoning.PartialOrder as PosetReasoning
 
@@ -487,5 +487,26 @@ module core.typ where
     { isPartialOrder = ⊑tₛ-isPartialOrder
     ; supremum       = ⊔tₛ-supremum
     ; infimum        = ⊓tₛ-infimum
+    }
+
+  -- Bounded lattice: □ is bottom, τ is top
+  ⊤ₛ : ∀ {τ} → ⌊ τ ⌋
+  ⊤ₛ {τ} = τ isSlice ⊑t-refl
+
+  ⊥ₛ : ∀ {τ} → ⌊ τ ⌋
+  ⊥ₛ {τ} = □ isSlice ⊑?
+
+  ⊤ₛ-maximum : ∀ {τ} → Maximum (_⊑tₛ_ {τ}) ⊤ₛ
+  ⊤ₛ-maximum υ = υ .proof
+
+  ⊥ₛ-minimum : ∀ {τ} → Minimum (_⊑tₛ_ {τ}) ⊥ₛ
+  ⊥ₛ-minimum υ = ⊑?
+
+  -- Bounded lattice on slices of a type
+  ⊑tₛ-isBoundedLattice : ∀ {τ} → IsBoundedLattice (_≡_ on ↓) (_⊑tₛ_ {τ}) _⊔tₛ_ _⊓tₛ_ ⊤ₛ ⊥ₛ
+  ⊑tₛ-isBoundedLattice = record
+    { isLattice = ⊑tₛ-isLattice
+    ; maximum   = ⊤ₛ-maximum
+    ; minimum   = ⊥ₛ-minimum
     }
 
