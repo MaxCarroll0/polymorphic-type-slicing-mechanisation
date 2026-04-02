@@ -139,16 +139,15 @@ module core.typ where
   -- TODO
 
   -- Slices OF a term
-  ⌊_⌋ : Typ → Set
-  ⌊ τ ⌋ = ∃[ τ' ] τ' ⊑t τ
+  -- Slice property irrelevant to equality
+  record SliceOf (τ : Typ) : Set where
+    constructor _isSlice_
+    field
+      ↓ : Typ
+      proof : ↓ ⊑t τ
 
-  _↓ : ∀ {τ} → ⌊ τ ⌋ → Typ
-  υ ↓ = proj₁ υ
-
-  infix 50 _↓
-
-  _slice : ∀ {τ} → (υ : ⌊ τ ⌋) → υ ↓ ⊑t τ
-  υ slice = proj₂ υ
+  syntax SliceOf τ = ⌊ τ ⌋
+  infix 3 _isSlice_
 
   -- Relating consistency and precision
   ~to⊑1 : ∀ {τ τ'} → τ ~ τ' → τ ⊑t τ'
@@ -192,20 +191,22 @@ module core.typ where
   -- TODO
 
   -- Meets (of slices of some type)
+  open SliceOf
+
   _⊓tₛ_ : ∀ {τ} → ⌊ τ ⌋ → ⌊ τ ⌋ → ⌊ τ ⌋
-  υ ⊓tₛ υ' = υ ↓ ⊓t υ' ↓ , ⊓t-preserves-⊑-spec (υ slice) (υ' slice)
+  υ ⊓tₛ υ' = υ .↓ ⊓t υ' .↓ isSlice ⊓t-preserves-⊑-spec (υ .proof) (υ' .proof)
 
   infixl 6 _⊓tₛ_
 
   -- Joins (of slices of some type)
   _⊔tₛ_ : ∀ {τ} → ⌊ τ ⌋ → ⌊ τ ⌋ → ⌊ τ ⌋
-  (τ₁ + τ₂ , s) ⊔tₛ (τ₁' + τ₂' , s') = {!!} , {!!}
-  (τ₁ × τ₂ , s) ⊔tₛ (τ₁' × τ₂' , s') = {!!} , {!!}
-  (τ₁ ⇒ τ₂ , s) ⊔tₛ (τ₁' ⇒ τ₂' , s') = {!!} , {!!}
-  (∀· τ₂ , s) ⊔tₛ (∀· τ₂' , s') = {!!} , {!!}
-  υ ⊔tₛ υ' with υ ↓ ≟t υ' ↓
+  (τ₁ + τ₂ isSlice s) ⊔tₛ (τ₁' + τ₂' isSlice s') = {!!} isSlice {!!}
+  (τ₁ × τ₂ isSlice s) ⊔tₛ (τ₁' × τ₂' isSlice s') = {!!} isSlice {!!}
+  (τ₁ ⇒ τ₂ isSlice s) ⊔tₛ (τ₁' ⇒ τ₂' isSlice s') = {!!} isSlice {!!}
+  (∀· τ₂ isSlice s) ⊔tₛ (∀· τ₂' isSlice s') = τ₂ isSlice {!!}
+  υ ⊔tₛ υ' with υ .↓ ≟t υ' .↓
   ...    | yes τ≡τ' = υ
-  ...    | no τ≢τ' = {!!} -- Impossible case, maybe difficult to prove in this particular layout
+  ...    | no τ≢τ' = υ -- Impossible case, maybe difficult to prove in this particular layout
 
   infixl 7 _⊔tₛ_
 
