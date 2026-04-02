@@ -99,9 +99,9 @@ module core.typ where
   shallow-inconsistency ~?ₗ τ≢□ _ _ = τ≢□ refl
 
   _~?_ : (τ τ' : Typ) → Dec(τ ~ τ')
-  τ ~? τ' with diag τ τ' | inspect (diag τ) τ'
-  ... | kind*          | _               = yes ~*
-  ... | kind□          | _               = yes ~?ᵣ
+  τ ~? τ'         with diag τ τ' | inspect (diag τ) τ'
+  ...                  | kind*   | _     = yes ~*
+  ...                  | kind□   | _     = yes ~?ᵣ
   ⟨ m ⟩   ~? ⟨ n ⟩     | kindVar | _     = map′ (λ where refl → ~Var) (λ where ~Var → refl) (m ≟ n)
   τ₁ + τ₂ ~? τ₁' + τ₂' | kind+   | _     = map′ (uncurry ~+)
                                                 (λ where (~+ τ₁~τ₁' τ₂~τ₂') → τ₁~τ₁' , τ₂~τ₂')
@@ -115,11 +115,11 @@ module core.typ where
   ∀· τ ~? ∀· τ'        | kind∀   | _     = map′ (~∀)
                                                 (λ where (~∀ τ~τ') → τ~τ')
                                                 (τ ~? τ') 
-  ...                  | diff | [ as ] with τ ≟t □ | τ' ≟t □
-  ...                                      | yes τ≡□ | _        rewrite τ≡□  = yes ~?ₗ
-  ...                                      | _       | yes τ'≡□ rewrite τ'≡□ = yes ~?ᵣ
-  ...                                      | no  τ≢□ | no  τ'≢□
-                                             = no λ τ~τ' → shallow-inconsistency τ~τ' τ≢□ τ'≢□ as 
+  ...                  | diff    | [ as ] with τ ≟t □ | τ' ≟t □
+  ...                                     | yes τ≡□ | _        rewrite τ≡□  = yes ~?ₗ
+  ...                                     | _       | yes τ'≡□ rewrite τ'≡□ = yes ~?ᵣ
+  ...                                     | no  τ≢□ | no  τ'≢□
+                                            = no λ τ~τ' → shallow-inconsistency τ~τ' τ≢□ τ'≢□ as 
  
   -- Consistency is an equivalence relation
 
