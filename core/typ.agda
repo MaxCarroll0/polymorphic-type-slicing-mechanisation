@@ -1,20 +1,25 @@
 open import Data.Nat using (ℕ; _≟_)
 open import Data.Maybe
 open import Data.Sum
+open import Data.Empty
 open import Data.Bool using (_∨_)
 open import Data.Product using (_,_; ∃-syntax; curry; uncurry; proj₁; proj₂)
 
 open import Relation.Binary.PropositionalEquality as Eq
 open Eq.≡-Reasoning
-
+  
 open import Function using (_⇔_; _on_)
 
 open import Relation.Binary using (Poset; IsPartialOrder; IsPreorder; IsEquivalence)
 open import Relation.Binary.Definitions using (Reflexive; Symmetric; Transitive; Antisymmetric)
+open import Relation.Binary.Lattice.Structures using (IsMeetSemilattice)
+open import Relation.Binary.Lattice.Definitions using (Infimum)
 import Relation.Binary.Reasoning.PartialOrder as PosetReasoning
 
 open import Relation.Nullary using (Dec; yes; no; ¬_; map′)
 open import Relation.Nullary.Decidable using (_×-dec_)
+
+open import Data.Empty using (⊥-elim)
 
 module core.typ where
 
@@ -266,23 +271,19 @@ module core.typ where
 
   -- Meets. Note: order theoretic. NOT necessarily type consistent
   _⊓t_ : Typ → Typ → Typ
-  τ₁ + τ₂ ⊓t τ₁' + τ₂' = (τ₁ ⊓t τ₁') + (τ₂ ⊓t τ₂')
-  τ₁ × τ₂ ⊓t τ₁' × τ₂' = (τ₁ ⊓t τ₁') × (τ₂ ⊓t τ₂')
-  τ₁ ⇒ τ₂ ⊓t τ₁' ⇒ τ₂' = (τ₁ ⊓t τ₁') ⇒ (τ₂ ⊓t τ₂')
-  ∀· τ₂   ⊓t ∀· τ₂'    = ∀· (τ₂ ⊓t τ₂')
-  τ       ⊓t τ'        with τ ≟t τ'
-  ...                      | yes τ≡τ' = τ
-  ...                      | no τ≢τ' = □
-
+  τ ⊓t τ' with diag τ τ'
+  ...        | diff  = □
+  ...        | kind□  = □
+  ...        | kind* = *
+  ...        | kind+ {τ₁} {τ₂} {τ₁'} {τ₂'} = (τ₁ ⊓t τ₁') + (τ₂ ⊓t τ₂')
+  ...        | kind× {τ₁} {τ₂} {τ₁'} {τ₂'} = (τ₁ ⊓t τ₁') × (τ₂ ⊓t τ₂')
+  ...        | kind⇒ {τ₁} {τ₂} {τ₁'} {τ₂'} = (τ₁ ⊓t τ₁') ⇒ (τ₂ ⊓t τ₂')
+  ...        | kind∀ {τ} {τ'} = ∀· (τ ⊓t τ')
+  ...        | kindVar {m} {n} with m ≟ n
+  ...                          | yes _ = ⟨ m ⟩
+  ...                          | no  _ = □
+  
   infixl 6 _⊓t_
-
-  -- Meets preserve precision
-  ⊓t-preserves-⊑ : ∀ {τ₁ τ₁' τ₂ τ₂'} → τ₁' ⊑t τ₁ → τ₂' ⊑t τ₂ → τ₁' ⊓t τ₂' ⊑t τ₁ ⊓t τ₂
-  ⊓t-preserves-⊑ s1 s2 = {!!}
-
-  -- In particular when τ₁ = τ₂ then we get the same notion as the slice joins below
-  ⊓t-preserves-⊑-spec : ∀ {τ₁ τ₂ τ : Typ} → τ₁ ⊑t τ → τ₂ ⊑t τ → τ₁ ⊓t τ₂ ⊑t τ
-  ⊓t-preserves-⊑-spec = {!!}
 
   -- Inconsistent Types have trivial meets
   ⊓t-consistent : ∀ {τ τ'} → τ ⊓t τ' ≢ □ → τ ~ τ'
@@ -292,8 +293,62 @@ module core.typ where
   ⊓t-inconsistent : ∀ {τ τ'} → τ ≁ τ' → τ ⊓t τ' ≡ □
   ⊓t-inconsistent incon = {!!}
 
-  -- Meets form a bounded semi-lattice
-  -- TODO
+  -- Meets form a bounded semi-lattice (GLB property)
+  ⊓t-lb₁ : ∀ τ₁ τ₂ → τ₁ ⊓t τ₂ ⊑t τ₁
+  ⊓t-lb₁ τ       τ'         with diag τ τ'
+  ⊓t-lb₁ (τ₁ + τ₂) (τ₁' + τ₂') | kind+ = ⊑+ (⊓t-lb₁ τ₁ τ₁') (⊓t-lb₁ τ₂ τ₂')
+  ⊓t-lb₁ (τ₁ × τ₂) (τ₁' × τ₂') | kind× = ⊑× (⊓t-lb₁ τ₁ τ₁') (⊓t-lb₁ τ₂ τ₂')
+  ⊓t-lb₁ (τ₁ ⇒ τ₂) (τ₁' ⇒ τ₂') | kind⇒ = ⊑⇒ (⊓t-lb₁ τ₁ τ₁') (⊓t-lb₁ τ₂ τ₂')
+  ⊓t-lb₁ (∀· τ)    (∀· τ')     | kind∀ = ⊑∀ (⊓t-lb₁ τ τ')
+  ⊓t-lb₁ ⟨ m ⟩     ⟨ n ⟩       | kindVar with m ≟ n
+  ...                                | yes _ = ⊑Var
+  ...                                | no  _ = ⊑?
+  ⊓t-lb₁ *         *           | kind* = ⊑*
+  ⊓t-lb₁ □         □           | kind□ = ⊑?
+  ⊓t-lb₁ _         _           | diff = ⊑?
+
+  ⊓t-lb₂ : ∀ τ₁ τ₂ → τ₁ ⊓t τ₂ ⊑t τ₂
+  ⊓t-lb₂ τ       τ'        with diag τ τ'
+  ⊓t-lb₂ (τ₁ + τ₂) (τ₁' + τ₂') | kind+ = ⊑+ (⊓t-lb₂ τ₁ τ₁') (⊓t-lb₂ τ₂ τ₂')
+  ⊓t-lb₂ (τ₁ × τ₂) (τ₁' × τ₂') | kind× = ⊑× (⊓t-lb₂ τ₁ τ₁') (⊓t-lb₂ τ₂ τ₂')
+  ⊓t-lb₂ (τ₁ ⇒ τ₂) (τ₁' ⇒ τ₂') | kind⇒ = ⊑⇒ (⊓t-lb₂ τ₁ τ₁') (⊓t-lb₂ τ₂ τ₂')
+  ⊓t-lb₂ (∀· τ)    (∀· τ')     | kind∀ = ⊑∀ (⊓t-lb₂ τ τ')
+  ⊓t-lb₂ ⟨ m ⟩     ⟨ n ⟩       | kindVar with m ≟ n
+  ...                                | yes refl = ⊑Var
+  ...                                | no  _ = ⊑?
+  ⊓t-lb₂ *         *           | kind* = ⊑*
+  ⊓t-lb₂ □         □           | kind□ = ⊑?
+  ⊓t-lb₂ _         _           | diff  = ⊑?
+
+  ⊓t-glb : ∀ {τ τ₁ τ₂} → τ ⊑t τ₁ → τ ⊑t τ₂ → τ ⊑t τ₁ ⊓t τ₂
+  ⊓t-glb ⊑? _                   = ⊑?
+  ⊓t-glb ⊑* ⊑*                  = ⊑*
+  ⊓t-glb (⊑Var {m}) (⊑Var {m}) with m ≟ m
+  ... | yes _ = ⊑Var
+  ... | no contr = ⊥-elim (contr refl) -- not automatic sadly
+  ⊓t-glb (⊑+ p₁ p₂) (⊑+ q₁ q₂) = ⊑+ (⊓t-glb p₁ q₁) (⊓t-glb p₂ q₂)
+  ⊓t-glb (⊑× p₁ p₂) (⊑× q₁ q₂) = ⊑× (⊓t-glb p₁ q₁) (⊓t-glb p₂ q₂)
+  ⊓t-glb (⊑⇒ p₁ p₂) (⊑⇒ q₁ q₂) = ⊑⇒ (⊓t-glb p₁ q₁) (⊓t-glb p₂ q₂)
+  ⊓t-glb (⊑∀ p)     (⊑∀ q)     = ⊑∀ (⊓t-glb p q)
+
+  -- Meets preserve precision
+  ⊓t-preserves-⊑ : ∀ {τ₁ τ₁' τ₂ τ₂'} → τ₁' ⊑t τ₁ → τ₂' ⊑t τ₂ → τ₁' ⊓t τ₂' ⊑t τ₁ ⊓t τ₂
+  ⊓t-preserves-⊑ {_} {τ₁'} {_} {τ₂'} lb₁ lb₂ = ⊓t-glb (⊑t-trans (⊓t-lb₁ τ₁' τ₂') lb₁) (⊑t-trans (⊓t-lb₂ τ₁' τ₂') lb₂)
+
+  -- In particular when τ₁ = τ₂ then we get the same notion as the slice joins below
+  ⊓t-preserves-⊑-spec : ∀ {τ₁ τ₂ τ : Typ} → τ₁ ⊑t τ → τ₂ ⊑t τ → τ₁ ⊓t τ₂ ⊑t τ
+  ⊓t-preserves-⊑-spec p₁ p₂ = ⊑t-trans (⊓t-lb₁ _ _) p₁
+
+  -- Meet is infimum
+  ⊓t-infimum : Infimum _⊑t_ _⊓t_
+  ⊓t-infimum τ₁ τ₂ = ⊓t-lb₁ τ₁ τ₂ , ⊓t-lb₂ τ₁ τ₂ , λ τ → ⊓t-glb {τ} {τ₁} {τ₂}
+
+  -- Meet semilattice structure
+  ⊓t-isMeetSemilattice : IsMeetSemilattice _≡_ _⊑t_ _⊓t_
+  ⊓t-isMeetSemilattice = record
+    { isPartialOrder = ⊑t-isPartialOrder
+    ; infimum        = ⊓t-infimum
+    }
 
   -- Joins. Note: only valid for consistent types
   _⊔t_ : Typ → Typ → Typ
@@ -315,10 +370,10 @@ module core.typ where
 
   -- Joins (of slices of some type)
   _⊔tₛ_ : ∀ {τ} → ⌊ τ ⌋ → ⌊ τ ⌋ → ⌊ τ ⌋
-  (τ₁ + τ₂ isSlice s) ⊔tₛ (τ₁' + τ₂' isSlice s') = {!!} isSlice {!!}
-  (τ₁ × τ₂ isSlice s) ⊔tₛ (τ₁' × τ₂' isSlice s') = {!!} isSlice {!!}
-  (τ₁ ⇒ τ₂ isSlice s) ⊔tₛ (τ₁' ⇒ τ₂' isSlice s') = {!!} isSlice {!!}
-  (∀· τ₂ isSlice s)   ⊔tₛ (∀· τ₂' isSlice s')    = {!!} isSlice {!!}
+  (τ₁ + τ₂ isSlice s) ⊔tₛ (τ₁' + τ₂' isSlice s') = τ₁ isSlice {!!}
+  (τ₁ × τ₂ isSlice s) ⊔tₛ (τ₁' × τ₂' isSlice s') = τ₁ isSlice {!!}
+  (τ₁ ⇒ τ₂ isSlice s) ⊔tₛ (τ₁' ⇒ τ₂' isSlice s') = τ₁ isSlice {!!}
+  (∀· τ₂ isSlice s)   ⊔tₛ (∀· τ₂' isSlice s')    = τ₂ isSlice {!!}
   υ ⊔tₛ υ' with υ .↓ ≟t υ' .↓
   ...         | yes τ≡τ' = υ
   ...         | no τ≢τ' = υ -- Impossible case, maybe difficult to prove in this particular layout
