@@ -1,5 +1,8 @@
 module core.Ctx.Base where
 
+open import Relation.Nullary using (¬_)
+open import Relation.Binary.PropositionalEquality using (_≡_)
+
 open import core.Typ using (Typ; □)
 open import core.Exp using (Exp; □e; λ·_⇒_; _∘_; _&_; ιₗ; ιᵣ; Λ; def_⊢_)
 
@@ -48,3 +51,45 @@ plug (def e' ⊢ᵣ C) e = def e' ⊢ plug C e
 □Ctx (Λ C)         = Λ (□Ctx C)
 □Ctx (def C ⊢ₗ _)  = def □Ctx C ⊢ₗ □e
 □Ctx (def _ ⊢ᵣ C)  = def □e ⊢ᵣ □Ctx C
+
+-- Classify contexts by their 'kinds' i.e. the kind of their top-most constructor
+data _kind?_ : Ctx → Ctx → Set where
+  kind○    :                                 ○               kind? ○
+  kindλ    : ∀ {τ τ' C C'}                 → (λ· τ ⇒ C)     kind? (λ· τ' ⇒ C')
+  kind∘ₗ   : ∀ {C C' e e'}                 → (C ∘ₗ e)       kind? (C' ∘ₗ e')
+  kind∘ᵣ   : ∀ {e e' C C'}                 → (e ∘ᵣ C)       kind? (e' ∘ᵣ C')
+  kind&ₗ   : ∀ {C C' e e'}                 → (C &ₗ e)       kind? (C' &ₗ e')
+  kind&ᵣ   : ∀ {e e' C C'}                 → (e &ᵣ C)       kind? (e' &ᵣ C')
+  kindιₗ   : ∀ {C C'}                      → ιₗ C           kind? ιₗ C'
+  kindιᵣ   : ∀ {C C'}                      → ιᵣ C           kind? ιᵣ C'
+  kindΛ    : ∀ {C C'}                      → Λ C            kind? Λ C'
+  kinddefₗ : ∀ {C C' e e'}                 → (def C ⊢ₗ e)   kind? (def C' ⊢ₗ e')
+  kinddefᵣ : ∀ {e e' C C'}                 → (def e ⊢ᵣ C)   kind? (def e' ⊢ᵣ C')
+  diff     : ∀ {C C'}                      → C              kind? C'
+
+diag : (C C' : Ctx) → C kind? C'
+diag ○             ○               = kind○
+diag (λ· _ ⇒ _)    (λ· _ ⇒ _)      = kindλ
+diag (_ ∘ₗ _)      (_ ∘ₗ _)        = kind∘ₗ
+diag (_ ∘ᵣ _)      (_ ∘ᵣ _)        = kind∘ᵣ
+diag (_ &ₗ _)      (_ &ₗ _)        = kind&ₗ
+diag (_ &ᵣ _)      (_ &ᵣ _)        = kind&ᵣ
+diag (ιₗ _)        (ιₗ _)          = kindιₗ
+diag (ιᵣ _)        (ιᵣ _)          = kindιᵣ
+diag (Λ _)         (Λ _)           = kindΛ
+diag (def _ ⊢ₗ _)  (def _ ⊢ₗ _)    = kinddefₗ
+diag (def _ ⊢ᵣ _)  (def _ ⊢ᵣ _)    = kinddefᵣ
+diag _             _               = diff
+
+shallow-disequality : {C : Ctx} → ¬(diag C C ≡ diff)
+shallow-disequality {○}           = λ ()
+shallow-disequality {λ· _ ⇒ _}    = λ ()
+shallow-disequality {_ ∘ₗ _}      = λ ()
+shallow-disequality {_ ∘ᵣ _}      = λ ()
+shallow-disequality {_ &ₗ _}      = λ ()
+shallow-disequality {_ &ᵣ _}      = λ ()
+shallow-disequality {ιₗ _}        = λ ()
+shallow-disequality {ιᵣ _}        = λ ()
+shallow-disequality {Λ _}         = λ ()
+shallow-disequality {def _ ⊢ₗ _}  = λ ()
+shallow-disequality {def _ ⊢ᵣ _}  = λ ()
