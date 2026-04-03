@@ -15,37 +15,14 @@ open import core.Typ.Lattice using (_⊓t_; _⊔t_; ⊓t-lb₁; ⊓t-lb₂; ⊓t
 open import core.Assumptions.Base
 open import core.Assumptions.Precision
 
--- A slice of Γ is any Γ' below Γ in precision
-record SliceOfΓ (Γ : Assumptions) : Set where
-  constructor _isSlice_
-  field
-    ↓     : Assumptions
-    proof : ↓ ⊑Γ Γ
+-- □Γ (length Γ) is below any slice of Γ
+□Γ-min-slice : ∀ {Γ' Γ} → Γ' ⊑Γ Γ → □Γ (length Γ) ⊑Γ Γ'
+□Γ-min-slice ⊑[]       = ⊑[]
+□Γ-min-slice (⊑∷ _ pf) = ⊑∷ ⊑? (□Γ-min-slice pf)
 
-syntax SliceOfΓ Γ = ⌊ Γ ⌋
-infix 3 _isSlice_
-
-open SliceOfΓ public
-
--- Lifted ordering on slices
-_⊑Γₛ_ : ∀ {Γ} → ⌊ Γ ⌋ → ⌊ Γ ⌋ → Set
-γ₁ ⊑Γₛ γ₂ = γ₁ .↓ ⊑Γ γ₂ .↓
-
-infix 4 _⊑Γₛ_
-
--- Top and bottom of slice lattice
-⊤Γₛ : ∀ {Γ} → ⌊ Γ ⌋
-⊤Γₛ {Γ} = Γ isSlice ⊑Γ-refl
-
-⊥Γₛ : ∀ {Γ} → ⌊ Γ ⌋
-⊥Γₛ {Γ} = □Γ (length Γ) isSlice □Γ-min Γ
-
--- Weaken a slice to a larger bound
-⊑Γₛ-weaken : ∀ {Γ Γ'} → Γ ⊑Γ Γ' → ⌊ Γ ⌋ → ⌊ Γ' ⌋
-⊑Γₛ-weaken p γ = γ .↓ isSlice ⊑Γ-trans (γ .proof) p
-
-⊑Γₛ-weaken-identity : ∀ {Γ Γ'} {γ : ⌊ Γ ⌋} {p : Γ ⊑Γ Γ'} → (⊑Γₛ-weaken p γ) .↓ ≡ γ .↓
-⊑Γₛ-weaken-identity = refl
+-- Instantiate generic Slice module for assumptions
+open import Slice _⊑Γ_ (λ Γ → □Γ (length Γ)) □Γ-min □Γ-min-slice ⊑Γ-refl ⊑Γ-trans public
+  renaming (SliceOf to SliceOfΓ; _⊑ₛ_ to _⊑Γₛ_; ⊤ₛ to ⊤Γₛ; ⊥ₛ to ⊥Γₛ; weaken to ⊑Γₛ-weaken; weaken-identity to ⊑Γₛ-weaken-identity; ⊥ₛ-min to ⊥Γₛ-min)
 
 -- Pointwise meet (for same-length lists)
 _⊓Γ_ : Assumptions → Assumptions → Assumptions
@@ -65,13 +42,13 @@ infixl 6 _⊔Γ_
 
 -- Meet is lower bound (left) - requires proof that arguments share an upper bound (ensures same length)
 ⊓Γ-lb₁ : ∀ {Γ₁ Γ₂ Γ} → Γ₁ ⊑Γ Γ → Γ₂ ⊑Γ Γ → Γ₁ ⊓Γ Γ₂ ⊑Γ Γ₁
-⊓Γ-lb₁ ⊑[]        ⊑[]        = ⊑[]
-⊓Γ-lb₁ (⊑∷ p₁ q₁) (⊑∷ p₂ q₂) = ⊑∷ (⊓t-lb₁ _ _) (⊓Γ-lb₁ q₁ q₂)
+⊓Γ-lb₁ ⊑[]                ⊑[]                = ⊑[]
+⊓Γ-lb₁ (⊑∷ {τ₁} p₁ q₁) (⊑∷ {τ₂} p₂ q₂) = ⊑∷ (⊓t-lb₁ τ₁ τ₂) (⊓Γ-lb₁ q₁ q₂)
 
 -- Meet is lower bound (right)
 ⊓Γ-lb₂ : ∀ {Γ₁ Γ₂ Γ} → Γ₁ ⊑Γ Γ → Γ₂ ⊑Γ Γ → Γ₁ ⊓Γ Γ₂ ⊑Γ Γ₂
-⊓Γ-lb₂ ⊑[]        ⊑[]        = ⊑[]
-⊓Γ-lb₂ (⊑∷ p₁ q₁) (⊑∷ p₂ q₂) = ⊑∷ (⊓t-lb₂ _ _) (⊓Γ-lb₂ q₁ q₂)
+⊓Γ-lb₂ ⊑[]                ⊑[]                = ⊑[]
+⊓Γ-lb₂ (⊑∷ {τ₁} p₁ q₁) (⊑∷ {τ₂} p₂ q₂) = ⊑∷ (⊓t-lb₂ τ₁ τ₂) (⊓Γ-lb₂ q₁ q₂)
 
 -- Meet is greatest lower bound
 ⊓Γ-glb : ∀ {Γ Γ₁ Γ₂} → Γ ⊑Γ Γ₁ → Γ ⊑Γ Γ₂ → Γ ⊑Γ Γ₁ ⊓Γ Γ₂
@@ -193,17 +170,10 @@ infixl 7 _⊔Γₛ_
 ⊤Γₛ-maximum : ∀ {Γ} → Maximum (_⊑Γₛ_ {Γ}) ⊤Γₛ
 ⊤Γₛ-maximum γ = γ .proof
 
-⊥Γₛ-minimum : ∀ {Γ} → Minimum (_⊑Γₛ_ {Γ}) ⊥Γₛ
-⊥Γₛ-minimum γ = □Γ-min-slice (γ .proof)
-  where
-    □Γ-min-slice : ∀ {Γ' Γ} → Γ' ⊑Γ Γ → □Γ (length Γ) ⊑Γ Γ'
-    □Γ-min-slice ⊑[]        = ⊑[]
-    □Γ-min-slice (⊑∷ _ pf)  = ⊑∷ ⊑? (□Γ-min-slice pf)
-
 -- Bounded lattice on slices of assumptions
 ⊑Γₛ-isBoundedLattice : ∀ {Γ} → IsBoundedLattice (_≡_ on ↓) (_⊑Γₛ_ {Γ}) _⊔Γₛ_ _⊓Γₛ_ ⊤Γₛ ⊥Γₛ
 ⊑Γₛ-isBoundedLattice = record
   { isLattice = ⊑Γₛ-isLattice
   ; maximum   = ⊤Γₛ-maximum
-  ; minimum   = ⊥Γₛ-minimum
+  ; minimum   = ⊥Γₛ-min
   }
