@@ -4,6 +4,7 @@ open import core.Typ using (Typ; □)
 open import core.Exp using (Exp; □e; λ·_⇒_; _∘_; _&_; ιₗ; ιᵣ; Λ; def_⊢_)
 
 -- Expression contexts with exactly one mark ○
+-- Note: Do not confuse with the typing assumptions (often referred to as contexts)
 data Ctx : Set where
   ○       : Ctx                      -- Identity context (the mark)
   λ·_⇒_   : Typ → Ctx → Ctx          -- Lambda: mark in body

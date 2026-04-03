@@ -44,7 +44,7 @@ open import Slice _⊑Ctx_ □Ctx □Ctx-min □Ctx-min-slice ⊑Ctx-refl ⊑Ctx
   ; antisym = λ {C'} {C} → ⊑Ctx-antisym
   }
 
--- Meets: only defined for same-constructor contexts (used in slice operations)
+-- Meets: only valid for same-constructor contexts (used in slice operations)
 -- For different constructors, there is no lower bound in the partial order
 _⊓Ctx_ : Ctx → Ctx → Ctx
 ○             ⊓Ctx ○             = ○
@@ -59,12 +59,11 @@ _⊓Ctx_ : Ctx → Ctx → Ctx
 (def C ⊢ₗ e)  ⊓Ctx (def C' ⊢ₗ e') = def (C ⊓Ctx C') ⊢ₗ (e ⊓e e')
 (def e ⊢ᵣ C)  ⊓Ctx (def e' ⊢ᵣ C') = def (e ⊓e e') ⊢ᵣ (C ⊓Ctx C')
 -- Incomparable cases: return the first operand as a fallback
--- These cases should not arise when operating on slices of the same context
 C             ⊓Ctx _             = C
 
 infixl 6 _⊓Ctx_
 
--- Joins: only defined for same-constructor contexts
+-- Joins: only valid for same-constructor contexts
 _⊔Ctx_ : Ctx → Ctx → Ctx
 ○             ⊔Ctx ○             = ○
 (λ· τ ⇒ C)    ⊔Ctx (λ· τ' ⇒ C')  = λ· (τ ⊔t τ') ⇒ (C ⊔Ctx C')
