@@ -19,8 +19,8 @@ open import core.Exp.Equality
 open import core.Exp.Precision
 
 -- Instantiate generic Slice module for expressions
-open import Slice _⊑e_ □e (λ _ → ⊑□) ⊑e-refl ⊑e-trans public
-  renaming (SliceOf to SliceOfExp; _⊑ₛ_ to _⊑eₛ_; ⊤ₛ to ⊤eₛ; ⊥ₛ to ⊥eₛ; weaken to ⊑eₛ-weaken; weaken-identity to ⊑eₛ-weaken-identity)
+open import Slice _⊑e_ (λ _ → □e) (λ _ → ⊑□) (λ _ → ⊑□) ⊑e-refl ⊑e-trans public
+  renaming (SliceOf to SliceOfExp; _⊑ₛ_ to _⊑eₛ_; ⊤ₛ to ⊤eₛ; ⊥ₛ to ⊥eₛ; weaken to ⊑eₛ-weaken; weaken-identity to ⊑eₛ-weaken-identity; ⊥ₛ-min to ⊥eₛ-min')
 
 -- Lifted partial order on slices of an expression
 ⊑eₛ-refl : ∀ {e} → Reflexive (_⊑eₛ_ {e})

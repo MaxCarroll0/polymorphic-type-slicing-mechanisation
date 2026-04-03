@@ -19,8 +19,8 @@ open import core.Typ.Precision
 open import core.Typ.Properties
 
 -- Instantiate generic Slice module for types
-open import Slice _⊑t_ □ (λ _ → ⊑?) ⊑t-refl ⊑t-trans public
-  renaming (SliceOf to SliceOfTyp; _⊑ₛ_ to _⊑tₛ_; ⊤ₛ to ⊤ₛ; ⊥ₛ to ⊥ₛ; weaken to ⊑tₛ-weaken; weaken-identity to ⊑tₛ-weaken-identity)
+open import Slice _⊑t_ (λ _ → □) (λ _ → ⊑?) (λ _ → ⊑?) ⊑t-refl ⊑t-trans public
+  renaming (SliceOf to SliceOfTyp; _⊑ₛ_ to _⊑tₛ_; ⊤ₛ to ⊤ₛ; ⊥ₛ to ⊥ₛ; weaken to ⊑tₛ-weaken; weaken-identity to ⊑tₛ-weaken-identity; ⊥ₛ-min to ⊥tₛ-min)
 
 -- Lifted partial order on slices of a type
 ⊑tₛ-refl : ∀ {τ} → Reflexive (_⊑tₛ_ {τ})
