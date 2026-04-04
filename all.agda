@@ -1,3 +1,3 @@
 module all where
-  import core
+  import Core
   import slicing

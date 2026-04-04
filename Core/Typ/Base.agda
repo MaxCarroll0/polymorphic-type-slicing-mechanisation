@@ -1,4 +1,4 @@
-module core.Typ.Base where
+module Core.Typ.Base where
 
 open import Data.Nat using (ℕ; _≟_)
 open import Relation.Nullary using (¬_)

@@ -1,4 +1,4 @@
-module core.Typ.Consistency where
+module Core.Typ.Consistency where
 
 open import Data.Nat using (ℕ; _≟_)
 open import Data.Product using (_,_; uncurry)
@@ -7,8 +7,8 @@ open import Relation.Binary.Definitions using (Reflexive; Symmetric; Transitive)
 open import Relation.Nullary using (Dec; yes; no; ¬_; map′)
 open import Relation.Nullary.Decidable using (_×-dec_)
 
-open import core.Typ.Base
-open import core.Typ.Equality
+open import Core.Typ.Base
+open import Core.Typ.Equality
 
 -- Type Consistency
 data _~_ : Typ → Typ → Set where

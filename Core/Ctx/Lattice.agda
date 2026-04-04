@@ -1,4 +1,4 @@
-module core.Ctx.Lattice where
+module Core.Ctx.Lattice where
 
 open import Data.Product using (_,_)
 open import Relation.Binary using (IsPartialOrder)
@@ -8,14 +8,14 @@ open import Relation.Binary.Lattice.Structures using (IsMeetSemilattice; IsJoinS
 open import Relation.Binary.Lattice.Definitions using (Infimum; Supremum)
 open import Function using (_on_)
 
-open import core.Typ using (Typ; _⊑t_; ⊑t-refl; ⊑t-trans;
+open import Core.Typ using (Typ; _⊑t_; ⊑t-refl; ⊑t-trans;
                             _⊓t_; ⊓t-lb₁; ⊓t-lb₂; ⊓t-glb;
                             _⊔t_; ⊔t-ub₁; ⊔t-ub₂; ⊔t-preserves-⊑; ⊑t-consistent)
-open import core.Exp using (Exp; _⊑e_; ⊑e-refl; ⊑e-trans;
+open import Core.Exp using (Exp; _⊑e_; ⊑e-refl; ⊑e-trans;
                             _⊓e_; ⊓e-lb₁; ⊓e-lb₂; ⊓e-glb;
                             _⊔e_; ⊔e-ub₁; ⊔e-ub₂; ⊔e-preserves-⊑)
-open import core.Ctx.Base
-open import core.Ctx.Precision
+open import Core.Ctx.Base
+open import Core.Ctx.Precision
 
 -- Instantiate generic Slice module for contexts
 open import Slice _⊑Ctx_ □Ctx □Ctx-min □Ctx-min-slice ⊑Ctx-refl ⊑Ctx-trans public

@@ -1,10 +1,10 @@
-module core.Typ.Precision where
+module Core.Typ.Precision where
 
 open import Relation.Binary using (IsPartialOrder; IsPreorder; IsEquivalence)
 open import Relation.Binary.Definitions using (Reflexive; Transitive; Antisymmetric)
 open import Relation.Binary.PropositionalEquality as Eq using (_≡_; refl; cong; cong₂)
 
-open import core.Typ.Base
+open import Core.Typ.Base
 
 -- Slices (Precision)
 data _⊑t_ : Typ → Typ → Set where

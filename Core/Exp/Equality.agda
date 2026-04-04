@@ -1,4 +1,4 @@
-module core.Exp.Equality where
+module Core.Exp.Equality where
 
 open import Data.Nat using (ℕ; _≟_)
 open import Data.Product using (_,_; uncurry)
@@ -6,8 +6,8 @@ open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong
 open import Relation.Nullary using (Dec; yes; no; map′)
 open import Relation.Nullary.Decidable using (_×-dec_)
 
-open import core.Typ using (Typ; _≟t_)
-open import core.Exp.Base
+open import Core.Typ using (Typ; _≟t_)
+open import Core.Exp.Base
 
 _≟e_ : (e e' : Exp) → Dec (e ≡ e')
 e         ≟e e'         with diag e e'    | inspect (diag e) e'

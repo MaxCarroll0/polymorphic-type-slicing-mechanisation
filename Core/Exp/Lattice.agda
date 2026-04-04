@@ -1,4 +1,4 @@
-module core.Exp.Lattice where
+module Core.Exp.Lattice where
 
 open import Data.Nat using (ℕ; _≟_)
 open import Data.Empty using (⊥-elim)
@@ -11,12 +11,12 @@ open import Relation.Binary.Lattice.Definitions using (Infimum; Supremum)
 open import Relation.Nullary using (yes; no)
 open import Function using (_on_)
 
-open import core.Typ using (Typ; _≟t_; _⊑t_; ⊑?; ⊑t-refl; ⊑t-trans; ⊑t-antisym;
+open import Core.Typ using (Typ; _≟t_; _⊑t_; ⊑?; ⊑t-refl; ⊑t-trans; ⊑t-antisym;
                             _⊓t_; ⊓t-lb₁; ⊓t-lb₂; ⊓t-glb;
                             _⊔t_; ⊔t-ub₁; ⊔t-ub₂; ⊔t-preserves-⊑; ⊑t-consistent)
-open import core.Exp.Base
-open import core.Exp.Equality
-open import core.Exp.Precision
+open import Core.Exp.Base
+open import Core.Exp.Equality
+open import Core.Exp.Precision
 
 -- Instantiate generic Slice module for expressions
 open import Slice _⊑e_ (λ _ → □e) (λ _ → ⊑□) (λ _ → ⊑□) ⊑e-refl ⊑e-trans public

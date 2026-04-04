@@ -1,8 +1,8 @@
-module core.Typ.Properties where
+module Core.Typ.Properties where
 
-open import core.Typ.Base
-open import core.Typ.Consistency
-open import core.Typ.Precision
+open import Core.Typ.Base
+open import Core.Typ.Consistency
+open import Core.Typ.Precision
 
 -- Precision implies consistency
 ⊑to~ : ∀ {τ τ'} → τ ⊑t τ' → τ ~ τ'

@@ -1,4 +1,4 @@
-module core.Typ.Equality where
+module Core.Typ.Equality where
 
 open import Data.Nat using (ℕ; _≟_)
 open import Data.Product using (_,_; uncurry)
@@ -6,7 +6,7 @@ open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong
 open import Relation.Nullary using (Dec; yes; no; map′)
 open import Relation.Nullary.Decidable using (_×-dec_)
 
-open import core.Typ.Base
+open import Core.Typ.Base
 
 _≟t_ : (τ τ' : Typ) → Dec (τ ≡ τ')
 τ       ≟t τ' with diag τ τ'   | inspect (diag τ) τ'

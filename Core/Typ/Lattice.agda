@@ -1,5 +1,5 @@
 
-module core.Typ.Lattice where
+module Core.Typ.Lattice where
 
 open import Data.Nat using (ℕ; _≟_)
 open import Data.Empty using (⊥-elim)
@@ -12,11 +12,11 @@ open import Relation.Binary.Lattice.Definitions using (Infimum; Supremum)
 open import Relation.Nullary using (yes; no)
 open import Function using (_on_)
 
-open import core.Typ.Base
-open import core.Typ.Equality
-open import core.Typ.Consistency
-open import core.Typ.Precision
-open import core.Typ.Properties
+open import Core.Typ.Base
+open import Core.Typ.Equality
+open import Core.Typ.Consistency
+open import Core.Typ.Precision
+open import Core.Typ.Properties
 
 -- Instantiate generic Slice module for types
 open import Slice _⊑t_ (λ _ → □) (λ _ → ⊑?) (λ _ → ⊑?) ⊑t-refl ⊑t-trans public

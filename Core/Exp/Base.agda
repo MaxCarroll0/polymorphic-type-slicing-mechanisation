@@ -1,10 +1,10 @@
-module core.Exp.Base where
+module Core.Exp.Base where
 
 open import Data.Nat using (ℕ; _≟_)
 open import Relation.Nullary using (¬_)
 open import Relation.Binary.PropositionalEquality using (_≡_; _≢_)
 
-open import core.Typ using (Typ)
+open import Core.Typ using (Typ)
 
 -- Expressions
 data Exp : Set where

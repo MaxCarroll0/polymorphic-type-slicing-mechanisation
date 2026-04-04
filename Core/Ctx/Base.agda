@@ -1,10 +1,10 @@
-module core.Ctx.Base where
+module Core.Ctx.Base where
 
 open import Relation.Nullary using (¬_)
 open import Relation.Binary.PropositionalEquality using (_≡_)
 
-open import core.Typ using (Typ; □)
-open import core.Exp using (Exp; □e; λ·_⇒_; _∘_; _&_; ιₗ; ιᵣ; Λ; def_⊢_)
+open import Core.Typ using (Typ; □)
+open import Core.Exp using (Exp; □e; λ·_⇒_; _∘_; _&_; ιₗ; ιᵣ; Λ; def_⊢_)
 
 -- Expression contexts with exactly one mark ○
 -- Note: Do not confuse with the typing assumptions (often referred to as contexts)

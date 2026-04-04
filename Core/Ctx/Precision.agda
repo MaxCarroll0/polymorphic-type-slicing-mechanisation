@@ -1,12 +1,12 @@
-module core.Ctx.Precision where
+module Core.Ctx.Precision where
 
 open import Relation.Binary using (IsPartialOrder; IsPreorder; IsEquivalence)
 open import Relation.Binary.Definitions using (Reflexive; Transitive; Antisymmetric)
 open import Relation.Binary.PropositionalEquality as Eq using (_≡_; refl; cong; cong₂)
 
-open import core.Typ using (Typ; _⊑t_; ⊑t-refl; ⊑t-trans; ⊑t-antisym; ⊑?)
-open import core.Exp using (Exp; _⊑e_; ⊑e-refl; ⊑e-trans; ⊑e-antisym; ⊑□; ⊑λ; ⊑∘; ⊑&; ⊑ιₗ; ⊑ιᵣ; ⊑Λ; ⊑def)
-open import core.Ctx.Base
+open import Core.Typ using (Typ; _⊑t_; ⊑t-refl; ⊑t-trans; ⊑t-antisym; ⊑?)
+open import Core.Exp using (Exp; _⊑e_; ⊑e-refl; ⊑e-trans; ⊑e-antisym; ⊑□; ⊑λ; ⊑∘; ⊑&; ⊑ιₗ; ⊑ιᵣ; ⊑Λ; ⊑def)
+open import Core.Ctx.Base
 
 -- Syntactic precision for contexts
 -- Note: only matching constructors are related (no global bottom)

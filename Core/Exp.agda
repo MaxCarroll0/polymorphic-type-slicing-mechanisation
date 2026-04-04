@@ -1,6 +1,6 @@
-module core.Exp where
+module Core.Exp where
 
-open import core.Exp.Base public hiding (_kind?_; diag; diff; shallow-disequality)
-open import core.Exp.Equality public
-open import core.Exp.Precision public
-open import core.Exp.Lattice public
+open import Core.Exp.Base public hiding (_kind?_; diag; diff; shallow-disequality)
+open import Core.Exp.Equality public
+open import Core.Exp.Precision public
+open import Core.Exp.Lattice public

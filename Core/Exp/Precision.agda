@@ -1,11 +1,11 @@
-module core.Exp.Precision where
+module Core.Exp.Precision where
 
 open import Relation.Binary using (IsPartialOrder; IsPreorder; IsEquivalence)
 open import Relation.Binary.Definitions using (Reflexive; Transitive; Antisymmetric)
 open import Relation.Binary.PropositionalEquality as Eq using (_≡_; refl; cong; cong₂)
 
-open import core.Typ using (Typ; _⊑t_; ⊑t-refl; ⊑t-trans; ⊑t-antisym)
-open import core.Exp.Base
+open import Core.Typ using (Typ; _⊑t_; ⊑t-refl; ⊑t-trans; ⊑t-antisym)
+open import Core.Exp.Base
 
 -- Slices (Precision) for expressions
 data _⊑e_ : Exp → Exp → Set where

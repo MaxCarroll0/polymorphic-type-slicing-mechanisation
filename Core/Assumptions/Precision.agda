@@ -1,13 +1,13 @@
-module core.Assumptions.Precision where
+module Core.Assumptions.Precision where
 
 open import Data.List using (List; []; _∷_; length)
 open import Relation.Binary using (IsPartialOrder; IsPreorder; IsEquivalence)
 open import Relation.Binary.Definitions using (Reflexive; Transitive; Antisymmetric)
 open import Relation.Binary.PropositionalEquality as Eq using (_≡_; refl; cong₂)
 
-open import core.Typ using (Typ; □)
-open import core.Typ.Precision using (_⊑t_; ⊑?; ⊑t-refl; ⊑t-trans; ⊑t-antisym)
-open import core.Assumptions.Base
+open import Core.Typ using (Typ; □)
+open import Core.Typ.Precision using (_⊑t_; ⊑?; ⊑t-refl; ⊑t-trans; ⊑t-antisym)
+open import Core.Assumptions.Base
 
 -- Pointwise precision relation (only defined for equal-length lists)
 data _⊑Γ_ : Assumptions → Assumptions → Set where

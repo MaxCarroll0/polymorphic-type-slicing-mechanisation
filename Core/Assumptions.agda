@@ -1,6 +1,6 @@
-module core.Assumptions where
+module Core.Assumptions where
 
-open import core.Assumptions.Base public
-open import core.Assumptions.Equality public
-open import core.Assumptions.Precision public
-open import core.Assumptions.Lattice public
+open import Core.Assumptions.Base public
+open import Core.Assumptions.Equality public
+open import Core.Assumptions.Precision public
+open import Core.Assumptions.Lattice public

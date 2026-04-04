@@ -1,8 +1,8 @@
-module core.Typ where
+module Core.Typ where
 
-open import core.Typ.Base public
-open import core.Typ.Equality public
-open import core.Typ.Consistency public
-open import core.Typ.Precision public
-open import core.Typ.Properties public
-open import core.Typ.Lattice public
+open import Core.Typ.Base public
+open import Core.Typ.Equality public
+open import Core.Typ.Consistency public
+open import Core.Typ.Precision public
+open import Core.Typ.Properties public
+open import Core.Typ.Lattice public

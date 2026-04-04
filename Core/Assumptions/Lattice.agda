@@ -1,4 +1,4 @@
-module core.Assumptions.Lattice where
+module Core.Assumptions.Lattice where
 
 open import Data.List using (List; []; _∷_; length)
 open import Data.Product using (_,_)
@@ -9,11 +9,11 @@ open import Relation.Binary.Lattice.Structures using (IsMeetSemilattice; IsJoinS
 open import Relation.Binary.Lattice.Definitions using (Infimum; Supremum)
 open import Function using (_on_)
 
-open import core.Typ using (Typ; □)
-open import core.Typ.Precision using (_⊑t_; ⊑?; ⊑t-refl; ⊑t-trans; ⊑t-antisym)
-open import core.Typ.Lattice using (_⊓t_; _⊔t_; ⊓t-lb₁; ⊓t-lb₂; ⊓t-glb; ⊔t-preserves-⊑; ⊓t-preserves-⊑-spec)
-open import core.Assumptions.Base
-open import core.Assumptions.Precision
+open import Core.Typ using (Typ; □)
+open import Core.Typ.Precision using (_⊑t_; ⊑?; ⊑t-refl; ⊑t-trans; ⊑t-antisym)
+open import Core.Typ.Lattice using (_⊓t_; _⊔t_; ⊓t-lb₁; ⊓t-lb₂; ⊓t-glb; ⊔t-preserves-⊑; ⊓t-preserves-⊑-spec)
+open import Core.Assumptions.Base
+open import Core.Assumptions.Precision
 
 -- □Γ (length Γ) is below any slice of Γ
 □Γ-min-slice : ∀ {Γ' Γ} → Γ' ⊑Γ Γ → □Γ (length Γ) ⊑Γ Γ'
@@ -64,8 +64,8 @@ infixl 6 _⊔Γ_
 ⊔Γ-ub₁ ⊑[]        ⊑[]        = ⊑[]
 ⊔Γ-ub₁ (⊑∷ p₁ q₁) (⊑∷ p₂ q₂) = ⊑∷ (⊔t-preserves-⊑-ub₁ p₁ p₂) (⊔Γ-ub₁ q₁ q₂)
   where
-    open import core.Typ.Lattice using (⊔t-ub₁)
-    open import core.Typ.Properties using (⊑t-consistent)
+    open import Core.Typ.Lattice using (⊔t-ub₁)
+    open import Core.Typ.Properties using (⊑t-consistent)
     ⊔t-preserves-⊑-ub₁ : ∀ {τ₁ τ₂ τ} → τ₁ ⊑t τ → τ₂ ⊑t τ → τ₁ ⊑t τ₁ ⊔t τ₂
     ⊔t-preserves-⊑-ub₁ p q = ⊔t-ub₁ (⊑t-consistent p q)
 
@@ -74,8 +74,8 @@ infixl 6 _⊔Γ_
 ⊔Γ-ub₂ ⊑[]        ⊑[]        = ⊑[]
 ⊔Γ-ub₂ (⊑∷ p₁ q₁) (⊑∷ p₂ q₂) = ⊑∷ (⊔t-preserves-⊑-ub₂ p₁ p₂) (⊔Γ-ub₂ q₁ q₂)
   where
-    open import core.Typ.Lattice using (⊔t-ub₂)
-    open import core.Typ.Properties using (⊑t-consistent)
+    open import Core.Typ.Lattice using (⊔t-ub₂)
+    open import Core.Typ.Properties using (⊑t-consistent)
     ⊔t-preserves-⊑-ub₂ : ∀ {τ₁ τ₂ τ} → τ₁ ⊑t τ → τ₂ ⊑t τ → τ₂ ⊑t τ₁ ⊔t τ₂
     ⊔t-preserves-⊑-ub₂ p q = ⊔t-ub₂ (⊑t-consistent p q)
 
