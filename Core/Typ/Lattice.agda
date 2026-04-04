@@ -1,13 +1,13 @@
-
 module Core.Typ.Lattice where
 
-open import Data.Nat using (ℕ; _≟_)
+open import Data.Nat using (ℕ) renaming (_≟_ to _≟ℕ_)
 open import Data.Empty using (⊥-elim)
-open import Data.Product using (_,_)
+open import Data.Product using (_,_; proj₁; proj₂)
 open import Relation.Binary using (IsPartialOrder)
 open import Relation.Binary.Definitions using (Reflexive; Transitive; Antisymmetric; Maximum; Minimum)
-open import Relation.Binary.PropositionalEquality as Eq using (_≡_; _≢_; refl; sym; trans; cong)
-open import Relation.Binary.Lattice.Structures using (IsMeetSemilattice; IsJoinSemilattice; IsLattice; IsBoundedLattice)
+open import Relation.Binary.PropositionalEquality as Eq using (_≡_; _≢_; refl; sym; trans; cong; cong₂)
+open Eq.≡-Reasoning
+open import Relation.Binary.Lattice.Structures using (IsMeetSemilattice; IsJoinSemilattice; IsLattice; IsBoundedLattice; IsDistributiveLattice)
 open import Relation.Binary.Lattice.Definitions using (Infimum; Supremum)
 open import Relation.Nullary using (yes; no)
 open import Function using (_on_)
@@ -18,241 +18,253 @@ open import Core.Typ.Consistency
 open import Core.Typ.Precision
 open import Core.Typ.Properties
 
--- Instantiate generic Slice module for types
-open import Slice _⊑t_ (λ _ → □) (λ _ → ⊑?) (λ _ → ⊑?) ⊑t-refl ⊑t-trans public
-  renaming (SliceOf to SliceOfTyp; _⊑ₛ_ to _⊑tₛ_; ⊤ₛ to ⊤ₛ; ⊥ₛ to ⊥ₛ; weaken to ⊑tₛ-weaken; weaken-identity to ⊑tₛ-weaken-identity; ⊥ₛ-min to ⊥tₛ-min)
+-- Meet operator. Note: order theoretic, does not require consistent types
+_⊓_ : Typ → Typ → Typ
+τ ⊓ τ' with diag τ τ'
+...       | diff  = □
+...       | kind□  = □
+...       | kind* = *
+...       | kind+ {τ₁} {τ₂} {τ₁'} {τ₂'} = (τ₁ ⊓ τ₁') + (τ₂ ⊓ τ₂')
+...       | kind× {τ₁} {τ₂} {τ₁'} {τ₂'} = (τ₁ ⊓ τ₁') × (τ₂ ⊓ τ₂')
+...       | kind⇒ {τ₁} {τ₂} {τ₁'} {τ₂'} = (τ₁ ⊓ τ₁') ⇒ (τ₂ ⊓ τ₂')
+...       | kind∀ {τ} {τ'} = ∀· (τ ⊓ τ')
+...       | kindVar {m} {n} with m ≟ℕ n
+...                         | yes _ = ⟨ m ⟩
+...                         | no  _ = □
 
--- Lifted partial order on slices of a type
-⊑tₛ-refl : ∀ {τ} → Reflexive (_⊑tₛ_ {τ})
-⊑tₛ-refl = ⊑t-refl
+infixl 6 _⊓_
 
-⊑tₛ-trans : ∀ {τ} → Transitive (_⊑tₛ_ {τ})
-⊑tₛ-trans = ⊑t-trans
+-- Join operator. Note: Only a LUB on consistent types
+_⊔_ : Typ → Typ → Typ
+τ ⊔ τ' with diag τ τ'
+...       | kind□  = □
+...       | kind* = *
+...       | kind+ {τ₁} {τ₂} {τ₁'} {τ₂'} = (τ₁ ⊔ τ₁') + (τ₂ ⊔ τ₂')
+...       | kind× {τ₁} {τ₂} {τ₁'} {τ₂'} = (τ₁ ⊔ τ₁') × (τ₂ ⊔ τ₂')
+...       | kind⇒ {τ₁} {τ₂} {τ₁'} {τ₂'} = (τ₁ ⊔ τ₁') ⇒ (τ₂ ⊔ τ₂')
+...       | kind∀ {τ} {τ'} = ∀· (τ ⊔ τ')
+...       | kindVar {m} {n} = ⟨ m ⟩
+τ ⊔ τ'    | diff with τ ≟ □
+...                 | yes _  = τ'
+...                 | no  _  = τ
 
-⊑tₛ-antisym : ∀ {τ} → Antisymmetric (_≡_ on ↓) (_⊑tₛ_ {τ})
-⊑tₛ-antisym = ⊑t-antisym
+infixl 6 _⊔_
 
-⊑tₛ-isPartialOrder : ∀ {τ} → IsPartialOrder (_≡_ on ↓) (_⊑tₛ_ {τ})
-⊑tₛ-isPartialOrder = record
-  { isPreorder = record
-    { isEquivalence = record
-      { refl = refl ; sym = sym ; trans = trans }
-    ; reflexive = λ where refl → ⊑t-refl
-    ; trans = λ {τ''} {τ'} {τ} → ⊑t-trans
+private
+  -- Meet lower bounds
+  ⊓-lb₁ : ∀ τ₁ τ₂ → τ₁ ⊓ τ₂ ⊑ τ₁
+  ⊓-lb₁ τ       τ'         with diag τ τ'
+  ⊓-lb₁ (τ₁ + τ₂) (τ₁' + τ₂') | kind+ = ⊑+ (⊓-lb₁ τ₁ τ₁') (⊓-lb₁ τ₂ τ₂')
+  ⊓-lb₁ (τ₁ × τ₂) (τ₁' × τ₂') | kind× = ⊑× (⊓-lb₁ τ₁ τ₁') (⊓-lb₁ τ₂ τ₂')
+  ⊓-lb₁ (τ₁ ⇒ τ₂) (τ₁' ⇒ τ₂') | kind⇒ = ⊑⇒ (⊓-lb₁ τ₁ τ₁') (⊓-lb₁ τ₂ τ₂')
+  ⊓-lb₁ (∀· τ)    (∀· τ')     | kind∀ = ⊑∀ (⊓-lb₁ τ τ')
+  ⊓-lb₁ ⟨ m ⟩     ⟨ n ⟩       | kindVar with m ≟ℕ n
+  ...                               | yes _ = ⊑Var
+  ...                               | no  _ = ⊑□
+  ⊓-lb₁ *         *           | kind* = ⊑*
+  ⊓-lb₁ □         □           | kind□ = ⊑□
+  ⊓-lb₁ _         _           | diff = ⊑□
+
+  ⊓-lb₂ : ∀ τ₁ τ₂ → τ₁ ⊓ τ₂ ⊑ τ₂
+  ⊓-lb₂ τ       τ'        with diag τ τ'
+  ⊓-lb₂ (τ₁ + τ₂) (τ₁' + τ₂') | kind+ = ⊑+ (⊓-lb₂ τ₁ τ₁') (⊓-lb₂ τ₂ τ₂')
+  ⊓-lb₂ (τ₁ × τ₂) (τ₁' × τ₂') | kind× = ⊑× (⊓-lb₂ τ₁ τ₁') (⊓-lb₂ τ₂ τ₂')
+  ⊓-lb₂ (τ₁ ⇒ τ₂) (τ₁' ⇒ τ₂') | kind⇒ = ⊑⇒ (⊓-lb₂ τ₁ τ₁') (⊓-lb₂ τ₂ τ₂')
+  ⊓-lb₂ (∀· τ)    (∀· τ')     | kind∀ = ⊑∀ (⊓-lb₂ τ τ')
+  ⊓-lb₂ ⟨ m ⟩     ⟨ n ⟩       | kindVar with m ≟ℕ n
+  ...                               | yes refl = ⊑Var
+  ...                               | no  _ = ⊑□
+  ⊓-lb₂ *         *           | kind* = ⊑*
+  ⊓-lb₂ □         □           | kind□ = ⊑□
+  ⊓-lb₂ _         _           | diff  = ⊑□
+
+  -- Meet is Greatest lower bound
+  ⊓-glb : ∀ {τ τ₁ τ₂} → τ ⊑ τ₁ → τ ⊑ τ₂ → τ ⊑ τ₁ ⊓ τ₂
+  ⊓-glb ⊑□ _                   = ⊑□
+  ⊓-glb ⊑* ⊑*                  = ⊑*
+  ⊓-glb (⊑Var {m}) (⊑Var {m}) with m ≟ℕ m
+  ... | yes _ = ⊑Var
+  ... | no contr = ⊥-elim (contr refl)
+  ⊓-glb (⊑+ p₁ p₂) (⊑+ q₁ q₂) = ⊑+ (⊓-glb p₁ q₁) (⊓-glb p₂ q₂)
+  ⊓-glb (⊑× p₁ p₂) (⊑× q₁ q₂) = ⊑× (⊓-glb p₁ q₁) (⊓-glb p₂ q₂)
+  ⊓-glb (⊑⇒ p₁ p₂) (⊑⇒ q₁ q₂) = ⊑⇒ (⊓-glb p₁ q₁) (⊓-glb p₂ q₂)
+  ⊓-glb (⊑∀ p)     (⊑∀ q)     = ⊑∀ (⊓-glb p q)
+
+  ⊓-infimum : Infimum _⊑_ _⊓_
+  ⊓-infimum τ₁ τ₂ = ⊓-lb₁ τ₁ τ₂ , ⊓-lb₂ τ₁ τ₂ , λ τ → ⊓-glb {τ} {τ₁} {τ₂}
+
+
+⊑-isMeetSemilattice : IsMeetSemilattice _≡_ _⊑_ _⊓_
+⊑-isMeetSemilattice = record
+  { isPartialOrder = ⊑.isPartialOrder
+  ; infimum        = ⊓-infimum
+  }
+
+module ⊑Lat = IsMeetSemilattice ⊑-isMeetSemilattice
+  using (infimum)
+  renaming (∧-greatest to ⊓-greatest; x∧y≤x to x⊓y⊑x; x∧y≤y to x⊓y⊑y)
+
+private
+  open LiftMeetSemilattice ⊑-isMeetSemilattice public
+    renaming (isBoundedMeetSemilattice to ⊑ₛ-isBoundedMeetSemilattice)
+
+  ⊔-identityₗ : ∀ τ → □ ⊔ τ ≡ τ
+  ⊔-identityₗ τ with diag □ τ
+  ⊔-identityₗ □         | kind□ = refl
+  ⊔-identityₗ _         | diff = refl
+
+  ⊔-identityᵣ : ∀ τ → τ ⊔ □ ≡ τ
+  ⊔-identityᵣ τ with diag τ □
+  ⊔-identityᵣ □         | kind□ = refl
+  ⊔-identityᵣ τ         | diff with τ ≟ □
+  ...                          | yes refl = refl
+  ...                          | no  _    = refl
+
+
+-- TODO: refactor consistency properties into Typ.Properties
+-- Join upper bounds (requires consistency)
+module ~ where
+  ⊔-ub₁ : ∀ {τ₁ τ₂} → τ₁ ~ τ₂ → τ₁ ⊑ τ₁ ⊔ τ₂
+  ⊔-ub₁ ~*               = ⊑*
+  ⊔-ub₁ ~Var             = ⊑Var
+  ⊔-ub₁ (~?ᵣ {τ})        rewrite ⊔-identityᵣ τ = ⊑.refl
+  ⊔-ub₁ ~?ₗ              = ⊑□
+  ⊔-ub₁ (~+ c₁ c₂)       = ⊑+ (⊔-ub₁ c₁) (⊔-ub₁ c₂)
+  ⊔-ub₁ (~× c₁ c₂)       = ⊑× (⊔-ub₁ c₁) (⊔-ub₁ c₂)
+  ⊔-ub₁ (~⇒ c₁ c₂)       = ⊑⇒ (⊔-ub₁ c₁) (⊔-ub₁ c₂)
+  ⊔-ub₁ (~∀ c)           = ⊑∀ (⊔-ub₁ c)
+  
+  ⊔-ub₂ : ∀ {τ₁ τ₂} → τ₁ ~ τ₂ → τ₂ ⊑ τ₁ ⊔ τ₂
+  ⊔-ub₂ ~*               = ⊑*
+  ⊔-ub₂ ~Var             = ⊑Var
+  ⊔-ub₂ ~?ᵣ              = ⊑□
+  ⊔-ub₂ (~?ₗ {τ})        rewrite ⊔-identityₗ τ = ⊑.refl
+  ⊔-ub₂ (~+ c₁ c₂)       = ⊑+ (⊔-ub₂ c₁) (⊔-ub₂ c₂)
+  ⊔-ub₂ (~× c₁ c₂)       = ⊑× (⊔-ub₂ c₁) (⊔-ub₂ c₂)
+  ⊔-ub₂ (~⇒ c₁ c₂)       = ⊑⇒ (⊔-ub₂ c₁) (⊔-ub₂ c₂)
+  ⊔-ub₂ (~∀ c)           = ⊑∀ (⊔-ub₂ c)
+  
+  ⊔-lub : ∀ {τ τ₁ τ₂} → τ₁ ~ τ₂ → τ₁ ⊑ τ → τ₂ ⊑ τ → τ₁ ⊔ τ₂ ⊑ τ
+  ⊔-lub ~*               ⊑*         ⊑*         = ⊑*
+  ⊔-lub ~Var             ⊑Var       ⊑Var       = ⊑Var
+  ⊔-lub (~?ᵣ {τ₁})       p          ⊑□         rewrite ⊔-identityᵣ τ₁ = p
+  ⊔-lub (~?ₗ {τ₂})       ⊑□         q          rewrite ⊔-identityₗ τ₂ = q
+  ⊔-lub (~+ c₁ c₂)       (⊑+ p₁ p₂) (⊑+ q₁ q₂) = ⊑+ (⊔-lub c₁ p₁ q₁) (⊔-lub c₂ p₂ q₂)
+  ⊔-lub (~× c₁ c₂)       (⊑× p₁ p₂) (⊑× q₁ q₂) = ⊑× (⊔-lub c₁ p₁ q₁) (⊔-lub c₂ p₂ q₂)
+  ⊔-lub (~⇒ c₁ c₂)       (⊑⇒ p₁ p₂) (⊑⇒ q₁ q₂) = ⊑⇒ (⊔-lub c₁ p₁ q₁) (⊔-lub c₂ p₂ q₂)
+  ⊔-lub (~∀ c)           (⊑∀ p)     (⊑∀ q)     = ⊑∀ (⊔-lub c p q)
+
+
+private
+  ⊥ₛ : ∀ {τ} → ⌊ τ ⌋
+  ⊥ₛ {τ} = □ isSlice ⊑□
+
+  ⊥ₛ-min : ∀ {τ} → Minimum (_⊑ₛ_ {τ}) ⊥ₛ
+  ⊥ₛ-min υ = ⊑□
+
+  ⊔-preserves-⊑ : ∀ {τ₁ τ₂ τ} → τ₁ ⊑ τ → τ₂ ⊑ τ → τ₁ ⊔ τ₂ ⊑ τ
+  ⊔-preserves-⊑ p q = ~.⊔-lub (⊑-consistent p q) p q
+
+-- Lift joins
+_⊔ₛ_ : ∀ {τ} → ⌊ τ ⌋ → ⌊ τ ⌋ → ⌊ τ ⌋
+υ ⊔ₛ υ' = υ .↓ ⊔ υ' .↓ isSlice ⊔-preserves-⊑ (υ .proof) (υ' .proof)
+
+infixl 7 _⊔ₛ_
+
+private
+  ⊔ₛ-ub₁ : ∀ {τ} (υ₁ υ₂ : ⌊ τ ⌋) → υ₁ ⊑ₛ υ₁ ⊔ₛ υ₂
+  ⊔ₛ-ub₁ υ₁ υ₂ = ~.⊔-ub₁ (⊑-consistent (υ₁ .proof) (υ₂ .proof))
+
+  ⊔ₛ-ub₂ : ∀ {τ} (υ₁ υ₂ : ⌊ τ ⌋) → υ₂ ⊑ₛ υ₁ ⊔ₛ υ₂
+  ⊔ₛ-ub₂ υ₁ υ₂ = ~.⊔-ub₂ (⊑-consistent (υ₁ .proof) (υ₂ .proof))
+  ⊔ₛ-lub : ∀ {τ} {υ υ₁ υ₂ : ⌊ τ ⌋} → υ₁ ⊑ₛ υ → υ₂ ⊑ₛ υ → υ₁ ⊔ₛ υ₂ ⊑ₛ υ
+  ⊔ₛ-lub {_} {υ} {υ₁} {υ₂} p q = ⊔-preserves-⊑ p q
+
+  ⊔ₛ-supremum : ∀ {τ} → Supremum (_⊑ₛ_ {τ}) _⊔ₛ_
+  ⊔ₛ-supremum υ₁ υ₂ = ⊔ₛ-ub₁ υ₁ υ₂ , ⊔ₛ-ub₂ υ₁ υ₂ , λ υ → ⊔ₛ-lub {υ = υ} {υ₁} {υ₂}
+
+
+  ⊑ₛ-isJoinSemilattice : ∀ {τ} → IsJoinSemilattice (_≡_ on ↓) (_⊑ₛ_ {τ}) _⊔ₛ_
+  ⊑ₛ-isJoinSemilattice = record
+    { isPartialOrder = ⊑ₛ.isPartialOrder
+    ; supremum       = ⊔ₛ-supremum
     }
-  ; antisym = λ {τ'} {τ} → ⊑t-antisym
+
+  ⊑ₛ-isLattice : ∀ {τ} → IsLattice (_≡_ on ↓) (_⊑ₛ_ {τ}) _⊔ₛ_ _⊓ₛ_
+  ⊑ₛ-isLattice = record
+    { isPartialOrder = ⊑ₛ.isPartialOrder
+    ; supremum       = ⊔ₛ-supremum
+    ; infimum        = ⊓ₛ.infimum
+    }
+
+⊑ₛ-isBoundedLattice : ∀ {τ} → IsBoundedLattice (_≡_ on ↓) (_⊑ₛ_ {τ}) _⊔ₛ_ _⊓ₛ_ ⊤ₛ ⊥ₛ
+⊑ₛ-isBoundedLattice = record
+  { isLattice = ⊑ₛ-isLattice
+  ; maximum   = ⊤ₛ-max
+  ; minimum   = ⊥ₛ-min
   }
 
--- Meets. Note: order theoretic. NOT necessarily type consistent
-_⊓t_ : Typ → Typ → Typ
-τ ⊓t τ' with diag τ τ'
-...        | diff  = □
-...        | kind□  = □
-...        | kind* = *
-...        | kind+ {τ₁} {τ₂} {τ₁'} {τ₂'} = (τ₁ ⊓t τ₁') + (τ₂ ⊓t τ₂')
-...        | kind× {τ₁} {τ₂} {τ₁'} {τ₂'} = (τ₁ ⊓t τ₁') × (τ₂ ⊓t τ₂')
-...        | kind⇒ {τ₁} {τ₂} {τ₁'} {τ₂'} = (τ₁ ⊓t τ₁') ⇒ (τ₂ ⊓t τ₂')
-...        | kind∀ {τ} {τ'} = ∀· (τ ⊓t τ')
-...        | kindVar {m} {n} with m ≟ n
-...                          | yes _ = ⟨ m ⟩
-...                          | no  _ = □
+private
+  □⊓-absorb : ∀ τ → □ ⊓ τ ≡ □
+  □⊓-absorb τ with diag □ τ
+  ... | kind□ = refl
+  ... | diff  = refl
 
-infixl 6 _⊓t_
+  ⊓□-absorb : ∀ τ → τ ⊓ □ ≡ □
+  ⊓□-absorb τ with diag τ □
+  ... | kind□ = refl
+  ... | diff  = refl
 
--- Meets form a bounded semi-lattice (GLB property)
-⊓t-lb₁ : ∀ τ₁ τ₂ → τ₁ ⊓t τ₂ ⊑t τ₁
-⊓t-lb₁ τ       τ'         with diag τ τ'
-⊓t-lb₁ (τ₁ + τ₂) (τ₁' + τ₂') | kind+ = ⊑+ (⊓t-lb₁ τ₁ τ₁') (⊓t-lb₁ τ₂ τ₂')
-⊓t-lb₁ (τ₁ × τ₂) (τ₁' × τ₂') | kind× = ⊑× (⊓t-lb₁ τ₁ τ₁') (⊓t-lb₁ τ₂ τ₂')
-⊓t-lb₁ (τ₁ ⇒ τ₂) (τ₁' ⇒ τ₂') | kind⇒ = ⊑⇒ (⊓t-lb₁ τ₁ τ₁') (⊓t-lb₁ τ₂ τ₂')
-⊓t-lb₁ (∀· τ)    (∀· τ')     | kind∀ = ⊑∀ (⊓t-lb₁ τ τ')
-⊓t-lb₁ ⟨ m ⟩     ⟨ n ⟩       | kindVar with m ≟ n
-...                                | yes _ = ⊑Var
-...                                | no  _ = ⊑?
-⊓t-lb₁ *         *           | kind* = ⊑*
-⊓t-lb₁ □         □           | kind□ = ⊑?
-⊓t-lb₁ _         _           | diff = ⊑?
+  □⊔□ : □ ⊔ □ ≡ □
+  □⊔□ = refl
 
-⊓t-lb₂ : ∀ τ₁ τ₂ → τ₁ ⊓t τ₂ ⊑t τ₂
-⊓t-lb₂ τ       τ'        with diag τ τ'
-⊓t-lb₂ (τ₁ + τ₂) (τ₁' + τ₂') | kind+ = ⊑+ (⊓t-lb₂ τ₁ τ₁') (⊓t-lb₂ τ₂ τ₂')
-⊓t-lb₂ (τ₁ × τ₂) (τ₁' × τ₂') | kind× = ⊑× (⊓t-lb₂ τ₁ τ₁') (⊓t-lb₂ τ₂ τ₂')
-⊓t-lb₂ (τ₁ ⇒ τ₂) (τ₁' ⇒ τ₂') | kind⇒ = ⊑⇒ (⊓t-lb₂ τ₁ τ₁') (⊓t-lb₂ τ₂ τ₂')
-⊓t-lb₂ (∀· τ)    (∀· τ')     | kind∀ = ⊑∀ (⊓t-lb₂ τ τ')
-⊓t-lb₂ ⟨ m ⟩     ⟨ n ⟩       | kindVar with m ≟ n
-...                                | yes refl = ⊑Var
-...                                | no  _ = ⊑?
-⊓t-lb₂ *         *           | kind* = ⊑*
-⊓t-lb₂ □         □           | kind□ = ⊑?
-⊓t-lb₂ _         _           | diff  = ⊑?
+  dist : ∀ {τ τ₁ τ₂ τ₃} → τ₁ ⊑ τ → τ₂ ⊑ τ → τ₃ ⊑ τ → τ₁ ⊓ (τ₂ ⊔ τ₃) ≡ (τ₁ ⊓ τ₂) ⊔ (τ₁ ⊓ τ₃)
+  dist {τ₂ = τ₂} {τ₃ = τ₃} ⊑□ _ _ =
+    begin
+    □ ⊓ (τ₂ ⊔ τ₃)          ≡⟨ □⊓-absorb (τ₂ ⊔ τ₃) ⟩
+    □                      ≡⟨⟩
+    □ ⊔ □                  ≡˘⟨ cong₂ _⊔_ (□⊓-absorb τ₂) (□⊓-absorb τ₃) ⟩
+    (□ ⊓ τ₂) ⊔ (□ ⊓ τ₃)    ∎
+  dist {τ₁ = τ₁} {τ₃ = τ₃} _ ⊑□ _ =
+    begin
+    τ₁ ⊓ (□ ⊔ τ₃)          ≡⟨ cong (τ₁ ⊓_) (⊔-identityₗ τ₃) ⟩
+    τ₁ ⊓ τ₃                ≡˘⟨ ⊔-identityₗ (τ₁ ⊓ τ₃) ⟩
+    □ ⊔ (τ₁ ⊓ τ₃)          ≡˘⟨ cong (_⊔ (τ₁ ⊓ τ₃)) (⊓□-absorb τ₁) ⟩
+    (τ₁ ⊓ □) ⊔ (τ₁ ⊓ τ₃)   ∎
+  dist {τ₁ = τ₁} {τ₂ = τ₂} _ _ ⊑□ =
+    begin
+    τ₁ ⊓ (τ₂ ⊔ □)          ≡⟨ cong (τ₁ ⊓_) (⊔-identityᵣ τ₂) ⟩
+    τ₁ ⊓ τ₂                ≡˘⟨ ⊔-identityᵣ (τ₁ ⊓ τ₂) ⟩
+    (τ₁ ⊓ τ₂) ⊔ □          ≡˘⟨ cong ((τ₁ ⊓ τ₂) ⊔_) (⊓□-absorb τ₁) ⟩
+    (τ₁ ⊓ τ₂) ⊔ (τ₁ ⊓ □)   ∎
+  dist ⊑*         ⊑*   ⊑*  = refl
+  dist (⊑Var {n}) ⊑Var ⊑Var with n ≟ℕ n
+  ... | yes _ = refl
+  ... | no n≢n = ⊥-elim (n≢n refl)
+  dist (⊑+ p₁ p₂) (⊑+ q₁ q₂) (⊑+ r₁ r₂) =
+    cong₂ _+_ (dist p₁ q₁ r₁) (dist p₂ q₂ r₂)
+  dist (⊑× p₁ p₂) (⊑× q₁ q₂) (⊑× r₁ r₂) =
+    cong₂ _×_ (dist p₁ q₁ r₁) (dist p₂ q₂ r₂)
+  dist (⊑⇒ p₁ p₂) (⊑⇒ q₁ q₂) (⊑⇒ r₁ r₂) =
+    cong₂ _⇒_ (dist p₁ q₁ r₁) (dist p₂ q₂ r₂)
+  dist (⊑∀ p) (⊑∀ q) (⊑∀ r) =
+    cong ∀· (dist p q r)
 
-⊓t-glb : ∀ {τ τ₁ τ₂} → τ ⊑t τ₁ → τ ⊑t τ₂ → τ ⊑t τ₁ ⊓t τ₂
-⊓t-glb ⊑? _                   = ⊑?
-⊓t-glb ⊑* ⊑*                  = ⊑*
-⊓t-glb (⊑Var {m}) (⊑Var {m}) with m ≟ m
-... | yes _ = ⊑Var
-... | no contr = ⊥-elim (contr refl) -- not automatic sadly
-⊓t-glb (⊑+ p₁ p₂) (⊑+ q₁ q₂) = ⊑+ (⊓t-glb p₁ q₁) (⊓t-glb p₂ q₂)
-⊓t-glb (⊑× p₁ p₂) (⊑× q₁ q₂) = ⊑× (⊓t-glb p₁ q₁) (⊓t-glb p₂ q₂)
-⊓t-glb (⊑⇒ p₁ p₂) (⊑⇒ q₁ q₂) = ⊑⇒ (⊓t-glb p₁ q₁) (⊓t-glb p₂ q₂)
-⊓t-glb (⊑∀ p)     (⊑∀ q)     = ⊑∀ (⊓t-glb p q)
+  ⊓ₛ-distribˡ-⊔ₛ : ∀ {τ} (υ₁ υ₂ υ₃ : ⌊ τ ⌋) → (υ₁ ⊓ₛ (υ₂ ⊔ₛ υ₃)) ≈ₛ ((υ₁ ⊓ₛ υ₂) ⊔ₛ (υ₁ ⊓ₛ υ₃))
+  ⊓ₛ-distribˡ-⊔ₛ υ₁ υ₂ υ₃ = dist (υ₁ .proof) (υ₂ .proof) (υ₃ .proof)
 
--- Meets preserve precision
-⊓t-preserves-⊑ : ∀ {τ₁ τ₁' τ₂ τ₂'} → τ₁' ⊑t τ₁ → τ₂' ⊑t τ₂ → τ₁' ⊓t τ₂' ⊑t τ₁ ⊓t τ₂
-⊓t-preserves-⊑ {_} {τ₁'} {_} {τ₂'} lb₁ lb₂ = ⊓t-glb (⊑t-trans (⊓t-lb₁ τ₁' τ₂') lb₁) (⊑t-trans (⊓t-lb₂ τ₁' τ₂') lb₂)
-
--- In particular when τ₁ = τ₂ then we get the same notion as the slice joins below
-⊓t-preserves-⊑-spec : ∀ {τ₁ τ₂ τ : Typ} → τ₁ ⊑t τ → τ₂ ⊑t τ → τ₁ ⊓t τ₂ ⊑t τ
-⊓t-preserves-⊑-spec p₁ p₂ = ⊑t-trans (⊓t-lb₁ _ _) p₁
-
--- Meet is greatest lower bound
-⊓t-infimum : Infimum _⊑t_ _⊓t_
-⊓t-infimum τ₁ τ₂ = ⊓t-lb₁ τ₁ τ₂ , ⊓t-lb₂ τ₁ τ₂ , λ τ → ⊓t-glb {τ} {τ₁} {τ₂}
-
--- Meet semilattice structure
-⊓t-isMeetSemilattice : IsMeetSemilattice _≡_ _⊑t_ _⊓t_
-⊓t-isMeetSemilattice = record
-  { isPartialOrder = ⊑t-isPartialOrder
-  ; infimum        = ⊓t-infimum
+⊑ₛ-isDistributiveLattice : ∀ {τ} → IsDistributiveLattice (_≡_ on ↓) (_⊑ₛ_ {τ}) _⊔ₛ_ _⊓ₛ_
+⊑ₛ-isDistributiveLattice = record
+  { isLattice    = ⊑ₛ-isLattice
+  ; ∧-distribˡ-∨ = ⊓ₛ-distribˡ-⊔ₛ
   }
 
--- Joins. Note: only valid for consistent types
-_⊔t_ : Typ → Typ → Typ
-τ ⊔t τ' with diag τ τ'
-...        | kind□  = □
-...        | kind* = *
-...        | kind+ {τ₁} {τ₂} {τ₁'} {τ₂'} = (τ₁ ⊔t τ₁') + (τ₂ ⊔t τ₂')
-...        | kind× {τ₁} {τ₂} {τ₁'} {τ₂'} = (τ₁ ⊔t τ₁') × (τ₂ ⊔t τ₂')
-...        | kind⇒ {τ₁} {τ₂} {τ₁'} {τ₂'} = (τ₁ ⊔t τ₁') ⇒ (τ₂ ⊔t τ₂')
-...        | kind∀ {τ} {τ'} = ∀· (τ ⊔t τ')
-...        | kindVar {m} {n} = ⟨ m ⟩
--- Using decidability over pattern matching simplifies proofs. But adding 3 types of 'diff' for τ diff □ and □ diff τ' might be cleaner
-τ ⊔t τ'    | diff with τ ≟t □
-...                  | yes _  = τ'
-...                  | no  _  = τ
+module ⊑ₛLat {τ} where
+  open IsBoundedLattice (⊑ₛ-isBoundedLattice {τ}) public
+    using (infimum; supremum; maximum; minimum;
+           isBoundedJoinSemilattice; isBoundedMeetSemilattice; isJoinSemilattice; isMeetSemilattice; isLattice)
+    renaming (x∧y≤x to x⊓ₛy⊑ₛx; x∧y≤y to x⊓ₛy⊑ₛy; x≤x∨y to x⊑ₛx⊔ₛy; y≤x∨y to y⊑ₛx⊔ₛy;
+              ∧-greatest to ⊓ₛ-greatest; ∨-least to ⊔ₛ-least)
+  open IsDistributiveLattice (⊑ₛ-isDistributiveLattice {τ}) public
+    using () renaming (∧-distribˡ-∨ to ⊓ₛ-distribˡ-⊔ₛ)
 
-infixl 6 _⊔t_
-
--- Join identity lemmas
-⊔t-identityₗ : ∀ τ → □ ⊔t τ ≡ τ
-⊔t-identityₗ τ with diag □ τ
-⊔t-identityₗ □         | kind□ = refl
-⊔t-identityₗ _         | diff = refl
-
-⊔t-identityᵣ : ∀ τ → τ ⊔t □ ≡ τ
-⊔t-identityᵣ τ with diag τ □
-⊔t-identityᵣ □         | kind□ = refl
-⊔t-identityᵣ τ         | diff with τ ≟t □
-...                           | yes refl = refl
-...                           | no  _    = refl
-
--- Least upper bound (if consistent)
-⊔t-ub₁ : ∀ {τ₁ τ₂} → τ₁ ~ τ₂ → τ₁ ⊑t τ₁ ⊔t τ₂
-⊔t-ub₁ ~*               = ⊑*
-⊔t-ub₁ ~Var             = ⊑Var
-⊔t-ub₁ (~?ᵣ {τ})        rewrite ⊔t-identityᵣ τ = ⊑t-refl
-⊔t-ub₁ ~?ₗ              = ⊑?
-⊔t-ub₁ (~+ c₁ c₂)       = ⊑+ (⊔t-ub₁ c₁) (⊔t-ub₁ c₂)
-⊔t-ub₁ (~× c₁ c₂)       = ⊑× (⊔t-ub₁ c₁) (⊔t-ub₁ c₂)
-⊔t-ub₁ (~⇒ c₁ c₂)       = ⊑⇒ (⊔t-ub₁ c₁) (⊔t-ub₁ c₂)
-⊔t-ub₁ (~∀ c)           = ⊑∀ (⊔t-ub₁ c)
-
-⊔t-ub₂ : ∀ {τ₁ τ₂} → τ₁ ~ τ₂ → τ₂ ⊑t τ₁ ⊔t τ₂
-⊔t-ub₂ ~*               = ⊑*
-⊔t-ub₂ ~Var             = ⊑Var
-⊔t-ub₂ ~?ᵣ              = ⊑?
-⊔t-ub₂ (~?ₗ {τ})        rewrite ⊔t-identityₗ τ = ⊑t-refl
-⊔t-ub₂ (~+ c₁ c₂)       = ⊑+ (⊔t-ub₂ c₁) (⊔t-ub₂ c₂)
-⊔t-ub₂ (~× c₁ c₂)       = ⊑× (⊔t-ub₂ c₁) (⊔t-ub₂ c₂)
-⊔t-ub₂ (~⇒ c₁ c₂)       = ⊑⇒ (⊔t-ub₂ c₁) (⊔t-ub₂ c₂)
-⊔t-ub₂ (~∀ c)           = ⊑∀ (⊔t-ub₂ c)
-
-⊔t-lub : ∀ {τ τ₁ τ₂} → τ₁ ~ τ₂ → τ₁ ⊑t τ → τ₂ ⊑t τ → τ₁ ⊔t τ₂ ⊑t τ
-⊔t-lub ~*               ⊑*         ⊑*         = ⊑*
-⊔t-lub ~Var             ⊑Var       ⊑Var       = ⊑Var
-⊔t-lub (~?ᵣ {τ₁})       p          ⊑?         rewrite ⊔t-identityᵣ τ₁ = p
-⊔t-lub (~?ₗ {τ₂})       ⊑?         q          rewrite ⊔t-identityₗ τ₂ = q
-⊔t-lub (~+ c₁ c₂)       (⊑+ p₁ p₂) (⊑+ q₁ q₂) = ⊑+ (⊔t-lub c₁ p₁ q₁) (⊔t-lub c₂ p₂ q₂)
-⊔t-lub (~× c₁ c₂)       (⊑× p₁ p₂) (⊑× q₁ q₂) = ⊑× (⊔t-lub c₁ p₁ q₁) (⊔t-lub c₂ p₂ q₂)
-⊔t-lub (~⇒ c₁ c₂)       (⊑⇒ p₁ p₂) (⊑⇒ q₁ q₂) = ⊑⇒ (⊔t-lub c₁ p₁ q₁) (⊔t-lub c₂ p₂ q₂)
-⊔t-lub (~∀ c)           (⊑∀ p)     (⊑∀ q)     = ⊑∀ (⊔t-lub c p q)
-
--- Joins preserve precision (for consistent types)
-⊔t-preserves-⊑ : ∀ {τ₁ τ₂ τ} → τ₁ ⊑t τ → τ₂ ⊑t τ → τ₁ ⊔t τ₂ ⊑t τ
-⊔t-preserves-⊑ p q = ⊔t-lub (⊑t-consistent p q) p q
-
--- Meets (of slices of some type)
-_⊓tₛ_ : ∀ {τ} → ⌊ τ ⌋ → ⌊ τ ⌋ → ⌊ τ ⌋
-υ ⊓tₛ υ' = υ .↓ ⊓t υ' .↓ isSlice ⊓t-preserves-⊑-spec (υ .proof) (υ' .proof)
-
-infixl 6 _⊓tₛ_
-
--- Joins (of slices of some type)
-_⊔tₛ_ : ∀ {τ} → ⌊ τ ⌋ → ⌊ τ ⌋ → ⌊ τ ⌋
-υ ⊔tₛ υ' = υ .↓ ⊔t υ' .↓ isSlice ⊔t-preserves-⊑ (υ .proof) (υ' .proof)
-
-infixl 7 _⊔tₛ_
-
--- Slice meet is lower bound
-⊓tₛ-lb₁ : ∀ {τ} (υ₁ υ₂ : ⌊ τ ⌋) → υ₁ ⊓tₛ υ₂ ⊑tₛ υ₁
-⊓tₛ-lb₁ υ₁ υ₂ = ⊓t-lb₁ (υ₁ .↓) (υ₂ .↓)
-
-⊓tₛ-lb₂ : ∀ {τ} (υ₁ υ₂ : ⌊ τ ⌋) → υ₁ ⊓tₛ υ₂ ⊑tₛ υ₂
-⊓tₛ-lb₂ υ₁ υ₂ = ⊓t-lb₂ (υ₁ .↓) (υ₂ .↓)
-
-⊓tₛ-glb : ∀ {τ} {υ υ₁ υ₂ : ⌊ τ ⌋} → υ ⊑tₛ υ₁ → υ ⊑tₛ υ₂ → υ ⊑tₛ υ₁ ⊓tₛ υ₂
-⊓tₛ-glb = ⊓t-glb
-
--- Slice join is upper bound
-⊔tₛ-ub₁ : ∀ {τ} (υ₁ υ₂ : ⌊ τ ⌋) → υ₁ ⊑tₛ υ₁ ⊔tₛ υ₂
-⊔tₛ-ub₁ υ₁ υ₂ = ⊔t-ub₁ (⊑t-consistent (υ₁ .proof) (υ₂ .proof))
-
-⊔tₛ-ub₂ : ∀ {τ} (υ₁ υ₂ : ⌊ τ ⌋) → υ₂ ⊑tₛ υ₁ ⊔tₛ υ₂
-⊔tₛ-ub₂ υ₁ υ₂ = ⊔t-ub₂ (⊑t-consistent (υ₁ .proof) (υ₂ .proof))
-
-⊔tₛ-lub : ∀ {τ} {υ υ₁ υ₂ : ⌊ τ ⌋} → υ₁ ⊑tₛ υ → υ₂ ⊑tₛ υ → υ₁ ⊔tₛ υ₂ ⊑tₛ υ
-⊔tₛ-lub {_} {υ} {υ₁} {υ₂} p q = ⊔t-lub (⊑t-consistent (υ₁ .proof) (υ₂ .proof)) p q
-
--- Slice infimum and supremum
-⊓tₛ-infimum : ∀ {τ} → Infimum (_⊑tₛ_ {τ}) _⊓tₛ_
-⊓tₛ-infimum υ₁ υ₂ = ⊓tₛ-lb₁ υ₁ υ₂ , ⊓tₛ-lb₂ υ₁ υ₂ , λ υ → ⊓tₛ-glb {υ = υ} {υ₁} {υ₂}
-
-⊔tₛ-supremum : ∀ {τ} → Supremum (_⊑tₛ_ {τ}) _⊔tₛ_
-⊔tₛ-supremum υ₁ υ₂ = ⊔tₛ-ub₁ υ₁ υ₂ , ⊔tₛ-ub₂ υ₁ υ₂ , λ υ → ⊔tₛ-lub {υ = υ} {υ₁} {υ₂}
-
--- Slice meet semilattice
-⊓tₛ-isMeetSemilattice : ∀ {τ} → IsMeetSemilattice (_≡_ on ↓) (_⊑tₛ_ {τ}) _⊓tₛ_
-⊓tₛ-isMeetSemilattice = record
-  { isPartialOrder = ⊑tₛ-isPartialOrder
-  ; infimum        = ⊓tₛ-infimum
-  }
-
--- Slice join semilattice
-⊔tₛ-isJoinSemilattice : ∀ {τ} → IsJoinSemilattice (_≡_ on ↓) (_⊑tₛ_ {τ}) _⊔tₛ_
-⊔tₛ-isJoinSemilattice = record
-  { isPartialOrder = ⊑tₛ-isPartialOrder
-  ; supremum       = ⊔tₛ-supremum
-  }
-
--- Full lattice on slices of a type
-⊑tₛ-isLattice : ∀ {τ} → IsLattice (_≡_ on ↓) (_⊑tₛ_ {τ}) _⊔tₛ_ _⊓tₛ_
-⊑tₛ-isLattice = record
-  { isPartialOrder = ⊑tₛ-isPartialOrder
-  ; supremum       = ⊔tₛ-supremum
-  ; infimum        = ⊓tₛ-infimum
-  }
-
--- Bounded lattice: □ is bottom, τ is top
-⊤ₛ-maximum : ∀ {τ} → Maximum (_⊑tₛ_ {τ}) ⊤ₛ
-⊤ₛ-maximum υ = υ .proof
-
-⊥ₛ-minimum : ∀ {τ} → Minimum (_⊑tₛ_ {τ}) ⊥ₛ
-⊥ₛ-minimum υ = ⊑?
-
--- Bounded lattice on slices of a type
-⊑tₛ-isBoundedLattice : ∀ {τ} → IsBoundedLattice (_≡_ on ↓) (_⊑tₛ_ {τ}) _⊔tₛ_ _⊓tₛ_ ⊤ₛ ⊥ₛ
-⊑tₛ-isBoundedLattice = record
-  { isLattice = ⊑tₛ-isLattice
-  ; maximum   = ⊤ₛ-maximum
-  ; minimum   = ⊥ₛ-minimum
-  }

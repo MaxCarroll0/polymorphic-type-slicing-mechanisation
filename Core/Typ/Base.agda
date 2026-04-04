@@ -1,8 +1,10 @@
 module Core.Typ.Base where
 
 open import Data.Nat using (ℕ; _≟_)
+open import Data.Unit using (⊤; tt)
 open import Relation.Nullary using (¬_)
 open import Relation.Binary.PropositionalEquality using (_≡_; _≢_)
+open import Agda.Builtin.FromNat using (Number; fromNat)
 
 -- Types
 data Typ : Set where
@@ -17,6 +19,7 @@ data Typ : Set where
 infixl 23 _+_
 infixl 24 _×_
 infixr 25 _⇒_
+infix 4 _kind?_
 
 -- Classify types by their 'kinds' i.e. the kind of their top-most constructor
 data _kind?_ : Typ → Typ → Set where
@@ -47,3 +50,16 @@ shallow-disequality {(τ + τ₁)} = λ ()
 shallow-disequality {(τ × τ₁)} = λ ()
 shallow-disequality {(τ ⇒ τ₁)} = λ ()
 shallow-disequality {(∀· τ)}   = λ ()
+
+-- Literal overloading: allow writing 0, 1 instead of ⟨ 0 ⟩, ⟨ 1 ⟩
+instance
+  NumTyp : Number Typ
+  NumTyp = record
+    { Constraint = λ _ → ⊤
+    ; fromNat = λ n → ⟨ n ⟩
+    }
+
+private
+  -- Test: literals work as type variables
+  _ : Typ
+  _ = 0 ⇒ 1
