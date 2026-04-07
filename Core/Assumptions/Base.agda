@@ -10,6 +10,7 @@ open import Core.Typ.Base as TypBase using () renaming (□ to □t)
 Assumptions : Set
 Assumptions = List Typ
 
+-- TODO: Maybe use vectors?
 -- Lookup by de Bruijn index
 _[_] : Assumptions → ℕ → Maybe Typ
 []       [ _ ]     = nothing

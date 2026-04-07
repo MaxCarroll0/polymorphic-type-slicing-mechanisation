@@ -3,6 +3,8 @@ open import Relation.Binary using (IsPartialOrder; IsDecPartialOrder; Maximum; I
 open import Relation.Binary.Lattice using (IsMeetSemilattice; IsBoundedMeetSemilattice)
 open import Relation.Nullary using (Dec; yes; no)
 
+-- TODO: move into core
+
 -- Lift partial order to a partial order on elements less than some top
 module Slice
   {A : Set}

@@ -18,6 +18,8 @@ open import Core.Typ.Consistency
 open import Core.Typ.Precision renaming (⊤ₛ to ⊤ₛ')
 open import Core.Typ.Properties
 
+-- TODO: separate all lattice modules into different directory and import from Core
+
 -- Meet operator. Note: order theoretic, does not require consistent types
 _⊓_ : Typ → Typ → Typ
 τ ⊓ τ' with diag τ τ'
