@@ -1,0 +1,42 @@
+module Core.Ctx.Equality where
+
+open import Data.Product using (_,_; uncurry)
+open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong₂; inspect; [_])
+open import Relation.Nullary using (Dec; yes; no; map′)
+open import Relation.Nullary.Decidable using (_×-dec_)
+
+open import Core.Typ using () renaming (_≟_ to _≟t_)
+open import Core.Exp using () renaming (_≟_ to _≟e_)
+open import Core.Ctx.Base
+
+_≟_ : (C C' : Ctx) → Dec (C ≡ C')
+C         ≟ C'               with diag C C' | inspect (diag C) C'
+...                             | kind○     | _ = yes  refl
+(λ· τ ⇒ C₁) ≟ (λ· τ' ⇒ C₁')     | kindλ     | _ = map′ (uncurry (cong₂ λ·_⇒_))
+                                                       (λ where refl → refl , refl)
+                                                       (τ ≟t τ' ×-dec C₁ ≟ C₁')
+(C₁ ∘₁ e)   ≟ (C₁' ∘₁ e')       | kind∘₁    | _ = map′ (uncurry (cong₂ _∘₁_))
+                                                       (λ where refl → refl , refl)
+                                                       (C₁ ≟ C₁' ×-dec e ≟e e')
+(e ∘₂ C₁)   ≟ (e' ∘₂ C₁')       | kind∘₂    | _ = map′ (uncurry (cong₂ _∘₂_))
+                                                       (λ where refl → refl , refl)
+                                                       (e ≟e e' ×-dec C₁ ≟ C₁')
+(C₁ &₁ e)   ≟ (C₁' &₁ e')       | kind&₁    | _ = map′ (uncurry (cong₂ _&₁_))
+                                                       (λ where refl → refl , refl)
+                                                       (C₁ ≟ C₁' ×-dec e ≟e e')
+(e &₂ C₁)   ≟ (e' &₂ C₁')       | kind&₂    | _ = map′ (uncurry (cong₂ _&₂_))
+                                                       (λ where refl → refl , refl)
+                                                       (e ≟e e' ×-dec C₁ ≟ C₁')
+(ι₁ C₁)     ≟ (ι₁ C₁')          | kindι₁    | _ = map′ (cong ι₁)
+                                                       (λ where refl → refl) (C₁ ≟ C₁')
+(ι₂ C₁)     ≟ (ι₂ C₁')          | kindι₂    | _ = map′ (cong ι₂)
+                                                       (λ where refl → refl) (C₁ ≟ C₁')
+(Λ C₁)      ≟ (Λ C₁')           | kindΛ     | _ = map′ (cong Λ)
+                                                       (λ where refl → refl) (C₁ ≟ C₁')
+(def C₁ ⊢₁ e) ≟ (def C₁' ⊢₁ e') | kinddef₁  | _ = map′ (uncurry (cong₂ def_⊢₁_))
+                                                       (λ where refl → refl , refl)
+                                                       (C₁ ≟ C₁' ×-dec e ≟e e')
+(def e ⊢₂ C₁) ≟ (def e' ⊢₂ C₁') | kinddef₂  | _ = map′ (uncurry (cong₂ def_⊢₂_))
+                                                       (λ where refl → refl , refl)
+                                                       (e ≟e e' ×-dec C₁ ≟ C₁')
+...                             | diff      | [ as ] = no λ where refl → shallow-disequality as
