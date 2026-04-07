@@ -2,7 +2,7 @@ module Core.Typ.Precision where
 
 open import Relation.Binary using (IsPartialOrder; IsDecPartialOrder; IsPreorder; IsEquivalence)
 open import Relation.Binary.Definitions using (Reflexive; Transitive; Antisymmetric; Minimum)
-open import Relation.Binary.PropositionalEquality as Eq using (_≡_; _≢_; refl; sym; trans; cong; cong₂)
+open import Relation.Binary.PropositionalEquality as Eq using (_≡_; _≢_; refl; sym; trans; cong; cong₂; [_])
 open import Relation.Nullary using (Dec; yes; no; ¬_; map′)
 open import Relation.Nullary.Decidable using (_×-dec_)
 open import Data.Nat using (ℕ) renaming (_≟_ to _≟ℕ_)
@@ -67,32 +67,34 @@ private
 
 _⊑?_ : ∀ τ τ' → Dec (τ ⊑ τ')
 τ ⊑? τ'                      with diag τ τ' | Eq.inspect (diag τ) τ'
-...                            | kind□   | _     = yes ⊑□
-...                            | kind*   | _     = yes ⊑*
-⟨ m ⟩     ⊑? ⟨ n ⟩             | kindVar | _     = map′ (λ where refl → ⊑Var)
-                                                         (λ where ⊑Var → refl) (m ≟ℕ n)
-(τ₁ + τ₂) ⊑? (τ₁' + τ₂')       | kind+   | _     = map′ (uncurry ⊑+)
-                                                         (λ where (⊑+ p q) → p , q)
-                                                         (τ₁ ⊑? τ₁' ×-dec τ₂ ⊑? τ₂')
-(τ₁ × τ₂) ⊑? (τ₁' × τ₂')       | kind×   | _     = map′ (uncurry ⊑×)
-                                                         (λ where (⊑× p q) → p , q)
-                                                         (τ₁ ⊑? τ₁' ×-dec τ₂ ⊑? τ₂')
-(τ₁ ⇒ τ₂) ⊑? (τ₁' ⇒ τ₂')       | kind⇒   | _     = map′ (uncurry ⊑⇒)
-                                                         (λ where (⊑⇒ p q) → p , q)
-                                                         (τ₁ ⊑? τ₁' ×-dec τ₂ ⊑? τ₂')
-(∀· τ)    ⊑? (∀· τ')           | kind∀   | _     = map′ ⊑∀ (λ where (⊑∀ p) → p) (τ ⊑? τ')
-τ         ⊑? τ'                | diff    | Eq.[ as ] with τ ≟t □
+...                            | kind□   | _    = yes  ⊑□
+...                            | kind*   | _    = yes  ⊑*
+⟨ m ⟩     ⊑? ⟨ n ⟩             | kindVar | _    = map′ (λ where refl → ⊑Var)
+                                                       (λ where ⊑Var → refl) (m ≟ℕ n)
+(τ₁ + τ₂) ⊑? (τ₁' + τ₂')       | kind+   | _    = map′ (uncurry ⊑+)
+                                                       (λ where (⊑+ p q) → p , q)
+                                                       (τ₁ ⊑? τ₁' ×-dec τ₂ ⊑? τ₂')
+(τ₁ × τ₂) ⊑? (τ₁' × τ₂')       | kind×   | _    = map′ (uncurry ⊑×)
+                                                       (λ where (⊑× p q) → p , q)
+                                                       (τ₁ ⊑? τ₁' ×-dec τ₂ ⊑? τ₂')
+(τ₁ ⇒ τ₂) ⊑? (τ₁' ⇒ τ₂')       | kind⇒   | _    = map′ (uncurry ⊑⇒)
+                                                       (λ where (⊑⇒ p q) → p , q)
+                                                       (τ₁ ⊑? τ₁' ×-dec τ₂ ⊑? τ₂')
+(∀· τ)    ⊑? (∀· τ')           | kind∀   | _    = map′ ⊑∀ (λ where (⊑∀ p) → p) (τ ⊑? τ')
+τ         ⊑? τ'                | diff    | [ as ] with τ ≟t □
 ...                                                    | yes refl = yes ⊑□
 ...                                                    | no  τ≢□  = no (shallow-imprecision τ≢□ as)
 
-⊑-isDecPartialOrder : IsDecPartialOrder _≡_ _⊑_
-⊑-isDecPartialOrder = record
-  { isPartialOrder = ⊑-isPartialOrder
-  ; _≟_            = _≟t_
-  ; _≤?_           = _⊑?_
-  }
+private 
+  ⊑-isDecPartialOrder : IsDecPartialOrder _≡_ _⊑_
+  ⊑-isDecPartialOrder = record
+                        { isPartialOrder = ⊑-isPartialOrder
+                        ; _≟_            = _≟t_
+                        ; _≤?_           = _⊑?_
+                        }
 
-module ⊑ = IsDecPartialOrder ⊑-isDecPartialOrder using (antisym; isPartialOrder; isPreorder; refl; reflexive; trans)
-
+module ⊑ = IsDecPartialOrder ⊑-isDecPartialOrder
+  using (antisym; isPartialOrder; isPreorder; refl; reflexive; trans)
+  
 -- Instantiate generic Slice module for types
 open import Slice ⊑-isDecPartialOrder public

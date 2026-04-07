@@ -94,20 +94,22 @@ private
   ⊓-infimum τ₁ τ₂ = ⊓-lb₁ τ₁ τ₂ , ⊓-lb₂ τ₁ τ₂ , λ τ → ⊓-glb {τ} {τ₁} {τ₂}
 
 
-⊑-isMeetSemilattice : IsMeetSemilattice _≡_ _⊑_ _⊓_
-⊑-isMeetSemilattice = record
-  { isPartialOrder = ⊑.isPartialOrder
-  ; infimum        = ⊓-infimum
-  }
+  ⊑-isMeetSemilattice : IsMeetSemilattice _≡_ _⊑_ _⊓_
+  ⊑-isMeetSemilattice = record
+                        { isPartialOrder = ⊑.isPartialOrder
+                        ; infimum        = ⊓-infimum
+                        }
 
-module ⊑Lat = IsMeetSemilattice ⊑-isMeetSemilattice
-  using (infimum)
-  renaming (∧-greatest to ⊓-greatest; x∧y≤x to x⊓y⊑x; x∧y≤y to x⊓y⊑y)
+module ⊑Lat where
+  open IsMeetSemilattice ⊑-isMeetSemilattice public
+    using (infimum)
+    renaming (∧-greatest to ⊓-greatest; x∧y≤x to x⊓y⊑x; x∧y≤y to x⊓y⊑y)
 
+  isMeetSemilattice = ⊑-isMeetSemilattice
+
+open LiftMeetSemilattice ⊑-isMeetSemilattice public
+ 
 private
-  open LiftMeetSemilattice ⊑-isMeetSemilattice public
-    renaming (isBoundedMeetSemilattice to ⊑ₛ-isBoundedMeetSemilattice)
-
   ⊔-identityₗ : ∀ τ → □ ⊔ τ ≡ τ
   ⊔-identityₗ τ with diag □ τ
   ⊔-identityₗ □         | kind□ = refl
@@ -127,8 +129,8 @@ module ~ where
   ⊔-ub₁ : ∀ {τ₁ τ₂} → τ₁ ~ τ₂ → τ₁ ⊑ τ₁ ⊔ τ₂
   ⊔-ub₁ ~*               = ⊑*
   ⊔-ub₁ ~Var             = ⊑Var
-  ⊔-ub₁ (~?ᵣ {τ})        rewrite ⊔-identityᵣ τ = ⊑.refl
-  ⊔-ub₁ ~?ₗ              = ⊑□
+  ⊔-ub₁ (~?₁ {τ})        rewrite ⊔-identityᵣ τ = ⊑.refl
+  ⊔-ub₁ ~?₂              = ⊑□
   ⊔-ub₁ (~+ c₁ c₂)       = ⊑+ (⊔-ub₁ c₁) (⊔-ub₁ c₂)
   ⊔-ub₁ (~× c₁ c₂)       = ⊑× (⊔-ub₁ c₁) (⊔-ub₁ c₂)
   ⊔-ub₁ (~⇒ c₁ c₂)       = ⊑⇒ (⊔-ub₁ c₁) (⊔-ub₁ c₂)
@@ -137,8 +139,8 @@ module ~ where
   ⊔-ub₂ : ∀ {τ₁ τ₂} → τ₁ ~ τ₂ → τ₂ ⊑ τ₁ ⊔ τ₂
   ⊔-ub₂ ~*               = ⊑*
   ⊔-ub₂ ~Var             = ⊑Var
-  ⊔-ub₂ ~?ᵣ              = ⊑□
-  ⊔-ub₂ (~?ₗ {τ})        rewrite ⊔-identityₗ τ = ⊑.refl
+  ⊔-ub₂ ~?₁              = ⊑□
+  ⊔-ub₂ (~?₂ {τ})        rewrite ⊔-identityₗ τ = ⊑.refl
   ⊔-ub₂ (~+ c₁ c₂)       = ⊑+ (⊔-ub₂ c₁) (⊔-ub₂ c₂)
   ⊔-ub₂ (~× c₁ c₂)       = ⊑× (⊔-ub₂ c₁) (⊔-ub₂ c₂)
   ⊔-ub₂ (~⇒ c₁ c₂)       = ⊑⇒ (⊔-ub₂ c₁) (⊔-ub₂ c₂)
@@ -147,8 +149,8 @@ module ~ where
   ⊔-lub : ∀ {τ τ₁ τ₂} → τ₁ ~ τ₂ → τ₁ ⊑ τ → τ₂ ⊑ τ → τ₁ ⊔ τ₂ ⊑ τ
   ⊔-lub ~*               ⊑*         ⊑*         = ⊑*
   ⊔-lub ~Var             ⊑Var       ⊑Var       = ⊑Var
-  ⊔-lub (~?ᵣ {τ₁})       p          ⊑□         rewrite ⊔-identityᵣ τ₁ = p
-  ⊔-lub (~?ₗ {τ₂})       ⊑□         q          rewrite ⊔-identityₗ τ₂ = q
+  ⊔-lub (~?₁ {τ₁})       p          ⊑□         rewrite ⊔-identityᵣ τ₁ = p
+  ⊔-lub (~?₂ {τ₂})       ⊑□         q          rewrite ⊔-identityₗ τ₂ = q
   ⊔-lub (~+ c₁ c₂)       (⊑+ p₁ p₂) (⊑+ q₁ q₂) = ⊑+ (⊔-lub c₁ p₁ q₁) (⊔-lub c₂ p₂ q₂)
   ⊔-lub (~× c₁ c₂)       (⊑× p₁ p₂) (⊑× q₁ q₂) = ⊑× (⊔-lub c₁ p₁ q₁) (⊔-lub c₂ p₂ q₂)
   ⊔-lub (~⇒ c₁ c₂)       (⊑⇒ p₁ p₂) (⊑⇒ q₁ q₂) = ⊑⇒ (⊔-lub c₁ p₁ q₁) (⊔-lub c₂ p₂ q₂)
@@ -186,25 +188,24 @@ private
 
   ⊑ₛ-isJoinSemilattice : ∀ {τ} → IsJoinSemilattice (_≡_ on ↓) (_⊑ₛ_ {τ}) _⊔ₛ_
   ⊑ₛ-isJoinSemilattice = record
-    { isPartialOrder = ⊑ₛ.isPartialOrder
-    ; supremum       = ⊔ₛ-supremum
-    }
+                         { isPartialOrder = ⊑ₛ.isPartialOrder
+                         ; supremum       = ⊔ₛ-supremum
+                         }
 
   ⊑ₛ-isLattice : ∀ {τ} → IsLattice (_≡_ on ↓) (_⊑ₛ_ {τ}) _⊔ₛ_ _⊓ₛ_
   ⊑ₛ-isLattice = record
-    { isPartialOrder = ⊑ₛ.isPartialOrder
-    ; supremum       = ⊔ₛ-supremum
-    ; infimum        = ⊓ₛ.infimum
-    }
+                 { isPartialOrder = ⊑ₛ.isPartialOrder
+                 ; supremum       = ⊔ₛ-supremum
+                 ; infimum        = ⊓ₛ.infimum
+                 }
 
-⊑ₛ-isBoundedLattice : ∀ {τ} → IsBoundedLattice (_≡_ on ↓) (_⊑ₛ_ {τ}) _⊔ₛ_ _⊓ₛ_ ⊤ₛ' ⊥ₛ'
-⊑ₛ-isBoundedLattice = record
-  { isLattice = ⊑ₛ-isLattice
-  ; maximum   = ⊤ₛ-max
-  ; minimum   = ⊥ₛ-min
-  }
+  ⊑ₛ-isBoundedLattice : ∀ {τ} → IsBoundedLattice (_≡_ on ↓) (_⊑ₛ_ {τ}) _⊔ₛ_ _⊓ₛ_ ⊤ₛ' ⊥ₛ'
+  ⊑ₛ-isBoundedLattice = record
+                        { isLattice = ⊑ₛ-isLattice
+                        ; maximum   = ⊤ₛ-max
+                        ; minimum   = ⊥ₛ-min
+                        }
 
-private
   □⊓-absorb : ∀ τ → □ ⊓ τ ≡ □
   □⊓-absorb τ with diag □ τ
   ... | kind□ = refl
@@ -253,11 +254,11 @@ private
   ⊓ₛ-distribˡ-⊔ₛ : ∀ {τ} (υ₁ υ₂ υ₃ : ⌊ τ ⌋) → (υ₁ ⊓ₛ (υ₂ ⊔ₛ υ₃)) ≈ₛ ((υ₁ ⊓ₛ υ₂) ⊔ₛ (υ₁ ⊓ₛ υ₃))
   ⊓ₛ-distribˡ-⊔ₛ υ₁ υ₂ υ₃ = dist (υ₁ .proof) (υ₂ .proof) (υ₃ .proof)
 
-⊑ₛ-isDistributiveLattice : ∀ {τ} → IsDistributiveLattice (_≡_ on ↓) (_⊑ₛ_ {τ}) _⊔ₛ_ _⊓ₛ_
-⊑ₛ-isDistributiveLattice = record
-  { isLattice    = ⊑ₛ-isLattice
-  ; ∧-distribˡ-∨ = ⊓ₛ-distribˡ-⊔ₛ
-  }
+  ⊑ₛ-isDistributiveLattice : ∀ {τ} → IsDistributiveLattice (_≡_ on ↓) (_⊑ₛ_ {τ}) _⊔ₛ_ _⊓ₛ_
+  ⊑ₛ-isDistributiveLattice = record
+                             { isLattice    = ⊑ₛ-isLattice
+                             ; ∧-distribˡ-∨ = ⊓ₛ-distribˡ-⊔ₛ
+                             }
 
 module ⊑ₛLat {τ} where
   open IsBoundedLattice (⊑ₛ-isBoundedLattice {τ}) public
@@ -272,6 +273,10 @@ module ⊑ₛLat {τ} where
   ⊥ₛ : ⌊ τ ⌋
   ⊥ₛ = ⊥ₛ'
 
+  isBoundedLattice = ⊑ₛ-isBoundedLattice
+
   open IsDistributiveLattice (⊑ₛ-isDistributiveLattice {τ}) public
     using () renaming (∧-distribˡ-∨ to ⊓ₛ-distribˡ-⊔ₛ)
+
+  isDistributiveLattice = ⊑ₛ-isDistributiveLattice
 
