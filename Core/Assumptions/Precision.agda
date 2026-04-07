@@ -1,48 +1,66 @@
 module Core.Assumptions.Precision where
 
 open import Data.List using (List; []; _∷_; length)
-open import Relation.Binary using (IsPartialOrder; IsPreorder; IsEquivalence)
-open import Relation.Binary.Definitions using (Reflexive; Transitive; Antisymmetric)
-open import Relation.Binary.PropositionalEquality as Eq using (_≡_; refl; cong₂)
+open import Data.Product using (_,_; uncurry)
+open import Relation.Binary using (IsPartialOrder; IsDecPartialOrder; IsPreorder; IsEquivalence)
+open import Relation.Binary.Definitions using (Reflexive; Transitive; Antisymmetric; Minimum)
+open import Relation.Binary.PropositionalEquality as Eq using (_≡_; refl; sym; trans; cong₂)
+open import Relation.Nullary using (Dec; yes; no)
+open import Relation.Nullary.Decidable using (map′; _×-dec_)
+open import Function using (_on_)
 
-open import Core.Typ using (Typ; □)
-open import Core.Typ.Precision using (_⊑t_; ⊑?; ⊑t-refl; ⊑t-trans; ⊑t-antisym)
+open import Core.Typ using (Typ)
+  renaming (⊑□ to ⊑t□; _⊑_ to _⊑t_; _⊑?_ to _⊑t?_;
+            module ⊑ to ⊑t)
 open import Core.Assumptions.Base
+open import Core.Assumptions.Equality
 
--- Pointwise precision relation (only defined for equal-length lists)
-data _⊑Γ_ : Assumptions → Assumptions → Set where
-  ⊑[]  :                                             []       ⊑Γ []
-  ⊑∷   : ∀ {τ τ' Γ Γ'} → τ ⊑t τ' → Γ ⊑Γ Γ' →         (τ ∷ Γ)  ⊑Γ (τ' ∷ Γ')
 
-infix 4 _⊑Γ_
+-- Pointwise precision relation (for equal-length lists)
+data _⊑_ : Assumptions → Assumptions → Set where
+  ⊑[]  :                                    []       ⊑ []
+  ⊑∷   : ∀ {τ τ' Γ Γ'} → τ ⊑t τ' → Γ ⊑ Γ' → (τ ∷ Γ)  ⊑ (τ' ∷ Γ')
 
--- Reflexivity
-⊑Γ-refl : Reflexive _⊑Γ_
-⊑Γ-refl {[]}    = ⊑[]
-⊑Γ-refl {_ ∷ _} = ⊑∷ ⊑t-refl ⊑Γ-refl
+infix 4 _⊑_
 
--- Transitivity
-⊑Γ-trans : Transitive _⊑Γ_
-⊑Γ-trans ⊑[]        ⊑[]        = ⊑[]
-⊑Γ-trans (⊑∷ p₁ q₁) (⊑∷ p₂ q₂) = ⊑∷ (⊑t-trans p₁ p₂) (⊑Γ-trans q₁ q₂)
+private
+  ⊑-refl : Reflexive _⊑_
+  ⊑-refl {[]}    = ⊑[]
+  ⊑-refl {_ ∷ _} = ⊑∷ ⊑t.refl ⊑-refl
 
--- Antisymmetry
-⊑Γ-antisym : Antisymmetric _≡_ _⊑Γ_
-⊑Γ-antisym ⊑[]        ⊑[]        = refl
-⊑Γ-antisym (⊑∷ p₁ q₁) (⊑∷ p₂ q₂) = cong₂ _∷_ (⊑t-antisym p₁ p₂) (⊑Γ-antisym q₁ q₂)
+  ⊑-trans : Transitive _⊑_
+  ⊑-trans ⊑[]        ⊑[]        = ⊑[]
+  ⊑-trans (⊑∷ p₁ q₁) (⊑∷ p₂ q₂) = ⊑∷ (⊑t.trans p₁ p₂) (⊑-trans q₁ q₂)
 
--- Partial order
-⊑Γ-isPartialOrder : IsPartialOrder _≡_ _⊑Γ_
-⊑Γ-isPartialOrder = record
-  { isPreorder = record
-    { isEquivalence = Eq.isEquivalence
-    ; reflexive     = λ where refl → ⊑Γ-refl
-    ; trans         = ⊑Γ-trans
+  ⊑-antisym : Antisymmetric _≡_ _⊑_
+  ⊑-antisym ⊑[]        ⊑[]        = refl
+  ⊑-antisym (⊑∷ p₁ q₁) (⊑∷ p₂ q₂) = cong₂ _∷_ (⊑t.antisym p₁ p₂) (⊑-antisym q₁ q₂)
+
+  ⊑-isPartialOrder : IsPartialOrder _≡_ _⊑_
+  ⊑-isPartialOrder = record
+    { isPreorder = record
+      { isEquivalence = Eq.isEquivalence
+      ; reflexive     = λ where refl → ⊑-refl
+      ; trans         = ⊑-trans
+      }
+    ; antisym = ⊑-antisym
     }
-  ; antisym = ⊑Γ-antisym
+
+-- Decidable precision
+_⊑?_ : ∀ Γ Γ' → Dec (Γ ⊑ Γ')
+[]      ⊑? []        = yes ⊑[]
+[]      ⊑? (_ ∷ _)   = no λ ()
+(_ ∷ _) ⊑? []        = no λ ()
+(τ ∷ Γ) ⊑? (τ' ∷ Γ') = map′ (uncurry ⊑∷) (λ where (⊑∷ p q) → p , q)
+                            (τ ⊑t? τ' ×-dec Γ ⊑? Γ')
+
+⊑-isDecPartialOrder : IsDecPartialOrder _≡_ _⊑_
+⊑-isDecPartialOrder = record
+  { isPartialOrder = ⊑-isPartialOrder
+  ; _≟_            = _≟Γ_
+  ; _≤?_           = _⊑?_
   }
 
--- □Γ n is the minimum for any same-length list
-□Γ-min : ∀ Γ → □Γ (length Γ) ⊑Γ Γ
-□Γ-min []      = ⊑[]
-□Γ-min (_ ∷ Γ) = ⊑∷ ⊑? (□Γ-min Γ)
+module ⊑ = IsDecPartialOrder ⊑-isDecPartialOrder using (antisym; isPartialOrder; isPreorder; refl; reflexive; trans)
+
+open import Slice ⊑-isDecPartialOrder public

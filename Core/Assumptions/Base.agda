@@ -4,9 +4,9 @@ open import Data.List using (List; []; _∷_; length)
 open import Data.Nat using (ℕ; zero; suc)
 open import Data.Maybe using (Maybe; just; nothing)
 
-open import Core.Typ using (Typ; □)
+open import Core.Typ using (Typ)
+open import Core.Typ.Base as TypBase using () renaming (□ to □t)
 
--- Typing assumptions (Γ) are lists of types
 Assumptions : Set
 Assumptions = List Typ
 
@@ -16,7 +16,6 @@ _[_] : Assumptions → ℕ → Maybe Typ
 (τ ∷ _)  [ zero ]  = just τ
 (_ ∷ Γ)  [ suc n ] = Γ [ n ]
 
--- Bottom: list of □s of given length
-□Γ : ℕ → Assumptions
-□Γ zero    = []
-□Γ (suc n) = □ ∷ □Γ n
+□ : ℕ → Assumptions
+□ zero    = []
+□ (suc n) = □t ∷ □ n
