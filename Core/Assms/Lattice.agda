@@ -19,14 +19,14 @@ open import Core.Assms.Precision renaming (⊤ₛ to ⊤ₛ')
 module Core.Assms.Lattice where
 
 -- Pointwise meet and join
-_⊓_ : Assumptions → Assumptions → Assumptions
+_⊓_ : Assms → Assms → Assms
 []       ⊓ []         = []
 (τ ∷ Γ₁) ⊓ (τ' ∷ Γ₂)  = (τ ⊓t τ') ∷ (Γ₁ ⊓ Γ₂)
 _        ⊓ _          = []
 
 infixl 6 _⊓_
 
-_⊔_ : Assumptions → Assumptions → Assumptions
+_⊔_ : Assms → Assms → Assms
 []       ⊔ []         = []
 (τ ∷ Γ₁) ⊔ (τ' ∷ Γ₂)  = (τ ⊔t τ') ∷ (Γ₁ ⊔ Γ₂)
 _        ⊔ _          = []

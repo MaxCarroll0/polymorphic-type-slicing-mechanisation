@@ -17,7 +17,7 @@ open import Core.Assms.Equality
 
 
 -- Pointwise precision relation (for equal-length lists)
-data _⊑_ : Assumptions → Assumptions → Set where
+data _⊑_ : Assms → Assms → Set where
   ⊑[]  :                                    []       ⊑ []
   ⊑∷   : ∀ {τ τ' Γ Γ'} → τ ⊑t τ' → Γ ⊑ Γ' → (τ ∷ Γ)  ⊑ (τ' ∷ Γ')
 
