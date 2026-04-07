@@ -8,7 +8,7 @@ open import Data.Product public using (_×_; _,_; proj₁; proj₂; ∃-syntax; 
 
 -- Relations
 open import Relation.Binary public
-  using (Poset; IsPartialOrder; IsPreorder; IsEquivalence)
+  using (Poset; IsPartialOrder; IsPreorder; IsEquivalence; IsDecPartialOrder)
 open import Relation.Binary.Definitions public
   using (Reflexive; Symmetric; Transitive; Antisymmetric; Maximum; Minimum)
 open import Relation.Binary.PropositionalEquality as Eq public
@@ -17,7 +17,7 @@ import Relation.Binary.Reasoning.PartialOrder as PosetReasoning
 
 -- Lattices
 open import Relation.Binary.Lattice.Structures public
-  using (IsMeetSemilattice; IsJoinSemilattice; IsLattice; IsBoundedLattice)
+  using (IsMeetSemilattice; IsJoinSemilattice; IsLattice; IsBoundedLattice; IsDistributiveLattice)
 open import Relation.Binary.Lattice.Definitions public
   using (Infimum; Supremum)
 
