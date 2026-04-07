@@ -1,20 +1,25 @@
 module Core.Typ.Base where
 
-open import Data.Nat using (ℕ; _≟_)
+open import Data.Nat using (ℕ; _≟_; suc) renaming (_⊔_ to max)
+open import Data.Nat.Literals
 open import Data.Unit using (⊤; tt)
 open import Relation.Nullary using (¬_)
 open import Relation.Binary.PropositionalEquality using (_≡_; _≢_)
 open import Agda.Builtin.FromNat using (Number; fromNat)
 
+instance
+  numNat = Data.Nat.Literals.number
+  
 -- Types
+-- TODO: Index by maximum variable ℕ → Set with ⟨_⟩ : (n : ℕ) → Typ {n}
 data Typ : Set where
-  ⟨_⟩  :  ℕ    →  Typ  -- Type variables (nats: de Bruijn)
+  ⟨_⟩  :  ℕ           → Typ  -- Type variables (nats: de Bruijn)
   *    :  Typ
   □    :  Typ
-  _+_  :  Typ  →  Typ  →  Typ
-  _×_  :  Typ  →  Typ  →  Typ
-  _⇒_  :  Typ  →  Typ  →  Typ
-  ∀·   :  Typ  →  Typ
+  _+_  :  Typ →  Typ  →  Typ
+  _×_  :  Typ →  Typ  →  Typ
+  _⇒_  :  Typ →  Typ  →  Typ
+  ∀·   :  Typ         →  Typ
 
 infixl 23 _+_
 infixl 24 _×_

@@ -1,4 +1,5 @@
 module Core.Typ where
+open import Agda.Builtin.FromNat using (Number; fromNat)
 
 open import Core.Typ.Base public
 open import Core.Typ.Equality public

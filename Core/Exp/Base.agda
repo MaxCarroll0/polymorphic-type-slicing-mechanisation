@@ -10,14 +10,16 @@ open import Core.Typ using (Typ)
 
 -- Expressions
 data Exp : Set where
-  □      : Exp                    -- Expression hole (bottom for slicing)
+  □      : Exp                    -- Expression hole
   *      : Exp                    -- Unit value
   ⟨_⟩    : ℕ → Exp                -- Variables (de Bruijn indices)
   λ·_⇒_  : Typ → Exp → Exp        -- Lambda abstraction
+  -- TODO: Add unannotated lambda, I don't think they are expressible using def nor annotated lambdas
   _∘_    : Exp → Exp → Exp        -- Application
   _&_    : Exp → Exp → Exp        -- Pair
   ι₁     : Exp → Exp              -- Left injection
   ι₂     : Exp → Exp              -- Right injection
+  -- TODO: Case elimination & Product projection
   Λ      : Exp → Exp              -- Type abstraction
   def_⊢_ : Exp → Exp → Exp        -- Let binding
 
