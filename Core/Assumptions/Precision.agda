@@ -53,13 +53,13 @@ _⊑?_ : ∀ Γ Γ' → Dec (Γ ⊑ Γ')
 (_ ∷ _) ⊑? []        = no λ ()
 (τ ∷ Γ) ⊑? (τ' ∷ Γ') = map′ (uncurry ⊑∷) (λ where (⊑∷ p q) → p , q)
                             (τ ⊑t? τ' ×-dec Γ ⊑? Γ')
-
-⊑-isDecPartialOrder : IsDecPartialOrder _≡_ _⊑_
-⊑-isDecPartialOrder = record
-  { isPartialOrder = ⊑-isPartialOrder
-  ; _≟_            = _≟Γ_
-  ; _≤?_           = _⊑?_
-  }
+private 
+  ⊑-isDecPartialOrder : IsDecPartialOrder _≡_ _⊑_
+  ⊑-isDecPartialOrder = record
+                        { isPartialOrder = ⊑-isPartialOrder
+                          ; _≟_            = _≟_
+                        ; _≤?_           = _⊑?_
+                        }
 
 module ⊑ = IsDecPartialOrder ⊑-isDecPartialOrder using (antisym; isPartialOrder; isPreorder; refl; reflexive; trans)
 

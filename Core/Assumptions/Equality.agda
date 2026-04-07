@@ -8,5 +8,5 @@ open import Relation.Nullary using (Dec)
 open import Core.Typ renaming (_≟_ to _≟t_)
 open import Core.Assumptions.Base
 
-_≟Γ_ : (Γ Γ' : Assumptions) → Dec (Γ ≡ Γ')
-_≟Γ_ = ≡-dec _≟t_
+_≟_ : (Γ Γ' : Assumptions) → Dec (Γ ≡ Γ')
+_≟_ = ≡-dec _≟t_

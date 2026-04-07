@@ -128,35 +128,35 @@ private
 
   ⊑ₛ-isMeetSemilattice : ∀ {Γ} → IsMeetSemilattice (_≡_ on ↓) (_⊑ₛ_ {Γ}) _⊓ₛ_
   ⊑ₛ-isMeetSemilattice = record
-    { isPartialOrder = ⊑ₛ.isPartialOrder
-    ; infimum        = ⊓ₛ-infimum
-    }
+                         { isPartialOrder = ⊑ₛ.isPartialOrder
+                         ; infimum        = ⊓ₛ-infimum
+                         }
 
   ⊑ₛ-isJoinSemilattice : ∀ {Γ} → IsJoinSemilattice (_≡_ on ↓) (_⊑ₛ_ {Γ}) _⊔ₛ_
   ⊑ₛ-isJoinSemilattice = record
-    { isPartialOrder = ⊑ₛ.isPartialOrder
-    ; supremum       = ⊔ₛ-supremum
-    }
+                         { isPartialOrder = ⊑ₛ.isPartialOrder
+                         ; supremum       = ⊔ₛ-supremum
+                         }
 
   ⊑ₛ-isLattice : ∀ {Γ} → IsLattice (_≡_ on ↓) (_⊑ₛ_ {Γ}) _⊔ₛ_ _⊓ₛ_
   ⊑ₛ-isLattice = record
-    { isPartialOrder = ⊑ₛ.isPartialOrder
-    ; supremum       = ⊔ₛ-supremum
-    ; infimum        = ⊓ₛ-infimum
-    }
+                 { isPartialOrder = ⊑ₛ.isPartialOrder
+                 ; supremum       = ⊔ₛ-supremum
+                 ; infimum        = ⊓ₛ-infimum
+                 }
 
-⊑ₛ-isBoundedLattice : ∀ {Γ} → IsBoundedLattice (_≡_ on ↓) (_⊑ₛ_ {Γ}) _⊔ₛ_ _⊓ₛ_ ⊤ₛ' ⊥ₛ'
-⊑ₛ-isBoundedLattice = record
-  { isLattice = ⊑ₛ-isLattice
-  ; maximum   = ⊤ₛ-maximum
-  ; minimum   = ⊥ₛ-min
-  }
+  ⊑ₛ-isBoundedLattice : ∀ {Γ} → IsBoundedLattice (_≡_ on ↓) (_⊑ₛ_ {Γ}) _⊔ₛ_ _⊓ₛ_ ⊤ₛ' ⊥ₛ'
+  ⊑ₛ-isBoundedLattice = record
+                        { isLattice = ⊑ₛ-isLattice
+                        ; maximum   = ⊤ₛ-maximum
+                        ; minimum   = ⊥ₛ-min
+                        }
 
-⊑ₛ-isDistributiveLattice : ∀ {Γ} → IsDistributiveLattice (_≡_ on ↓) (_⊑ₛ_ {Γ}) _⊔ₛ_ _⊓ₛ_
-⊑ₛ-isDistributiveLattice = record
-  { isLattice = ⊑ₛ-isLattice
-  ; ∧-distribˡ-∨ = {!!}
-  }
+  ⊑ₛ-isDistributiveLattice : ∀ {Γ} → IsDistributiveLattice (_≡_ on ↓) (_⊑ₛ_ {Γ}) _⊔ₛ_ _⊓ₛ_
+  ⊑ₛ-isDistributiveLattice = record
+                             { isLattice = ⊑ₛ-isLattice
+                             ; ∧-distribˡ-∨ = {!!}
+                             }
 
 module ⊑ₛLat {Γ} where
   open IsBoundedLattice (⊑ₛ-isBoundedLattice {Γ}) public
@@ -168,6 +168,10 @@ module ⊑ₛLat {Γ} where
   ⊤ₛ = ⊤ₛ'
   ⊥ₛ = ⊥ₛ'
 
+  isBoundedLattice = ⊑ₛ-isBoundedLattice
+
   open IsDistributiveLattice (⊑ₛ-isDistributiveLattice {Γ}) public 
     using () renaming (∧-distribˡ-∨ to ⊓ₛ-distribˡ-⊔ₛ)
+
+  isDistributiveLattice = ⊑ₛ-isDistributiveLattice
 

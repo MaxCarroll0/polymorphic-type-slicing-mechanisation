@@ -4,9 +4,7 @@ open import Core.Assumptions.Base public
 
 open import Core.Assumptions.Equality public
 
--- Precision: rename relation, slices, and records
 open import Core.Assumptions.Precision public
-  hiding (⊤ₛ; ⊤ₛ-max)
+  hiding (⊤ₛ; ⊤ₛ-max; module LiftMeetSemilattice)
 
--- Lattice: rename operators and records
 open import Core.Assumptions.Lattice public
