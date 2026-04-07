@@ -28,12 +28,14 @@ module Slice
   _≈ₛ_ : ∀ {a a'} → ⌊ a ⌋ → ⌊ a' ⌋ → Set
   s₁ ≈ₛ s₂ = s₁ .↓ ≈ s₂ .↓
 
-  ≈ₛ-isEquivalence : ∀ {a} → IsEquivalence (_≈ₛ_ {a} {a})
-  ≈ₛ-isEquivalence = record
+  private 
+    ≈ₛ-isEquivalence : ∀ {a} → IsEquivalence (_≈ₛ_ {a} {a})
+    ≈ₛ-isEquivalence = record
                       { refl = Eq.refl
                       ; sym = Eq.sym
                       ; trans = Eq.trans
                       }
+                      
   -- TODO: make decidable and hide regular equivalence            
   module ≈ₛ {a : A} = IsEquivalence (≈ₛ-isEquivalence {a})
 
@@ -47,13 +49,13 @@ module Slice
   private
     ⊑ₛ-isPartialOrder : ∀ {a} → IsPartialOrder (_≈ₛ_ {a} {a}) _⊑ₛ_
     ⊑ₛ-isPartialOrder = record
-      { isPreorder = record
-        { isEquivalence = ≈ₛ-isEquivalence
-        ; reflexive = reflexive
-        ; trans     = trans
-        }
-      ; antisym = antisym
-      }
+                        { isPreorder = record
+                                       { isEquivalence = ≈ₛ-isEquivalence
+                                       ; reflexive = reflexive
+                                       ; trans     = trans
+                                       }
+                        ; antisym = antisym
+                        }
 
   _≈ₛ?_ : ∀ {a} (s₁ s₂ : ⌊ a ⌋) → Dec (s₁ ≈ₛ s₂)
   s₁ ≈ₛ? s₂ = s₁ .↓ ≟ s₂ .↓
@@ -61,18 +63,19 @@ module Slice
   _⊑ₛ?_ : ∀ {a} (s₁ s₂ : ⌊ a ⌋) → Dec (s₁ ⊑ₛ s₂)
   s₁ ⊑ₛ? s₂ = s₁ .↓ ≤? s₂ .↓
 
-  ⊑ₛ-isDecPartialOrder : ∀ {a} → IsDecPartialOrder (_≈ₛ_ {a} {a}) _⊑ₛ_
-  ⊑ₛ-isDecPartialOrder = record
-    { isPartialOrder = ⊑ₛ-isPartialOrder
-    ; _≟_            = _≈ₛ?_
-    ; _≤?_           = _⊑ₛ?_
-    }
+  private
+    ⊑ₛ-isDecPartialOrder : ∀ {a} → IsDecPartialOrder (_≈ₛ_ {a} {a}) _⊑ₛ_
+    ⊑ₛ-isDecPartialOrder = record
+                           { isPartialOrder = ⊑ₛ-isPartialOrder
+                           ; _≟_            = _≈ₛ?_
+                           ; _≤?_           = _⊑ₛ?_
+                           }
 
   module ⊑ₛ {a : A} where
     open IsDecPartialOrder (⊑ₛ-isDecPartialOrder {a}) public
       hiding (module Eq; isEquivalence; ≲-resp-≈; ≲-respˡ-≈; ≲-respʳ-≈; _≟_; _≤?_)
       renaming (≤-resp-≈ to ⊑ₛ-resp-≈ₛ; ≤-respˡ-≈ to ⊑ₛ-respˡ-≈ₛ; ≤-respʳ-≈ to ⊑ₛ-respʳ-≈ₛ)
-
+    
   ↑ : ∀ {a' a} → a' ⊑ a → ⌊ a ⌋
   ↑ {a'} p = a' isSlice p
 
@@ -101,22 +104,25 @@ module Slice
     _⊓ₛ_ : ∀ {a} → ⌊ a ⌋ → ⌊ a ⌋ → ⌊ a ⌋
     s₁ ⊓ₛ s₂ = s₁ .↓ ⊓ s₂ .↓ isSlice trans (x∧y≤x (s₁ .↓) (s₂ .↓)) (s₁ .proof)
 
-    isBoundedMeetSemilattice : ∀ {a} → IsBoundedMeetSemilattice (_≈ₛ_ {a}) _⊑ₛ_ _⊓ₛ_ ⊤ₛ
-    isBoundedMeetSemilattice = record
-      { isMeetSemilattice = record
-                            { isPartialOrder = ⊑ₛ-isPartialOrder
-                            ; infimum = λ s₁ s₂ →
-                              x∧y≤x (s₁ .↓) (s₂ .↓)
-                            , x∧y≤y (s₁ .↓) (s₂ .↓)
-                            , λ _ → ∧-greatest
-                            }
-      ; maximum = ⊤ₛ-max
-      }
+    private
+      isBoundedMeetSemilattice' : ∀ {a} → IsBoundedMeetSemilattice (_≈ₛ_ {a}) _⊑ₛ_ _⊓ₛ_ ⊤ₛ
+      isBoundedMeetSemilattice' = record
+                                  { isMeetSemilattice = record
+                                                        { isPartialOrder = ⊑ₛ-isPartialOrder
+                                                        ; infimum = λ s₁ s₂ →
+                                                                    x∧y≤x (s₁ .↓) (s₂ .↓)
+                                                                  , x∧y≤y (s₁ .↓) (s₂ .↓)
+                                                                  , λ _ → ∧-greatest
+                                                        }
+                                  ; maximum = ⊤ₛ-max
+                                  }
 
     module ⊓ₛ {a : A} where
-      open IsBoundedMeetSemilattice (isBoundedMeetSemilattice {a}) public
+      open IsBoundedMeetSemilattice (isBoundedMeetSemilattice' {a}) public
         using (infimum; isMeetSemilattice; maximum)
-        renaming (x∧y≤x to x⊓ₛy⊑ₛx; x∧y≤y to x⊓ₛy⊑ₛy; ∧-greatest to ⊓ₛ-greatest) 
+        renaming (x∧y≤x to x⊓ₛy⊑ₛx; x∧y≤y to x⊓ₛy⊑ₛy; ∧-greatest to ⊓ₛ-greatest)
+
+      isBoundedMeetSemilattice = isBoundedMeetSemilattice'
 
 
     
