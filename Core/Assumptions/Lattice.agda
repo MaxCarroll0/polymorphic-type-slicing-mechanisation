@@ -1,11 +1,11 @@
-module Core.Assumptions.Lattice where
+{-# OPTIONS --allow-unsolved-metas #-}
 
 open import Data.List using (List; []; _∷_; length)
 open import Data.Product using (_,_; proj₁; proj₂)
 open import Relation.Binary using (IsPartialOrder; IsDecPartialOrder)
 open import Relation.Binary.Definitions using (Reflexive; Transitive; Antisymmetric; Maximum; Minimum)
 open import Relation.Binary.PropositionalEquality as Eq using (_≡_; refl; sym; trans; cong₂)
-open import Relation.Binary.Lattice.Structures using (IsMeetSemilattice; IsJoinSemilattice; IsLattice; IsBoundedLattice)
+open import Relation.Binary.Lattice.Structures using (IsMeetSemilattice; IsJoinSemilattice; IsLattice; IsBoundedLattice; IsDistributiveLattice)
 open import Relation.Binary.Lattice.Definitions using (Infimum; Supremum)
 open import Function using (_on_)
 
@@ -16,6 +16,7 @@ open import Core.Typ using (Typ)
 open import Core.Assumptions.Base
 open import Core.Assumptions.Precision renaming (⊤ₛ to ⊤ₛ')
 
+module Core.Assumptions.Lattice where
 
 -- Pointwise meet and join
 _⊓_ : Assumptions → Assumptions → Assumptions
@@ -118,6 +119,13 @@ private
   ⊤ₛ-maximum : ∀ {Γ} → Maximum (_⊑ₛ_ {Γ}) ⊤ₛ'
   ⊤ₛ-maximum γ = γ .proof
 
+  -- distributvity
+  ⊓ₛ-distribˡ-⊔ₛ : ∀ {τ} (υ₁ υ₂ υ₃ : ⌊ τ ⌋) → (υ₁ ⊓ₛ (υ₂ ⊔ₛ υ₃)) ≈ₛ ((υ₁ ⊓ₛ υ₂) ⊔ₛ (υ₁ ⊓ₛ υ₃))
+  ⊓ₛ-distribˡ-⊔ₛ (_ isSlice ⊑[]) (_ isSlice ⊑[]) (_ isSlice ⊑[]) = refl
+  ⊓ₛ-distribˡ-⊔ₛ (γ₁ isSlice ⊑∷ p₁ q₁) (γ₂ isSlice ⊑∷ p₂ q₂) (γ₃ isSlice ⊑∷ p₃ q₃)
+    = {!!}
+
+
   ⊑ₛ-isMeetSemilattice : ∀ {Γ} → IsMeetSemilattice (_≡_ on ↓) (_⊑ₛ_ {Γ}) _⊓ₛ_
   ⊑ₛ-isMeetSemilattice = record
     { isPartialOrder = ⊑ₛ.isPartialOrder
@@ -144,6 +152,12 @@ private
   ; minimum   = ⊥ₛ-min
   }
 
+⊑ₛ-isDistributiveLattice : ∀ {Γ} → IsDistributiveLattice (_≡_ on ↓) (_⊑ₛ_ {Γ}) _⊔ₛ_ _⊓ₛ_
+⊑ₛ-isDistributiveLattice = record
+  { isLattice = ⊑ₛ-isLattice
+  ; ∧-distribˡ-∨ = {!!}
+  }
+
 module ⊑ₛLat {Γ} where
   open IsBoundedLattice (⊑ₛ-isBoundedLattice {Γ}) public
     using (infimum; supremum; maximum; minimum;
@@ -153,3 +167,7 @@ module ⊑ₛLat {Γ} where
 
   ⊤ₛ = ⊤ₛ'
   ⊥ₛ = ⊥ₛ'
+
+  open IsDistributiveLattice (⊑ₛ-isDistributiveLattice {Γ}) public 
+    using () renaming (∧-distribˡ-∨ to ⊓ₛ-distribˡ-⊔ₛ)
+
