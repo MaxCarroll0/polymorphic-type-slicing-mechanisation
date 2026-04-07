@@ -39,6 +39,10 @@ instance
 _▸_ : Exp → Typ → Exp
 e ▸ τ = (λ· τ ⇒ 0) ∘ e
 
+-- Annotated Let bindings (derived form)
+def_::_⊢_ : Exp → Typ → Exp → Exp 
+def e' :: τ ⊢ e = (λ· τ ⇒ e) ∘ e'
+
 -- Classify expressions by their 'kinds' i.e. the kind of their top-most constructor
 data _kind?_ : Exp → Exp → Set where
   kind□   :                               □            kind? □
