@@ -15,7 +15,7 @@ open import Function using (_on_)
 open import Core.Typ.Base
 open import Core.Typ.Equality
 open import Core.Typ.Consistency
-open import Core.Typ.Precision
+open import Core.Typ.Precision renaming (⊤ₛ to ⊤ₛ')
 open import Core.Typ.Properties
 
 -- Meet operator. Note: order theoretic, does not require consistent types
@@ -156,10 +156,10 @@ module ~ where
 
 
 private
-  ⊥ₛ : ∀ {τ} → ⌊ τ ⌋
-  ⊥ₛ {τ} = □ isSlice ⊑□
+  ⊥ₛ' : ∀ {τ} → ⌊ τ ⌋
+  ⊥ₛ' {τ} = □ isSlice ⊑□
 
-  ⊥ₛ-min : ∀ {τ} → Minimum (_⊑ₛ_ {τ}) ⊥ₛ
+  ⊥ₛ-min : ∀ {τ} → Minimum (_⊑ₛ_ {τ}) ⊥ₛ'
   ⊥ₛ-min υ = ⊑□
 
   ⊔-preserves-⊑ : ∀ {τ₁ τ₂ τ} → τ₁ ⊑ τ → τ₂ ⊑ τ → τ₁ ⊔ τ₂ ⊑ τ
@@ -197,7 +197,7 @@ private
     ; infimum        = ⊓ₛ.infimum
     }
 
-⊑ₛ-isBoundedLattice : ∀ {τ} → IsBoundedLattice (_≡_ on ↓) (_⊑ₛ_ {τ}) _⊔ₛ_ _⊓ₛ_ ⊤ₛ ⊥ₛ
+⊑ₛ-isBoundedLattice : ∀ {τ} → IsBoundedLattice (_≡_ on ↓) (_⊑ₛ_ {τ}) _⊔ₛ_ _⊓ₛ_ ⊤ₛ' ⊥ₛ'
 ⊑ₛ-isBoundedLattice = record
   { isLattice = ⊑ₛ-isLattice
   ; maximum   = ⊤ₛ-max
@@ -261,10 +261,17 @@ private
 
 module ⊑ₛLat {τ} where
   open IsBoundedLattice (⊑ₛ-isBoundedLattice {τ}) public
-    using (infimum; supremum; maximum; minimum;
+    using (infimum; supremum;
            isBoundedJoinSemilattice; isBoundedMeetSemilattice; isJoinSemilattice; isMeetSemilattice; isLattice)
     renaming (x∧y≤x to x⊓ₛy⊑ₛx; x∧y≤y to x⊓ₛy⊑ₛy; x≤x∨y to x⊑ₛx⊔ₛy; y≤x∨y to y⊑ₛx⊔ₛy;
-              ∧-greatest to ⊓ₛ-greatest; ∨-least to ⊔ₛ-least)
+              ∧-greatest to ⊓ₛ-greatest; ∨-least to ⊔ₛ-least;
+              maximum to ⊤ₛ-max; minimum to ⊥ₛ-min)
+  ⊤ₛ : ⌊ τ ⌋
+  ⊤ₛ = ⊤ₛ'
+
+  ⊥ₛ : ⌊ τ ⌋
+  ⊥ₛ = ⊥ₛ'
+
   open IsDistributiveLattice (⊑ₛ-isDistributiveLattice {τ}) public
     using () renaming (∧-distribˡ-∨ to ⊓ₛ-distribˡ-⊔ₛ)
 
