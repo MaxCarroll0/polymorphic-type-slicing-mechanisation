@@ -12,10 +12,10 @@ Assms = List Typ
 
 -- TODO: Maybe use vectors?
 -- Lookup by de Bruijn index
-_[_] : Assms → ℕ → Maybe Typ
-[]       [ _ ]     = nothing
-(τ ∷ _)  [ zero ]  = just τ
-(_ ∷ Γ)  [ suc n ] = Γ [ n ]
+_at_ : Assms → ℕ → Maybe Typ
+[]      at _     = nothing
+(τ ∷ _) at zero  = just τ
+(_ ∷ Γ) at suc n = Γ at n
 
 □ : ℕ → Assms
 □ zero    = []
