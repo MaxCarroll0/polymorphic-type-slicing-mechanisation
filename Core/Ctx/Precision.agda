@@ -1,121 +1,161 @@
 module Core.Ctx.Precision where
 
-open import Relation.Binary using (IsPartialOrder; IsPreorder; IsEquivalence)
-open import Relation.Binary.Definitions using (Reflexive; Transitive; Antisymmetric)
-open import Relation.Binary.PropositionalEquality as Eq using (_≡_; refl; cong; cong₂)
+open import Data.Product using (_,_; uncurry)
+open import Relation.Binary using (IsPartialOrder; IsDecPartialOrder; IsPreorder; IsEquivalence)
+open import Relation.Binary.Definitions using (Reflexive; Transitive; Antisymmetric; Minimum)
+open import Relation.Binary.PropositionalEquality as Eq using (_≡_; refl; sym; trans; cong; cong₂; inspect; [_]; _≢_)
+open import Relation.Nullary using (Dec; yes; no; map′; ¬_)
+open import Relation.Nullary.Decidable using (_×-dec_)
+open import Function using (_on_)
 
-open import Core.Typ using (Typ; _⊑t_; ⊑t-refl; ⊑t-trans; ⊑t-antisym; ⊑?)
-open import Core.Exp using (Exp; _⊑e_; ⊑e-refl; ⊑e-trans; ⊑e-antisym; ⊑□; ⊑λ; ⊑∘; ⊑&; ⊑ιₗ; ⊑ιᵣ; ⊑Λ; ⊑def)
+open import Core.Typ using (Typ)
+  renaming (_⊑_ to _⊑t_; _⊑?_ to _⊑t?_;
+            module ⊑ to ⊑t)
+open import Core.Exp using (Exp; ⊑□; ⊑∘; ⊑&; ⊑def; ⊑λ; ⊑ι₁; ⊑ι₂; ⊑Λ)
+  renaming (_⊑_ to _⊑e_; _⊑?_ to _⊑e?_;
+            module ⊑ to ⊑e)
+
 open import Core.Ctx.Base
+open import Core.Ctx.Equality using () renaming (_≟_ to _≟Ctx_)
 
 -- Syntactic precision for contexts
 -- Note: only matching constructors are related (no global bottom)
-data _⊑Ctx_ : Ctx → Ctx → Set where
-  ⊑○    :                                               ○           ⊑Ctx ○
-  ⊑λ    : ∀ {τ τ' C C'} → τ ⊑t τ' → C ⊑Ctx C'         → λ· τ ⇒ C   ⊑Ctx λ· τ' ⇒ C'
-  ⊑∘ₗ   : ∀ {C C' e e'} → C ⊑Ctx C' → e ⊑e e'         → C ∘ₗ e     ⊑Ctx C' ∘ₗ e'
-  ⊑∘ᵣ   : ∀ {e e' C C'} → e ⊑e e' → C ⊑Ctx C'         → e ∘ᵣ C     ⊑Ctx e' ∘ᵣ C'
-  ⊑&ₗ   : ∀ {C C' e e'} → C ⊑Ctx C' → e ⊑e e'         → C &ₗ e     ⊑Ctx C' &ₗ e'
-  ⊑&ᵣ   : ∀ {e e' C C'} → e ⊑e e' → C ⊑Ctx C'         → e &ᵣ C     ⊑Ctx e' &ᵣ C'
-  ⊑ιₗ   : ∀ {C C'}      → C ⊑Ctx C'                   → ιₗ C       ⊑Ctx ιₗ C'
-  ⊑ιᵣ   : ∀ {C C'}      → C ⊑Ctx C'                   → ιᵣ C       ⊑Ctx ιᵣ C'
-  ⊑Λ    : ∀ {C C'}      → C ⊑Ctx C'                   → Λ C        ⊑Ctx Λ C'
-  ⊑defₗ : ∀ {C C' e e'} → C ⊑Ctx C' → e ⊑e e'         → def C ⊢ₗ e ⊑Ctx def C' ⊢ₗ e'
-  ⊑defᵣ : ∀ {e e' C C'} → e ⊑e e' → C ⊑Ctx C'         → def e ⊢ᵣ C ⊑Ctx def e' ⊢ᵣ C'
+data _⊑_ : Ctx → Ctx → Set where
+  ⊑○     :                                         ○          ⊑ ○
+  ⊑λ     :  ∀ {τ τ' C C'}  →  τ ⊑t τ' → C ⊑ C'  →  λ· τ ⇒ C   ⊑ λ· τ' ⇒ C'
+  ⊑∘₁    :  ∀ {C C' e e'}  →  C ⊑ C' → e ⊑e e'  →  C ∘₁ e     ⊑ C' ∘₁ e'
+  ⊑∘₂    :  ∀ {e e' C C'}  →  e ⊑e e' → C ⊑ C'  →  e ∘₂ C     ⊑ e' ∘₂ C'
+  ⊑&₁    :  ∀ {C C' e e'}  →  C ⊑ C' → e ⊑e e'  →  C &₁ e     ⊑ C' &₁ e'
+  ⊑&₂    :  ∀ {e e' C C'}  →  e ⊑e e' → C ⊑ C'  →  e &₂ C     ⊑ e' &₂ C'
+  ⊑ι₁    :  ∀ {C C'}       →  C ⊑ C'            →  ι₁ C       ⊑ ι₁ C'
+  ⊑ι₂    :  ∀ {C C'}       →  C ⊑ C'            →  ι₂ C       ⊑ ι₂ C'
+  ⊑Λ     :  ∀ {C C'}       →  C ⊑ C'            →  Λ C        ⊑ Λ C'
+  ⊑def₁  :  ∀ {C C' e e'}  →  C ⊑ C' → e ⊑e e'  →  def C ⊢₁ e ⊑ def C' ⊢₁ e'
+  ⊑def₂  :  ∀ {e e' C C'}  →  e ⊑e e' → C ⊑ C'  →  def e ⊢₂ C ⊑ def e' ⊢₂ C'
 
-infix 4 _⊑Ctx_
+infix 4 _⊑_
 
--- Precision is reflexive
-⊑Ctx-refl : Reflexive _⊑Ctx_
-⊑Ctx-refl {○}           = ⊑○
-⊑Ctx-refl {λ· _ ⇒ _}    = ⊑λ ⊑t-refl ⊑Ctx-refl
-⊑Ctx-refl {_ ∘ₗ _}      = ⊑∘ₗ ⊑Ctx-refl ⊑e-refl
-⊑Ctx-refl {_ ∘ᵣ _}      = ⊑∘ᵣ ⊑e-refl ⊑Ctx-refl
-⊑Ctx-refl {_ &ₗ _}      = ⊑&ₗ ⊑Ctx-refl ⊑e-refl
-⊑Ctx-refl {_ &ᵣ _}      = ⊑&ᵣ ⊑e-refl ⊑Ctx-refl
-⊑Ctx-refl {ιₗ _}        = ⊑ιₗ ⊑Ctx-refl
-⊑Ctx-refl {ιᵣ _}        = ⊑ιᵣ ⊑Ctx-refl
-⊑Ctx-refl {Λ _}         = ⊑Λ ⊑Ctx-refl
-⊑Ctx-refl {def _ ⊢ₗ _}  = ⊑defₗ ⊑Ctx-refl ⊑e-refl
-⊑Ctx-refl {def _ ⊢ᵣ _}  = ⊑defᵣ ⊑e-refl ⊑Ctx-refl
+-- All intermediate lemmas are private
+private
+  -- Precision is reflexive
+  ⊑-refl : Reflexive _⊑_
+  ⊑-refl {○}           = ⊑○
+  ⊑-refl {λ· _ ⇒ _}    = ⊑λ ⊑t.refl ⊑-refl
+  ⊑-refl {_ ∘₁ _}      = ⊑∘₁ ⊑-refl ⊑e.refl
+  ⊑-refl {_ ∘₂ _}      = ⊑∘₂ ⊑e.refl ⊑-refl
+  ⊑-refl {_ &₁ _}      = ⊑&₁ ⊑-refl ⊑e.refl
+  ⊑-refl {_ &₂ _}      = ⊑&₂ ⊑e.refl ⊑-refl
+  ⊑-refl {ι₁ _}        = ⊑ι₁ ⊑-refl
+  ⊑-refl {ι₂ _}        = ⊑ι₂ ⊑-refl
+  ⊑-refl {Λ _}         = ⊑Λ ⊑-refl
+  ⊑-refl {def _ ⊢₁ _}  = ⊑def₁ ⊑-refl ⊑e.refl
+  ⊑-refl {def _ ⊢₂ _}  = ⊑def₂ ⊑e.refl ⊑-refl
 
--- Precision is transitive
-⊑Ctx-trans : Transitive _⊑Ctx_
-⊑Ctx-trans ⊑○ ⊑○                     = ⊑○
-⊑Ctx-trans (⊑λ p q) (⊑λ r s)         = ⊑λ (⊑t-trans p r) (⊑Ctx-trans q s)
-⊑Ctx-trans (⊑∘ₗ p q) (⊑∘ₗ r s)       = ⊑∘ₗ (⊑Ctx-trans p r) (⊑e-trans q s)
-⊑Ctx-trans (⊑∘ᵣ p q) (⊑∘ᵣ r s)       = ⊑∘ᵣ (⊑e-trans p r) (⊑Ctx-trans q s)
-⊑Ctx-trans (⊑&ₗ p q) (⊑&ₗ r s)       = ⊑&ₗ (⊑Ctx-trans p r) (⊑e-trans q s)
-⊑Ctx-trans (⊑&ᵣ p q) (⊑&ᵣ r s)       = ⊑&ᵣ (⊑e-trans p r) (⊑Ctx-trans q s)
-⊑Ctx-trans (⊑ιₗ p) (⊑ιₗ q)           = ⊑ιₗ (⊑Ctx-trans p q)
-⊑Ctx-trans (⊑ιᵣ p) (⊑ιᵣ q)           = ⊑ιᵣ (⊑Ctx-trans p q)
-⊑Ctx-trans (⊑Λ p) (⊑Λ q)             = ⊑Λ (⊑Ctx-trans p q)
-⊑Ctx-trans (⊑defₗ p q) (⊑defₗ r s)   = ⊑defₗ (⊑Ctx-trans p r) (⊑e-trans q s)
-⊑Ctx-trans (⊑defᵣ p q) (⊑defᵣ r s)   = ⊑defᵣ (⊑e-trans p r) (⊑Ctx-trans q s)
+  -- Precision is transitive
+  ⊑-trans : Transitive _⊑_
+  ⊑-trans ⊑○ ⊑○                   = ⊑○
+  ⊑-trans (⊑λ p q) (⊑λ r s)       = ⊑λ (⊑t.trans p r) (⊑-trans q s)
+  ⊑-trans (⊑∘₁ p q) (⊑∘₁ r s)     = ⊑∘₁ (⊑-trans p r) (⊑e.trans q s)
+  ⊑-trans (⊑∘₂ p q) (⊑∘₂ r s)     = ⊑∘₂ (⊑e.trans p r) (⊑-trans q s)
+  ⊑-trans (⊑&₁ p q) (⊑&₁ r s)     = ⊑&₁ (⊑-trans p r) (⊑e.trans q s)
+  ⊑-trans (⊑&₂ p q) (⊑&₂ r s)     = ⊑&₂ (⊑e.trans p r) (⊑-trans q s)
+  ⊑-trans (⊑ι₁ p) (⊑ι₁ q)         = ⊑ι₁ (⊑-trans p q)
+  ⊑-trans (⊑ι₂ p) (⊑ι₂ q)         = ⊑ι₂ (⊑-trans p q)
+  ⊑-trans (⊑Λ p) (⊑Λ q)           = ⊑Λ (⊑-trans p q)
+  ⊑-trans (⊑def₁ p q) (⊑def₁ r s) = ⊑def₁ (⊑-trans p r) (⊑e.trans q s)
+  ⊑-trans (⊑def₂ p q) (⊑def₂ r s) = ⊑def₂ (⊑e.trans p r) (⊑-trans q s)
 
--- Precision is antisymmetric
-⊑Ctx-antisym : Antisymmetric _≡_ _⊑Ctx_
-⊑Ctx-antisym ⊑○ ⊑○                   = refl
-⊑Ctx-antisym (⊑λ p q) (⊑λ r s)       = cong₂ λ·_⇒_ (⊑t-antisym p r) (⊑Ctx-antisym q s)
-⊑Ctx-antisym (⊑∘ₗ p q) (⊑∘ₗ r s)     = cong₂ _∘ₗ_ (⊑Ctx-antisym p r) (⊑e-antisym q s)
-⊑Ctx-antisym (⊑∘ᵣ p q) (⊑∘ᵣ r s)     = cong₂ _∘ᵣ_ (⊑e-antisym p r) (⊑Ctx-antisym q s)
-⊑Ctx-antisym (⊑&ₗ p q) (⊑&ₗ r s)     = cong₂ _&ₗ_ (⊑Ctx-antisym p r) (⊑e-antisym q s)
-⊑Ctx-antisym (⊑&ᵣ p q) (⊑&ᵣ r s)     = cong₂ _&ᵣ_ (⊑e-antisym p r) (⊑Ctx-antisym q s)
-⊑Ctx-antisym (⊑ιₗ p) (⊑ιₗ q)         = cong ιₗ (⊑Ctx-antisym p q)
-⊑Ctx-antisym (⊑ιᵣ p) (⊑ιᵣ q)         = cong ιᵣ (⊑Ctx-antisym p q)
-⊑Ctx-antisym (⊑Λ p) (⊑Λ q)           = cong Λ (⊑Ctx-antisym p q)
-⊑Ctx-antisym (⊑defₗ p q) (⊑defₗ r s) = cong₂ def_⊢ₗ_ (⊑Ctx-antisym p r) (⊑e-antisym q s)
-⊑Ctx-antisym (⊑defᵣ p q) (⊑defᵣ r s) = cong₂ def_⊢ᵣ_ (⊑e-antisym p r) (⊑Ctx-antisym q s)
+  -- Precision is antisymmetric
+  ⊑-antisym : Antisymmetric _≡_ _⊑_
+  ⊑-antisym ⊑○ ⊑○                   = refl
+  ⊑-antisym (⊑λ p q) (⊑λ r s)       = cong₂ λ·_⇒_ (⊑t.antisym p r) (⊑-antisym q s)
+  ⊑-antisym (⊑∘₁ p q) (⊑∘₁ r s)     = cong₂ _∘₁_ (⊑-antisym p r) (⊑e.antisym q s)
+  ⊑-antisym (⊑∘₂ p q) (⊑∘₂ r s)     = cong₂ _∘₂_ (⊑e.antisym p r) (⊑-antisym q s)
+  ⊑-antisym (⊑&₁ p q) (⊑&₁ r s)     = cong₂ _&₁_ (⊑-antisym p r) (⊑e.antisym q s)
+  ⊑-antisym (⊑&₂ p q) (⊑&₂ r s)     = cong₂ _&₂_ (⊑e.antisym p r) (⊑-antisym q s)
+  ⊑-antisym (⊑ι₁ p) (⊑ι₁ q)         = cong ι₁ (⊑-antisym p q)
+  ⊑-antisym (⊑ι₂ p) (⊑ι₂ q)         = cong ι₂ (⊑-antisym p q)
+  ⊑-antisym (⊑Λ p) (⊑Λ q)           = cong Λ (⊑-antisym p q)
+  ⊑-antisym (⊑def₁ p q) (⊑def₁ r s) = cong₂ def_⊢₁_ (⊑-antisym p r) (⊑e.antisym q s)
+  ⊑-antisym (⊑def₂ p q) (⊑def₂ r s) = cong₂ def_⊢₂_ (⊑e.antisym p r) (⊑-antisym q s)
 
--- Partial order structure
-⊑Ctx-isPartialOrder : IsPartialOrder _≡_ _⊑Ctx_
-⊑Ctx-isPartialOrder = record
-  { isPreorder = record
-    { isEquivalence = Eq.isEquivalence
-    ; reflexive = λ where refl → ⊑Ctx-refl
-    ; trans = ⊑Ctx-trans
+  ⊑-isPartialOrder : IsPartialOrder _≡_ _⊑_
+  ⊑-isPartialOrder = record
+    { isPreorder = record
+      { isEquivalence = Eq.isEquivalence
+      ; reflexive = λ where refl → ⊑-refl
+      ; trans = ⊑-trans
+      }
+    ; antisym = ⊑-antisym
     }
-  ; antisym = ⊑Ctx-antisym
-  }
 
--- □Ctx is minimum for slices of a specific context
-□Ctx-min : ∀ C → □Ctx C ⊑Ctx C
-□Ctx-min ○             = ⊑○
-□Ctx-min (λ· τ ⇒ C)    = ⊑λ ⊑? (□Ctx-min C)
-□Ctx-min (C ∘ₗ e)      = ⊑∘ₗ (□Ctx-min C) ⊑□
-□Ctx-min (e ∘ᵣ C)      = ⊑∘ᵣ ⊑□ (□Ctx-min C)
-□Ctx-min (C &ₗ e)      = ⊑&ₗ (□Ctx-min C) ⊑□
-□Ctx-min (e &ᵣ C)      = ⊑&ᵣ ⊑□ (□Ctx-min C)
-□Ctx-min (ιₗ C)        = ⊑ιₗ (□Ctx-min C)
-□Ctx-min (ιᵣ C)        = ⊑ιᵣ (□Ctx-min C)
-□Ctx-min (Λ C)         = ⊑Λ (□Ctx-min C)
-□Ctx-min (def C ⊢ₗ e)  = ⊑defₗ (□Ctx-min C) ⊑□
-□Ctx-min (def e ⊢ᵣ C)  = ⊑defᵣ ⊑□ (□Ctx-min C)
+  shallow-imprecision : ∀ {c c'} → diag c c' ≡ diff → ¬(c ⊑ c')
+  shallow-imprecision () ⊑○
+  shallow-imprecision () (⊑λ _ _)
+  shallow-imprecision () (⊑∘₁ _ _)
+  shallow-imprecision () (⊑∘₂ _ _)
+  shallow-imprecision () (⊑&₁ _ _)
+  shallow-imprecision () (⊑&₂ _ _)
+  shallow-imprecision () (⊑ι₁ _)
+  shallow-imprecision () (⊑ι₂ _)
+  shallow-imprecision () (⊑Λ _)
+  shallow-imprecision () (⊑def₁ _ _)
+  shallow-imprecision () (⊑def₂ _ _)
 
--- □Ctx is below any slice of C
-□Ctx-min-slice : ∀ {C' C} → C' ⊑Ctx C → □Ctx C ⊑Ctx C'
-□Ctx-min-slice ⊑○                   = ⊑○
-□Ctx-min-slice (⊑λ _ p)             = ⊑λ ⊑? (□Ctx-min-slice p)
-□Ctx-min-slice (⊑∘ₗ p _)            = ⊑∘ₗ (□Ctx-min-slice p) ⊑□
-□Ctx-min-slice (⊑∘ᵣ _ p)            = ⊑∘ᵣ ⊑□ (□Ctx-min-slice p)
-□Ctx-min-slice (⊑&ₗ p _)            = ⊑&ₗ (□Ctx-min-slice p) ⊑□
-□Ctx-min-slice (⊑&ᵣ _ p)            = ⊑&ᵣ ⊑□ (□Ctx-min-slice p)
-□Ctx-min-slice (⊑ιₗ p)              = ⊑ιₗ (□Ctx-min-slice p)
-□Ctx-min-slice (⊑ιᵣ p)              = ⊑ιᵣ (□Ctx-min-slice p)
-□Ctx-min-slice (⊑Λ p)               = ⊑Λ (□Ctx-min-slice p)
-□Ctx-min-slice (⊑defₗ p _)          = ⊑defₗ (□Ctx-min-slice p) ⊑□
-□Ctx-min-slice (⊑defᵣ _ p)          = ⊑defᵣ ⊑□ (□Ctx-min-slice p)
+
+-- Decidable precision
+_⊑?_ : ∀ C C' → Dec (C ⊑ C')
+C ⊑? C'                       with diag C C' | inspect (diag C) C'
+○            ⊑? ○                | kind○     | _      = yes  ⊑○
+(λ· τ ⇒ C₁)  ⊑? (λ· τ' ⇒ C₁')    | kindλ     | _      = map′ (uncurry ⊑λ)
+                                                             (λ where (⊑λ p q) → p , q)
+                                                             (τ ⊑t? τ' ×-dec C₁ ⊑? C₁')
+(C₁ ∘₁ e)    ⊑? (C₁' ∘₁ e')      | kind∘₁    | _      = map′ (uncurry ⊑∘₁)
+                                                             (λ where (⊑∘₁ p q) → p , q)
+                                                             (C₁ ⊑? C₁' ×-dec e ⊑e? e')
+(e ∘₂ C₁)    ⊑? (e' ∘₂ C₁')      | kind∘₂    | _      = map′ (uncurry ⊑∘₂)
+                                                             (λ where (⊑∘₂ p q) → p , q)
+                                                             (e ⊑e? e' ×-dec C₁ ⊑? C₁')
+(C₁ &₁ e)    ⊑? (C₁' &₁ e')      | kind&₁    | _      = map′ (uncurry ⊑&₁)
+                                                             (λ where (⊑&₁ p q) → p , q)
+                                                             (C₁ ⊑? C₁' ×-dec e ⊑e? e')
+(e &₂ C₁)    ⊑? (e' &₂ C₁')      | kind&₂    | _      = map′ (uncurry ⊑&₂)
+                                                             (λ where (⊑&₂ p q) → p , q)
+                                                             (e ⊑e? e' ×-dec C₁ ⊑? C₁')
+(ι₁ C₁)      ⊑? (ι₁ C₁')         | kindι₁    | _      = map′ ⊑ι₁ (λ where (⊑ι₁ p) → p) (C₁ ⊑? C₁')
+(ι₂ C₁)      ⊑? (ι₂ C₁')         | kindι₂    | _      = map′ ⊑ι₂ (λ where (⊑ι₂ p) → p) (C₁ ⊑? C₁')
+(Λ C₁)       ⊑? (Λ C₁')          | kindΛ     | _      = map′ ⊑Λ (λ where (⊑Λ p) → p) (C₁ ⊑? C₁')
+(def C₁ ⊢₁ e) ⊑? (def C₁' ⊢₁ e') | kinddef₁  | _      = map′ (uncurry ⊑def₁)
+                                                             (λ where (⊑def₁ p q) → p , q)
+                                                             (C₁ ⊑? C₁' ×-dec e ⊑e? e')
+(def e ⊢₂ C₁) ⊑? (def e' ⊢₂ C₁') | kinddef₂  | _      = map′ (uncurry ⊑def₂)
+                                                             (λ where (⊑def₂ p q) → p , q)
+                                                             (e ⊑e? e' ×-dec C₁ ⊑? C₁')
+_            ⊑? _                | diff      | [ eq ] = no (shallow-imprecision eq)
+
+private
+  ⊑-isDecPartialOrder : IsDecPartialOrder _≡_ _⊑_
+  ⊑-isDecPartialOrder = record
+                        { isPartialOrder = ⊑-isPartialOrder
+                        ; _≟_            = _≟Ctx_
+                        ; _≤?_           = _⊑?_
+                        }
+
+module ⊑ = IsDecPartialOrder ⊑-isDecPartialOrder using (antisym; isPartialOrder; isPreorder; refl; reflexive; trans)
 
 -- Plug preserves precision
-plug-preserves-⊑ : ∀ {C C' e e'} → C ⊑Ctx C' → e ⊑e e' → plug C e ⊑e plug C' e'
-plug-preserves-⊑ ⊑○ p                   = p
-plug-preserves-⊑ (⊑λ q r) p             = ⊑λ q (plug-preserves-⊑ r p)
-plug-preserves-⊑ (⊑∘ₗ q r) p            = ⊑∘ (plug-preserves-⊑ q p) r
-plug-preserves-⊑ (⊑∘ᵣ q r) p            = ⊑∘ q (plug-preserves-⊑ r p)
-plug-preserves-⊑ (⊑&ₗ q r) p            = ⊑& (plug-preserves-⊑ q p) r
-plug-preserves-⊑ (⊑&ᵣ q r) p            = ⊑& q (plug-preserves-⊑ r p)
-plug-preserves-⊑ (⊑ιₗ q) p              = ⊑ιₗ (plug-preserves-⊑ q p)
-plug-preserves-⊑ (⊑ιᵣ q) p              = ⊑ιᵣ (plug-preserves-⊑ q p)
-plug-preserves-⊑ (⊑Λ q) p               = ⊑Λ (plug-preserves-⊑ q p)
-plug-preserves-⊑ (⊑defₗ q r) p          = ⊑def (plug-preserves-⊑ q p) r
-plug-preserves-⊑ (⊑defᵣ q r) p          = ⊑def q (plug-preserves-⊑ r p)
+plug-preserves-⊑ : ∀ {C C' e e'} → C ⊑ C' → e ⊑e e' → plug C e ⊑e plug C' e'
+plug-preserves-⊑ ⊑○ p          = p
+plug-preserves-⊑ (⊑λ q r) p    = ⊑λ   q (plug-preserves-⊑ r p)
+plug-preserves-⊑ (⊑∘₁ q r) p   = ⊑∘   (plug-preserves-⊑ q p) r
+plug-preserves-⊑ (⊑∘₂ q r) p   = ⊑∘   q (plug-preserves-⊑ r p)
+plug-preserves-⊑ (⊑&₁ q r) p   = ⊑&   (plug-preserves-⊑ q p) r
+plug-preserves-⊑ (⊑&₂ q r) p   = ⊑&   q (plug-preserves-⊑ r p)
+plug-preserves-⊑ (⊑ι₁ q) p     = ⊑ι₁  (plug-preserves-⊑ q p)
+plug-preserves-⊑ (⊑ι₂ q) p     = ⊑ι₂  (plug-preserves-⊑ q p)
+plug-preserves-⊑ (⊑Λ q) p      = ⊑Λ   (plug-preserves-⊑ q p)
+plug-preserves-⊑ (⊑def₁ q r) p = ⊑def (plug-preserves-⊑ q p) r
+plug-preserves-⊑ (⊑def₂ q r) p = ⊑def q (plug-preserves-⊑ r p)
+
+-- Instantiate generic Slice module for contexts
+open import Slice ⊑-isDecPartialOrder public
