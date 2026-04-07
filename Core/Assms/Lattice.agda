@@ -13,10 +13,10 @@ open import Core.Typ using (Typ)
   renaming (⊑□ to ⊑t□; _⊑_ to _⊑t_; _⊓_ to _⊓t_; _⊔_ to _⊔t_;
             module ⊑ₛLat to ⊑tₛLat; module ⊑ to ⊑t; module ⊑ₛ to ⊑tₛ;
             _isSlice_ to _isSlicet_; ↑ to ↑t)
-open import Core.Assumptions.Base
-open import Core.Assumptions.Precision renaming (⊤ₛ to ⊤ₛ')
+open import Core.Assms.Base
+open import Core.Assms.Precision renaming (⊤ₛ to ⊤ₛ')
 
-module Core.Assumptions.Lattice where
+module Core.Assms.Lattice where
 
 -- Pointwise meet and join
 _⊓_ : Assumptions → Assumptions → Assumptions

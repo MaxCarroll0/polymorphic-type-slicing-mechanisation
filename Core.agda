@@ -15,7 +15,7 @@ module Core where
               weaken to weaken-e; weaken-identity to weaken-identity-e; ↑ to ↑e;
               module ≈ₛ to ≈eₛ; module ⊑ to ⊑e; module ⊑ₛ to ⊑eₛ; module ⊑Lat to ⊑eLat; module ⊑ₛLat to ⊑ₛeLat)
 
-  open import Core.Assumptions public
+  open import Core.Assms public
     renaming (□ to □Assm;
               _⊑_ to _⊑Assm_; _⊑?_ to _⊑Assm?_; _⊑ₛ_ to _⊑Assmₛ_; _⊑ₛ?_ to _⊑Assmₛ?_;
               _≈ₛ_ to _≈Assmₛ_; _≈ₛ?_ to _≈ₛAssm?_; _≟_ to _≟Assm_; SliceOf to SliceOfAssms;

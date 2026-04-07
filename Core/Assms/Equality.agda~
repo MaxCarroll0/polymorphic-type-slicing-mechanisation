@@ -1,4 +1,4 @@
-module Core.Assumptions.Equality where
+module Core.Assms.Equality where
 
 open import Data.List using (List; []; _∷_)
 open import Data.List.Properties using (≡-dec)

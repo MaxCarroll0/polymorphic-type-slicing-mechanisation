@@ -1,4 +1,4 @@
-module Core.Assumptions.Base where
+module Core.Assms.Base where
 
 open import Data.List using (List; []; _∷_; length)
 open import Data.Nat using (ℕ; zero; suc)

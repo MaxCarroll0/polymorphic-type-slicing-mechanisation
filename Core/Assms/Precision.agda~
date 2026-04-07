@@ -1,4 +1,4 @@
-module Core.Assumptions.Precision where
+module Core.Assms.Precision where
 
 open import Data.List using (List; []; _∷_; length)
 open import Data.Product using (_,_; uncurry)

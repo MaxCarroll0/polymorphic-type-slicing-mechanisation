@@ -1,0 +1,12 @@
+module Core.Assms.Equality where
+
+open import Data.List using (List; []; _∷_)
+open import Data.List.Properties using (≡-dec)
+open import Relation.Binary.PropositionalEquality using (_≡_)
+open import Relation.Nullary using (Dec)
+
+open import Core.Typ renaming (_≟_ to _≟t_)
+open import Core.Assms.Base
+
+_≟_ : (Γ Γ' : Assumptions) → Dec (Γ ≡ Γ')
+_≟_ = ≡-dec _≟t_
