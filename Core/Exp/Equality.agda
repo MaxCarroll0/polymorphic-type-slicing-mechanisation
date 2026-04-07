@@ -13,7 +13,7 @@ _≟_ : (e e' : Exp) → Dec (e ≡ e')
 e             ≟ e'           with diag e e' | inspect (diag e) e'
 ...                             | kind□     | _    = yes refl
 ...                             | kind*     | _    = yes refl
-< m >         ≟ < n >           | kindVar   | _    = map′ (cong <_>)
+⟨ m ⟩         ≟ ⟨ n ⟩           | kindVar   | _    = map′ (cong ⟨_⟩)
                                                            (λ where refl → refl) (m ≟ℕ n)
 (λ· τ ⇒ e₁)   ≟ (λ· τ' ⇒ e₁')   | kindλ     | _    = map′ (uncurry (cong₂ λ·_⇒_))
                                                            (λ where refl → refl , refl)

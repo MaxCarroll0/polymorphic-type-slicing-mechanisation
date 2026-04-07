@@ -4,7 +4,7 @@ open import Data.Nat using (ℕ; _≟_)
 open import Data.Unit using (⊤; tt)
 open import Relation.Nullary using (¬_)
 open import Relation.Binary.PropositionalEquality using (_≡_; _≢_)
-open import Agda.Builtin.FromNat using (Number)
+open import Agda.Builtin.FromNat using (Number; fromNat)
 
 open import Core.Typ using (Typ)
 
@@ -12,7 +12,7 @@ open import Core.Typ using (Typ)
 data Exp : Set where
   □      : Exp                    -- Expression hole (bottom for slicing)
   *      : Exp                    -- Unit value
-  <_>    : ℕ → Exp                -- Variables (de Bruijn indices)
+  ⟨_⟩    : ℕ → Exp                -- Variables (de Bruijn indices)
   λ·_⇒_  : Typ → Exp → Exp        -- Lambda abstraction
   _∘_    : Exp → Exp → Exp        -- Application
   _&_    : Exp → Exp → Exp        -- Pair
@@ -27,15 +27,23 @@ infixl 22 _∘_
 infixl 23 _&_
 infix  4  _kind?_
 
+-- Literal overloading: allow writing 0, 1 instead of < 0 >, < 1 >
+instance
+  NumExp : Number Exp
+  NumExp = record
+    { Constraint = λ _ → ⊤
+    ; fromNat = λ n → ⟨ n ⟩
+    }
+
 -- Type cast (derived form)
 _▸_ : Exp → Typ → Exp
-e ▸ τ = (λ· τ ⇒ < 0 >) ∘ e
+e ▸ τ = (λ· τ ⇒ 0) ∘ e
 
 -- Classify expressions by their 'kinds' i.e. the kind of their top-most constructor
 data _kind?_ : Exp → Exp → Set where
   kind□   :                               □            kind? □
   kind*   :                               *            kind? *
-  kindVar : ∀ {m n}                     → < m >        kind? < n >
+  kindVar : ∀ {m n}                     → ⟨ m ⟩        kind? ⟨ n ⟩
   kindλ   : ∀ {τ τ' e e'}               → λ· τ ⇒ e     kind? λ· τ' ⇒ e'
   kind∘   : ∀ {e₁ e₂ e₁' e₂'}           → e₁ ∘ e₂      kind? e₁' ∘ e₂'
   kind&   : ∀ {e₁ e₂ e₁' e₂'}           → e₁ & e₂      kind? e₁' & e₂'
@@ -48,7 +56,7 @@ data _kind?_ : Exp → Exp → Set where
 diag : (e e' : Exp) → e kind? e'
 diag □             □               = kind□
 diag *             *               = kind*
-diag < m >         < n >           = kindVar
+diag ⟨ m ⟩         ⟨ n ⟩           = kindVar
 diag (λ· τ ⇒ e)    (λ· τ' ⇒ e')    = kindλ
 diag (e₁ ∘ e₂)     (e₁' ∘ e₂')     = kind∘
 diag (e₁ & e₂)     (e₁' & e₂')     = kind&
@@ -61,7 +69,7 @@ diag _             _               = diff
 shallow-disequality : {e : Exp} → ¬(diag e e ≡ diff)
 shallow-disequality {□}         = λ ()
 shallow-disequality {*}         = λ ()
-shallow-disequality {< _ >}     = λ ()
+shallow-disequality {⟨ _ ⟩}     = λ ()
 shallow-disequality {λ· _ ⇒ _}  = λ ()
 shallow-disequality {_ ∘ _}     = λ ()
 shallow-disequality {_ & _}     = λ ()
@@ -70,10 +78,3 @@ shallow-disequality {ι₂ _}      = λ ()
 shallow-disequality {Λ _}       = λ ()
 shallow-disequality {def _ ⊢ _} = λ ()
 
--- Literal overloading: allow writing 0, 1 instead of < 0 >, < 1 >
-instance
-  NumExp : Number Exp
-  NumExp = record
-    { Constraint = λ _ → ⊤
-    ; fromNat = λ n → < n >
-    }

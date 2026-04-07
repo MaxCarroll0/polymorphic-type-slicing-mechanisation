@@ -19,7 +19,7 @@ open import Core.Exp.Equality renaming (_≟_ to _≟e_)
 data _⊑_ : Exp → Exp → Set where
   ⊑□   : ∀ {e}              →                          □           ⊑ e
   ⊑*   :                                               *           ⊑ *
-  ⊑Var : ∀ {n}              →                          < n >       ⊑ < n >
+  ⊑Var : ∀ {n}              →                          ⟨ n ⟩       ⊑ ⟨ n ⟩
   ⊑λ   : ∀ {τ τ' e e'}      →  τ  ⊑t τ'  → e  ⊑ e'   → λ· τ ⇒ e    ⊑ λ· τ' ⇒ e'
   ⊑∘   : ∀ {e₁ e₂ e₁' e₂'}  →  e₁ ⊑  e₁' → e₂ ⊑ e₂'  →  e₁ ∘ e₂    ⊑ e₁' ∘ e₂'
   ⊑&   : ∀ {e₁ e₂ e₁' e₂'}  →  e₁ ⊑  e₁' → e₂ ⊑ e₂'  → e₁ & e₂     ⊑ e₁' & e₂'
@@ -34,7 +34,7 @@ private
   ⊑-refl : Reflexive _⊑_
   ⊑-refl {□}        = ⊑□
   ⊑-refl {*}        = ⊑*
-  ⊑-refl {< _ >}    = ⊑Var
+  ⊑-refl {⟨ _ ⟩}    = ⊑Var
   ⊑-refl {λ· _ ⇒ _} = ⊑λ ⊑t.refl ⊑-refl
   ⊑-refl {_ ∘ _}    = ⊑∘ ⊑-refl ⊑-refl
   ⊑-refl {_ & _}    = ⊑& ⊑-refl ⊑-refl
@@ -85,7 +85,7 @@ _⊑?_ : ∀ e e' → Dec (e ⊑ e')
 e ⊑? e'                       with diag e e' | Eq.inspect (diag e) e'
 ...                              | kind□     | _    = yes ⊑□
 ...                              | kind*     | _    = yes ⊑*
-< m >        ⊑? < n >            | kindVar   | _    = map′ (λ where refl → ⊑Var)
+⟨ m ⟩        ⊑? ⟨ n ⟩            | kindVar   | _    = map′ (λ where refl → ⊑Var)
                                                            (λ where ⊑Var → refl) (m ≟ℕ n)
 (λ· τ ⇒ e₁)  ⊑? (λ· τ' ⇒ e₁')    | kindλ     | _    = map′ (uncurry ⊑λ)
                                                            (λ where (⊑λ p q) → p , q)
