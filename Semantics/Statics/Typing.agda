@@ -29,7 +29,7 @@ mutual
               (τ₁ ∷ Γ) ⊢ e ↦ τ₂                  →
               -- TODO: inherently well-scoped terms or a well-formedness judgement Γ ⊢ τ
               ------------------
-              Γ ⊢ λ· τ₁ ⇒ e ↦ τ₁ ⇒ τ₂
+              Γ ⊢ λ: τ₁ ⇒ e ↦ τ₁ ⇒ τ₂
 
     ↦def : ∀ {Γ : Assms} {e' e : Exp} {τ' τ : Typ} →
               Γ ⊢ e' ↦ τ'                          →
