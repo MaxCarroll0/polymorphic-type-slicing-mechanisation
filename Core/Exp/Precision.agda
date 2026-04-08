@@ -7,7 +7,6 @@ open import Relation.Binary.Definitions using (Reflexive; Transitive; Antisymmet
 open import Relation.Binary.PropositionalEquality as Eq using (_≡_; _≢_; refl; sym; trans; cong; cong₂; [_])
 open import Relation.Nullary using (Dec; yes; no; ¬_; map′)
 open import Relation.Nullary.Decidable using (_×-dec_)
-open import Function using (_on_)
 
 open import Core.Typ using (Typ)
   renaming (⊑□ to ⊑t□; _⊑_ to _⊑t_; _⊑?_ to _⊑t?_;
@@ -17,55 +16,77 @@ open import Core.Exp.Equality renaming (_≟_ to _≟e_)
 
 -- Precision relation for expressions
 data _⊑_ : Exp → Exp → Set where
-  ⊑□   : ∀ {e}              →                          □           ⊑ e
-  ⊑*   :                                               *           ⊑ *
-  ⊑Var : ∀ {n}              →                          ⟨ n ⟩       ⊑ ⟨ n ⟩
-  ⊑λ   : ∀ {τ τ' e e'}      →  τ  ⊑t τ'  → e  ⊑ e'   → λ· τ ⇒ e    ⊑ λ· τ' ⇒ e'
-  ⊑∘   : ∀ {e₁ e₂ e₁' e₂'}  →  e₁ ⊑  e₁' → e₂ ⊑ e₂'  →  e₁ ∘ e₂    ⊑ e₁' ∘ e₂'
-  ⊑&   : ∀ {e₁ e₂ e₁' e₂'}  →  e₁ ⊑  e₁' → e₂ ⊑ e₂'  → e₁ & e₂     ⊑ e₁' & e₂'
-  ⊑ι₁  : ∀ {e e'}           →  e  ⊑  e'              → ι₁ e        ⊑ ι₁ e'
-  ⊑ι₂  : ∀ {e e'}           →  e  ⊑  e'              → ι₂ e        ⊑ ι₂ e'
-  ⊑Λ   : ∀ {e e'}           →  e  ⊑  e'              → Λ e         ⊑ Λ e'
-  ⊑def : ∀ {e₁ e₂ e₁' e₂'}  →  e₁ ⊑  e₁' → e₂ ⊑ e₂'  → def e₁ ⊢ e₂ ⊑ def e₁' ⊢ e₂'
+  ⊑□    : ∀ {e}                →                         □           ⊑ e
+  ⊑*    :                                                *           ⊑ *
+  ⊑Var  : ∀ {n}                →                         ⟨ n ⟩       ⊑ ⟨ n ⟩
+  ⊑λ    : ∀ {τ τ' e e'}        →  τ ⊑t τ' → e ⊑ e'    →  λ: τ ⇒ e    ⊑ λ: τ' ⇒ e'
+  ⊑λu   : ∀ {e e'}             →  e ⊑ e'              →  λ⇒ e        ⊑ λ⇒ e'
+  ⊑∘    : ∀ {e₁ e₂ e₁' e₂'}    →  e₁ ⊑ e₁' → e₂ ⊑ e₂' →  e₁ ∘ e₂     ⊑ e₁' ∘ e₂'
+  ⊑<>   : ∀ {e e' τ τ'}        →  e ⊑ e' → τ ⊑t τ'    →  e < τ >     ⊑ e' < τ' >
+  ⊑&    : ∀ {e₁ e₂ e₁' e₂'}    →  e₁ ⊑ e₁' → e₂ ⊑ e₂' →  e₁ & e₂     ⊑ e₁' & e₂'
+  ⊑ι₁   : ∀ {e e'}             →  e ⊑ e'              →  ι₁ e        ⊑ ι₁ e'
+  ⊑ι₂   : ∀ {e e'}             →  e ⊑ e'              →  ι₂ e        ⊑ ι₂ e'
+  ⊑case : ∀ {e e' e₁ e₂ e₁' e₂'}
+          → e ⊑ e' → e₁ ⊑ e₁'  → e₂ ⊑ e₂'             →  case e of e₁ · e₂ ⊑ case e' of e₁' · e₂'
+  ⊑π₁   : ∀ {e e'}             →  e ⊑ e'              →  π₁ e        ⊑ π₁ e'
+  ⊑π₂   : ∀ {e e'}             →  e ⊑ e'              →  π₂ e        ⊑ π₂ e'
+  ⊑Λ    : ∀ {e e'}             →  e ⊑ e'              →  Λ e         ⊑ Λ e'
+  ⊑def  : ∀ {e₁ e₂ e₁' e₂'}    →  e₁ ⊑ e₁' → e₂ ⊑ e₂' →  def e₁ ⊢ e₂ ⊑ def e₁' ⊢ e₂'
 
 infix 4 _⊑_
 
 private
   ⊑-refl : Reflexive _⊑_
-  ⊑-refl {□}        = ⊑□
-  ⊑-refl {*}        = ⊑*
-  ⊑-refl {⟨ _ ⟩}    = ⊑Var
-  ⊑-refl {λ· _ ⇒ _} = ⊑λ ⊑t.refl ⊑-refl
-  ⊑-refl {_ ∘ _}    = ⊑∘ ⊑-refl ⊑-refl
-  ⊑-refl {_ & _}    = ⊑& ⊑-refl ⊑-refl
-  ⊑-refl {ι₁ _}     = ⊑ι₁ ⊑-refl
-  ⊑-refl {ι₂ _}     = ⊑ι₂ ⊑-refl
-  ⊑-refl {Λ _}      = ⊑Λ ⊑-refl
-  ⊑-refl {def _ ⊢ _}   = ⊑def ⊑-refl ⊑-refl
+  ⊑-refl {□}                   = ⊑□
+  ⊑-refl {*}                   = ⊑*
+  ⊑-refl {⟨ _ ⟩}               = ⊑Var
+  ⊑-refl {λ: _ ⇒ _}            = ⊑λ ⊑t.refl ⊑-refl
+  ⊑-refl {λ⇒ _}                = ⊑λu ⊑-refl
+  ⊑-refl {_ ∘ _}               = ⊑∘ ⊑-refl ⊑-refl
+  ⊑-refl {_ < _ >}             = ⊑<> ⊑-refl ⊑t.refl
+  ⊑-refl {_ & _}               = ⊑& ⊑-refl ⊑-refl
+  ⊑-refl {ι₁ _}                = ⊑ι₁ ⊑-refl
+  ⊑-refl {ι₂ _}                = ⊑ι₂ ⊑-refl
+  ⊑-refl {case _ of _ · _}     = ⊑case ⊑-refl ⊑-refl ⊑-refl
+  ⊑-refl {π₁ _}                = ⊑π₁ ⊑-refl
+  ⊑-refl {π₂ _}                = ⊑π₂ ⊑-refl
+  ⊑-refl {Λ _}                 = ⊑Λ ⊑-refl
+  ⊑-refl {def _ ⊢ _}           = ⊑def ⊑-refl ⊑-refl
 
   ⊑-trans : Transitive _⊑_
-  ⊑-trans ⊑□ _                  = ⊑□
-  ⊑-trans ⊑* ⊑*                 = ⊑*
-  ⊑-trans ⊑Var ⊑Var             = ⊑Var
-  ⊑-trans (⊑λ p q) (⊑λ r s)     = ⊑λ (⊑t.trans p r) (⊑-trans q s)
-  ⊑-trans (⊑∘ p q) (⊑∘ r s)     = ⊑∘ (⊑-trans p r) (⊑-trans q s)
-  ⊑-trans (⊑& p q) (⊑& r s)     = ⊑& (⊑-trans p r) (⊑-trans q s)
-  ⊑-trans (⊑ι₁ p) (⊑ι₁ q)       = ⊑ι₁ (⊑-trans p q)
-  ⊑-trans (⊑ι₂ p) (⊑ι₂ q)       = ⊑ι₂ (⊑-trans p q)
-  ⊑-trans (⊑Λ p) (⊑Λ q)         = ⊑Λ (⊑-trans p q)
-  ⊑-trans (⊑def p q) (⊑def r s) = ⊑def (⊑-trans p r) (⊑-trans q s)
+  ⊑-trans ⊑□ _                       = ⊑□
+  ⊑-trans ⊑* ⊑*                      = ⊑*
+  ⊑-trans ⊑Var ⊑Var                  = ⊑Var
+  ⊑-trans (⊑λ p q) (⊑λ r s)          = ⊑λ (⊑t.trans p r) (⊑-trans q s)
+  ⊑-trans (⊑λu p) (⊑λu q)            = ⊑λu (⊑-trans p q)
+  ⊑-trans (⊑∘ p q) (⊑∘ r s)          = ⊑∘ (⊑-trans p r) (⊑-trans q s)
+  ⊑-trans (⊑<> p q) (⊑<> r s)        = ⊑<> (⊑-trans p r) (⊑t.trans q s)
+  ⊑-trans (⊑& p q) (⊑& r s)          = ⊑& (⊑-trans p r) (⊑-trans q s)
+  ⊑-trans (⊑ι₁ p) (⊑ι₁ q)            = ⊑ι₁ (⊑-trans p q)
+  ⊑-trans (⊑ι₂ p) (⊑ι₂ q)            = ⊑ι₂ (⊑-trans p q)
+  ⊑-trans (⊑case p q r) (⊑case s t u) = ⊑case (⊑-trans p s) (⊑-trans q t) (⊑-trans r u)
+  ⊑-trans (⊑π₁ p) (⊑π₁ q)            = ⊑π₁ (⊑-trans p q)
+  ⊑-trans (⊑π₂ p) (⊑π₂ q)            = ⊑π₂ (⊑-trans p q)
+  ⊑-trans (⊑Λ p) (⊑Λ q)              = ⊑Λ (⊑-trans p q)
+  ⊑-trans (⊑def p q) (⊑def r s)      = ⊑def (⊑-trans p r) (⊑-trans q s)
 
   ⊑-antisym : Antisymmetric _≡_ _⊑_
-  ⊑-antisym ⊑□ ⊑□                 = refl
-  ⊑-antisym ⊑* ⊑*                 = refl
-  ⊑-antisym ⊑Var ⊑Var             = refl
-  ⊑-antisym (⊑λ p q) (⊑λ r s)     = cong₂ λ·_⇒_ (⊑t.antisym p r) (⊑-antisym q s)
-  ⊑-antisym (⊑∘ p q) (⊑∘ r s)     = cong₂ _∘_ (⊑-antisym p r) (⊑-antisym q s)
-  ⊑-antisym (⊑& p q) (⊑& r s)     = cong₂ _&_ (⊑-antisym p r) (⊑-antisym q s)
-  ⊑-antisym (⊑ι₁ p) (⊑ι₁ q)       = cong ι₁ (⊑-antisym p q)
-  ⊑-antisym (⊑ι₂ p) (⊑ι₂ q)       = cong ι₂ (⊑-antisym p q)
-  ⊑-antisym (⊑Λ p) (⊑Λ q)         = cong Λ (⊑-antisym p q)
-  ⊑-antisym (⊑def p q) (⊑def r s) = cong₂ def_⊢_ (⊑-antisym p r) (⊑-antisym q s)
+  ⊑-antisym ⊑□ ⊑□                       = refl
+  ⊑-antisym ⊑* ⊑*                        = refl
+  ⊑-antisym ⊑Var ⊑Var                    = refl
+  ⊑-antisym (⊑λ p q) (⊑λ r s)            = cong₂ λ:_⇒_ (⊑t.antisym p r) (⊑-antisym q s)
+  ⊑-antisym (⊑λu p) (⊑λu q)              = cong λ⇒_ (⊑-antisym p q)
+  ⊑-antisym (⊑∘ p q) (⊑∘ r s)            = cong₂ _∘_ (⊑-antisym p r) (⊑-antisym q s)
+  ⊑-antisym (⊑<> p q) (⊑<> r s)          = cong₂ _<_> (⊑-antisym p r) (⊑t.antisym q s)
+  ⊑-antisym (⊑& p q) (⊑& r s)            = cong₂ _&_ (⊑-antisym p r) (⊑-antisym q s)
+  ⊑-antisym (⊑ι₁ p) (⊑ι₁ q)              = cong ι₁ (⊑-antisym p q)
+  ⊑-antisym (⊑ι₂ p) (⊑ι₂ q)              = cong ι₂ (⊑-antisym p q)
+  ⊑-antisym (⊑case p q r) (⊑case s t u)  with ⊑-antisym p s | ⊑-antisym q t | ⊑-antisym r u
+  ... | refl | refl | refl = refl
+  ⊑-antisym (⊑π₁ p) (⊑π₁ q)              = cong π₁ (⊑-antisym p q)
+  ⊑-antisym (⊑π₂ p) (⊑π₂ q)              = cong π₂ (⊑-antisym p q)
+  ⊑-antisym (⊑Λ p) (⊑Λ q)                = cong Λ (⊑-antisym p q)
+  ⊑-antisym (⊑def p q) (⊑def r s)        = cong₂ def_⊢_ (⊑-antisym p r) (⊑-antisym q s)
 
   ⊑-isPartialOrder : IsPartialOrder _≡_ _⊑_
   ⊑-isPartialOrder = record
@@ -87,17 +108,27 @@ e ⊑? e'                       with diag e e' | Eq.inspect (diag e) e'
 ...                              | kind*     | _    = yes ⊑*
 ⟨ m ⟩        ⊑? ⟨ n ⟩            | kindVar   | _    = map′ (λ where refl → ⊑Var)
                                                            (λ where ⊑Var → refl) (m ≟ℕ n)
-(λ· τ ⇒ e₁)  ⊑? (λ· τ' ⇒ e₁')    | kindλ     | _    = map′ (uncurry ⊑λ)
+(λ: τ ⇒ e₁)  ⊑? (λ: τ' ⇒ e₁')    | kindλ     | _    = map′ (uncurry ⊑λ)
                                                            (λ where (⊑λ p q) → p , q)
                                                            (τ ⊑t? τ' ×-dec e₁ ⊑? e₁')
+(λ⇒ e₁)      ⊑? (λ⇒ e₁')         | kindλu    | _    = map′ ⊑λu (λ where (⊑λu p) → p) (e₁ ⊑? e₁')
 (e₁ ∘ e₂)    ⊑? (e₁' ∘ e₂')      | kind∘     | _    = map′ (uncurry ⊑∘)
                                                            (λ where (⊑∘ p q) → p , q)
                                                            (e₁ ⊑? e₁' ×-dec e₂ ⊑? e₂')
+(e₁ < τ >)   ⊑? (e₁' < τ' >)     | kind<>    | _    = map′ (uncurry ⊑<>)
+                                                           (λ where (⊑<> p q) → p , q)
+                                                           (e₁ ⊑? e₁' ×-dec τ ⊑t? τ')
 (e₁ & e₂)    ⊑? (e₁' & e₂')      | kind&     | _    = map′ (uncurry ⊑&)
                                                            (λ where (⊑& p q) → p , q)
                                                            (e₁ ⊑? e₁' ×-dec e₂ ⊑? e₂')
 (ι₁ e₁)      ⊑? (ι₁ e₁')         | kindι₁    | _    = map′ ⊑ι₁ (λ where (⊑ι₁ p) → p) (e₁ ⊑? e₁')
 (ι₂ e₁)      ⊑? (ι₂ e₁')         | kindι₂    | _    = map′ ⊑ι₂ (λ where (⊑ι₂ p) → p) (e₁ ⊑? e₁')
+(case e of e₁ · e₂) ⊑? (case e' of e₁' · e₂') | kindcase | _ =
+                                                      map′ (λ where (p , q , r) → ⊑case p q r)
+                                                           (λ where (⊑case p q r) → p , q , r)
+                                                           (e ⊑? e' ×-dec e₁ ⊑? e₁' ×-dec e₂ ⊑? e₂')
+(π₁ e₁)      ⊑? (π₁ e₁')         | kindπ₁    | _    = map′ ⊑π₁ (λ where (⊑π₁ p) → p) (e₁ ⊑? e₁')
+(π₂ e₁)      ⊑? (π₂ e₁')         | kindπ₂    | _    = map′ ⊑π₂ (λ where (⊑π₂ p) → p) (e₁ ⊑? e₁')
 (Λ e₁)       ⊑? (Λ e₁')          | kindΛ     | _    = map′ ⊑Λ (λ where (⊑Λ p) → p) (e₁ ⊑? e₁')
 (def e₁ ⊢ e₂) ⊑? (def e₁' ⊢ e₂') | kinddef   | _    = map′ (uncurry ⊑def)
                                                            (λ where (⊑def p q) → p , q)
@@ -106,7 +137,7 @@ e            ⊑? e'               | diff      | [ as ] with e ≟e □
 ...                                                      | yes refl = yes ⊑□
 ...                                                      | no  e≢□  = no (shallow-imprecision e≢□ as)
 
-private 
+private
   ⊑-isDecPartialOrder : IsDecPartialOrder _≡_ _⊑_
   ⊑-isDecPartialOrder = record
                         { isPartialOrder = ⊑-isPartialOrder
