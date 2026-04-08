@@ -9,7 +9,7 @@ module Semantics.Statics.Typing where
 
 infix  4 _⊢_↦_
 infix  4 _⊢_↤_
--- TODO: better notation than using ↦ and ↤
+-- TODO: better notation than using ↦ and ↤. i.e. ⇑ and ⇓
 mutual
   data _⊢_↦_ : Assms → Exp → Typ → Set where
     ↦*   : ∀ {Γ : Assms} →
@@ -37,14 +37,14 @@ mutual
               -----------------
               Γ ⊢ def e' ⊢ e ↦ τ
 
-    ↦Γ   : ∀ {Γ : Assms} {e : Exp} {τ : Typ} →
+    ↦Λ   : ∀ {Γ : Assms} {e : Exp} {τ : Typ} →
              --(0 ∷ Γ) ⊢ e ↦ τ               → -- Representing type vars by ⟨ 0 ⟩. ALSO, fix instance resolution for 0 to ⟨ 0 ⟩. Also, well scoping needed???
              ---------------
              Γ ⊢ Λ e ↦ ∀· τ
 
     ↦∘   : ∀ {Γ : Assms} {e₁ e₂ : Exp} {τ τ₁ τ₂ : Typ} →
               Γ ⊢ e₁ ↦ τ                               →
-              τ ~ □ ⇒ □                                → -- TODO: Make join default to □ meaning that this assumption is unneeded (i.e. any inconsistent joins cannot be decomposed)
+              τ ~ □ ⇒ □                                → -- TODO: Make join default to □ meaning that this assumption is unneeded (i.e. any inconsistent joins cannot be decomposed). For completeness prove that τ ⊔t □ ⇒ □ ≡ τ₁ ⇒ τ₂ if and only if τ ~ □ ⇒ □. And similarly for other compound types.
               τ ⊔t □ ⇒ □ ≡ τ₁ ⇒ τ₂                     →
               Γ ⊢ e₂ ↤ τ₁                              →
               --------------------
@@ -56,6 +56,8 @@ mutual
               τ ⊔t ∀· □ ≡ ∀· τ'                   →
               --------------------------
               Γ ⊢ e < σ > ↦ [ 0 ↦ σ ] τ'
+
+    -- TODO: Sum and Product introduction rules
 
     ↦π₁  : ∀ {Γ : Assms} {e : Exp} {τ τ₁ τ₂ : Typ} →
               Γ ⊢ e ↦ τ                            →
@@ -103,3 +105,5 @@ mutual
                (τ₂ ∷ Γ) ⊢ e₂ ↤ τ'                            →
                --------------------------
                Γ ⊢ case e of e₁ · e₂ ↤ τ'
+
+    -- TODO: Checking rules for Product, sum introduction, annotated lambdas, let bindings, type applications
