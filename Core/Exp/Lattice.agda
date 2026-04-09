@@ -319,7 +319,7 @@ private
     = cong₂ λ:_⇒_ (⊑tₛLat.⊓ₛ-distribˡ-⊔ₛ (↑t pt) (↑t qt) (↑t rt)) (dist pe qe re)
   dist (⊑λu pe)         (⊑λu qe)        (⊑λu re)
     = cong λ⇒_ (dist pe qe re)
-  dist (⊑∘ pe₁ pe₂)     (⊑∘ qe₁ qe₂)    (⊑∘ re₁ re₂)
+  dist (⊑∘ pe₁ pe₂)    (⊑∘ qe₁ qe₂)    (⊑∘ re₁ re₂)
     = cong₂ _∘_ (dist pe₁ qe₁ re₁) (dist pe₂ qe₂ re₂)
   dist (⊑<> pe pt)      (⊑<> qe qt)     (⊑<> re rt)     
     = cong₂ _<_> (dist pe qe re) (⊑tₛLat.⊓ₛ-distribˡ-⊔ₛ (↑t pt) (↑t qt) (↑t rt))

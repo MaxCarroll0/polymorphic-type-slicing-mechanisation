@@ -110,7 +110,7 @@ module ⊑Lat where
   isMeetSemilattice = ⊑-isMeetSemilattice
 
 open LiftMeetSemilattice ⊑-isMeetSemilattice public
- 
+
 private
   ⊔-identityₗ : ∀ τ → □ ⊔ τ ≡ τ
   ⊔-identityₗ τ with diag □ τ
