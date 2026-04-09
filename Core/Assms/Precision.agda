@@ -53,13 +53,12 @@ _⊑?_ : ∀ Γ Γ' → Dec (Γ ⊑ Γ')
 (_ ∷ _) ⊑? []        = no λ ()
 (τ ∷ Γ) ⊑? (τ' ∷ Γ') = map′ (uncurry ⊑∷) (λ where (⊑∷ p q) → p , q)
                             (τ ⊑t? τ' ×-dec Γ ⊑? Γ')
-private 
-  ⊑-isDecPartialOrder : IsDecPartialOrder _≡_ _⊑_
-  ⊑-isDecPartialOrder = record
-                        { isPartialOrder = ⊑-isPartialOrder
-                          ; _≟_            = _≟_
-                        ; _≤?_           = _⊑?_
-                        }
+⊑-isDecPartialOrder : IsDecPartialOrder _≡_ _⊑_
+⊑-isDecPartialOrder = record
+                      { isPartialOrder = ⊑-isPartialOrder
+                        ; _≟_            = _≟_
+                      ; _≤?_           = _⊑?_
+                      }
 
 module ⊑ = IsDecPartialOrder ⊑-isDecPartialOrder using (antisym; isPartialOrder; isPreorder; refl; reflexive; trans)
 
@@ -67,4 +66,4 @@ open import Core.Slice ⊑-isDecPartialOrder public
 
 import Core.Instances as I
 instance assms-precision : I.HasPrecision Assms
-         assms-precision = record { _⊑_ = _⊑_ }
+         assms-precision = record { _⊑_ = _⊑_ ; isDecPartialOrder = ⊑-isDecPartialOrder }

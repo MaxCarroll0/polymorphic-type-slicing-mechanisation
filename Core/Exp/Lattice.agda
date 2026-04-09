@@ -375,3 +375,12 @@ instance
   exp-meet = record { _⊓_ = _⊓_ }
   exp-join : I.HasJoin Exp
   exp-join = record { _⊔_ = _⊔_ }
+  exp-meetSemilattice : I.HasMeetSemilattice Exp
+  exp-meetSemilattice = record { isMeetSemilattice = ⊑-isMeetSemilattice }
+  exp-sliceLattice : I.SliceLattice SliceOf ↓
+  exp-sliceLattice = record
+    { _⊑ₛ_ = _⊑ₛ_ ; _⊓ₛ_ = _⊓ₛ_ ; _⊔ₛ_ = _⊔ₛ_
+    ; ⊤ₛ = ⊤ₛ' ; ⊥ₛ = ⊥ₛ'
+    ; isBoundedLattice = ⊑ₛ-isBoundedLattice
+    ; isDistributiveLattice = ⊑ₛ-isDistributiveLattice
+    }

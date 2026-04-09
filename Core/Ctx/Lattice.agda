@@ -399,3 +399,10 @@ instance
   ctx-meet = record { _⊓_ = _⊓_ }
   ctx-join : I.HasJoin Ctx
   ctx-join = record { _⊔_ = _⊔_ }
+  ctx-sliceLattice : I.SliceLattice SliceOf ↓
+  ctx-sliceLattice = record
+    { _⊑ₛ_ = _⊑ₛ_ ; _⊓ₛ_ = _⊓ₛ_ ; _⊔ₛ_ = _⊔ₛ_
+    ; ⊤ₛ = ⊤ₛ' ; ⊥ₛ = ⊥ₛ'
+    ; isBoundedLattice = ⊑ₛ-isBoundedLattice
+    ; isDistributiveLattice = ⊑ₛ-isDistributiveLattice
+    }

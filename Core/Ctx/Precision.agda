@@ -176,13 +176,12 @@ C ⊑? C'                         with diag C C'  | inspect (diag C) C'
                                                             (e ⊑e? e' ×-dec C₁ ⊑? C₁')
 _              ⊑? _                | diff       | [ eq ] = no (shallow-imprecision eq)
 
-private
-  ⊑-isDecPartialOrder : IsDecPartialOrder _≡_ _⊑_
-  ⊑-isDecPartialOrder = record
-                        { isPartialOrder = ⊑-isPartialOrder
-                        ; _≟_            = _≟Ctx_
-                        ; _≤?_           = _⊑?_
-                        }
+⊑-isDecPartialOrder : IsDecPartialOrder _≡_ _⊑_
+⊑-isDecPartialOrder = record
+                      { isPartialOrder = ⊑-isPartialOrder
+                      ; _≟_            = _≟Ctx_
+                      ; _≤?_           = _⊑?_
+                      }
 
 module ⊑ = IsDecPartialOrder ⊑-isDecPartialOrder using (antisym; isPartialOrder; isPreorder; refl; reflexive; trans)
 
@@ -211,4 +210,4 @@ open import Core.Slice ⊑-isDecPartialOrder public
 
 import Core.Instances as I
 instance ctx-precision : I.HasPrecision Ctx
-         ctx-precision = record { _⊑_ = _⊑_ }
+         ctx-precision = record { _⊑_ = _⊑_ ; isDecPartialOrder = ⊑-isDecPartialOrder }
