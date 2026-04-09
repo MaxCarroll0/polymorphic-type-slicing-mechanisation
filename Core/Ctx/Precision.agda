@@ -209,5 +209,10 @@ plug-preserves-⊑ (⊑def₂ q r) p      = ⊑def  q (plug-preserves-⊑ r p)
 open import Core.Slice ⊑-isDecPartialOrder public
 
 import Core.Instances as I
-instance ctx-precision : I.HasPrecision Ctx
-         ctx-precision = record { _⊑_ = _⊑_ ; isDecPartialOrder = ⊑-isDecPartialOrder }
+instance
+  ctx-precision : I.HasPrecision Ctx
+  ctx-precision = record { _⊑_ = _⊑_ ; isDecPartialOrder = ⊑-isDecPartialOrder }
+  ctx-slice : I.HasSlice Ctx
+  ctx-slice = record
+    { SliceOf = SliceOf ; ↓ = ↓ ; _isSlice_ = _isSlice_ ; ↑ = ↑
+    ; weaken = weaken ; _≈ₛ_ = _≈ₛ_ ; _≈ₛ?_ = _≈ₛ?_ }

@@ -6,7 +6,7 @@ module Slicing.Synthesis where
 -- Slicing
 -- TODO : ⌊ _ ⌋ syntax
 data SynSlice {Γ : Assms} {e : Exp} {τ : Typ} : (syn : Γ ⊢ e ↦ τ)
-              → (γ : SliceOfAssms Γ) → (s : SliceOfExp e) → (υ : SliceOfTyp τ) → Set where
+              → (γ : SliceOf Γ) → (s : SliceOf e) → (υ : SliceOf τ) → Set where
   is : ∀ {syn γ s υ} γ .↓ ⊢ s .↓ ↦ υ .↓ → SynSlice syn γ s υ
        
 

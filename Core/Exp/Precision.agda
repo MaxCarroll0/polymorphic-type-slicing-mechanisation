@@ -152,5 +152,10 @@ module ⊑ = IsDecPartialOrder ⊑-isDecPartialOrder using (antisym; isPartialOr
 open import Core.Slice ⊑-isDecPartialOrder public
 
 import Core.Instances as I
-instance exp-precision : I.HasPrecision Exp
-         exp-precision = record { _⊑_ = _⊑_ ; isDecPartialOrder = ⊑-isDecPartialOrder }
+instance
+  exp-precision : I.HasPrecision Exp
+  exp-precision = record { _⊑_ = _⊑_ ; isDecPartialOrder = ⊑-isDecPartialOrder }
+  exp-slice : I.HasSlice Exp
+  exp-slice = record
+    { SliceOf = SliceOf ; ↓ = ↓ ; _isSlice_ = _isSlice_ ; ↑ = ↑
+    ; weaken = weaken ; _≈ₛ_ = _≈ₛ_ ; _≈ₛ?_ = _≈ₛ?_ }

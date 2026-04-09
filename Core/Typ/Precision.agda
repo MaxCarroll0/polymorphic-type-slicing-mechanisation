@@ -123,5 +123,10 @@ module ⊑ = IsDecPartialOrder ⊑-isDecPartialOrder
 open import Core.Slice ⊑-isDecPartialOrder public
 
 import Core.Instances as I
-instance typ-precision : I.HasPrecision Typ
-         typ-precision = record { _⊑_ = _⊑_ ; isDecPartialOrder = ⊑-isDecPartialOrder }
+instance
+  typ-precision : I.HasPrecision Typ
+  typ-precision = record { _⊑_ = _⊑_ ; isDecPartialOrder = ⊑-isDecPartialOrder }
+  typ-slice : I.HasSlice Typ
+  typ-slice = record
+    { SliceOf = SliceOf ; ↓ = ↓ ; _isSlice_ = _isSlice_ ; ↑ = ↑
+    ; weaken = weaken ; _≈ₛ_ = _≈ₛ_ ; _≈ₛ?_ = _≈ₛ?_ }

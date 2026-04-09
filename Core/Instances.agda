@@ -44,6 +44,19 @@ module ⊑Lat {A : Set} ⦃ hp : HasPrecision A ⦄ ⦃ hm : HasMeet A ⦄ ⦃ h
     renaming (∧-greatest to ⊓-greatest; x∧y≤x to x⊓y⊑x; x∧y≤y to x⊓y⊑y)
   isMeetSemilattice = HasMeetSemilattice.isMeetSemilattice hms
 
+-- Slice infrastructure, parameterised by carrier type
+record HasSlice (A : Set) ⦃ _ : HasPrecision A ⦄ : Set₁ where
+  field
+    SliceOf          : A → Set
+    ↓                : ∀ {a} → SliceOf a → A
+    _isSlice_        : ∀ {a} → (x : A) → _⊑_ x a → SliceOf a
+    ↑                : ∀ {a' a} → _⊑_ a' a → SliceOf a
+    weaken           : ∀ {a a'} → _⊑_ a a' → SliceOf a → SliceOf a'
+    _≈ₛ_             : ∀ {a a'} → SliceOf a → SliceOf a' → Set
+    _≈ₛ?_            : ∀ {a} → (s₁ s₂ : SliceOf a) → Dec (s₁ ≈ₛ s₂)
+  infix 3 _isSlice_
+open HasSlice ⦃...⦄ public hiding (_isSlice_)
+
 -- Slice-level lattice bundle, parameterised by carrier and slice type
 record SliceLattice {A : Set} (⌊_⌋ : A → Set) (↓' : ∀ {a} → ⌊ a ⌋ → A) : Set₁ where
   field

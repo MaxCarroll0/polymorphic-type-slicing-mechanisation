@@ -65,5 +65,10 @@ module ⊑ = IsDecPartialOrder ⊑-isDecPartialOrder using (antisym; isPartialOr
 open import Core.Slice ⊑-isDecPartialOrder public
 
 import Core.Instances as I
-instance assms-precision : I.HasPrecision Assms
-         assms-precision = record { _⊑_ = _⊑_ ; isDecPartialOrder = ⊑-isDecPartialOrder }
+instance
+  assms-precision : I.HasPrecision Assms
+  assms-precision = record { _⊑_ = _⊑_ ; isDecPartialOrder = ⊑-isDecPartialOrder }
+  assms-slice : I.HasSlice Assms
+  assms-slice = record
+    { SliceOf = SliceOf ; ↓ = ↓ ; _isSlice_ = _isSlice_ ; ↑ = ↑
+    ; weaken = weaken ; _≈ₛ_ = _≈ₛ_ ; _≈ₛ?_ = _≈ₛ?_ }
