@@ -44,7 +44,6 @@ mutual
 
     ↦∘   : ∀ {Γ : Assms} {e₁ e₂ : Exp} {τ τ₁ τ₂ : Typ} →
               Γ ⊢ e₁ ↦ τ                               →
-              τ ~ □ ⇒ □                                → -- TODO: Make join default to □ meaning that this assumption is unneeded (i.e. any inconsistent joins cannot be decomposed). For completeness prove that τ ⊔t □ ⇒ □ ≡ τ₁ ⇒ τ₂ if and only if τ ~ □ ⇒ □. And similarly for other compound types.
               τ ⊔t □ ⇒ □ ≡ τ₁ ⇒ τ₂                     →
               Γ ⊢ e₂ ↤ τ₁                              →
               --------------------
@@ -52,7 +51,6 @@ mutual
 
     ↦<>  : ∀ {Γ : Assms} {e : Exp} {τ τ' σ : Typ} →
               Γ ⊢ e ↦ τ                           →
-              τ ~ ∀· □                            →
               τ ⊔t ∀· □ ≡ ∀· τ'                   →
               --------------------------
               Γ ⊢ e < σ > ↦ [ zero ↦ σ ] τ'
@@ -65,21 +63,18 @@ mutual
 
     ↦π₁  : ∀ {Γ : Assms} {e : Exp} {τ τ₁ τ₂ : Typ} →
               Γ ⊢ e ↦ τ                            →
-              τ ~ □ × □                            →
               τ ⊔t □ × □ ≡ τ₁ × τ₂                 →
               --------------------
               Γ ⊢ π₁ e ↦ τ₁
 
     ↦π₂  : ∀ {Γ : Assms} {e : Exp} {τ τ₁ τ₂ : Typ} →
               Γ ⊢ e ↦ τ                            →
-              τ ~ □ × □                            →
               τ ⊔t □ × □ ≡ τ₁ × τ₂                 →
               --------------------
               Γ ⊢ π₂ e ↦ τ₂
 
     ↦case : ∀ {Γ : Assms} {e e₁ e₂ : Exp} {τ τ₁ τ₂ τ₁' τ₂' : Typ} →
               Γ ⊢ e ↦ τ                                           →
-              τ ~ □ + □                                           →
               τ ⊔t □ + □ ≡ τ₁ + τ₂                                →
               (τ₁ ∷ Γ) ⊢ e₁ ↦ τ₁'                                 →
               (τ₂ ∷ Γ) ⊢ e₂ ↦ τ₂'                                 →
@@ -95,7 +90,6 @@ mutual
                Γ ⊢ e ↤ τ
 
     ↤λ    : ∀ {Γ : Assms} {e : Exp} {τ τ₁ τ₂ : Typ} →
-               τ ~ □ ⇒ □                            →
                τ ⊔t □ ⇒ □ ≡ τ₁ ⇒ τ₂                 →
                (τ₁ ∷ Γ) ⊢ e ↤ τ₂                    →
                --------------------
@@ -103,29 +97,25 @@ mutual
 
     ↤case : ∀ {Γ : Assms} {e e₁ e₂ : Exp} {τ τ₁ τ₂ τ' : Typ} →
                Γ ⊢ e ↦ τ                                     →
-               τ ~ □ + □                                     →
                τ ⊔t □ + □ ≡ τ₁ + τ₂                          →
-               (τ₁ ∷ Γ) ⊢ e₁ ↤ τ'                            → 
+               (τ₁ ∷ Γ) ⊢ e₁ ↤ τ'                            →
                (τ₂ ∷ Γ) ⊢ e₂ ↤ τ'                            →
                --------------------------
                Γ ⊢ case e of e₁ · e₂ ↤ τ'
 
     ↤ι₁  : ∀ {Γ : Assms} {e : Exp} {τ τ₁ τ₂ : Typ} →
-              τ ~ □ + □                            →
               τ ⊔t □ + □ ≡ τ₁ + τ₂                 →
               Γ ⊢ e ↤ τ₁                           →
               --------------------
               Γ ⊢ ι₁ e ↤ τ
 
     ↤ι₂  : ∀ {Γ : Assms} {e : Exp} {τ τ₁ τ₂ : Typ} →
-              τ ~ □ + □                            →
               τ ⊔t □ + □ ≡ τ₁ + τ₂                 →
               Γ ⊢ e ↤ τ₂                           →
               --------------------
               Γ ⊢ ι₂ e ↤ τ
 
     ↤&   : ∀ {Γ : Assms} {e₁ e₂ : Exp} {τ τ₁ τ₂ : Typ} →
-              τ ~ □ × □                                →
               τ ⊔t □ × □ ≡ τ₁ × τ₂                     →
               Γ ⊢ e₁ ↤ τ₁                              →
               Γ ⊢ e₂ ↤ τ₂                              →

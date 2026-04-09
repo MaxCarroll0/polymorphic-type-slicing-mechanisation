@@ -11,6 +11,7 @@ open import Function using (_on_)
 
 open import Core.Typ.Base
 open import Core.Typ.Equality renaming (_≟_ to _≟t_)
+open import Core.Typ.Consistency
 
 -- Precision relation
 data _⊑_ : Typ → Typ → Set where
@@ -96,5 +97,28 @@ private
 module ⊑ = IsDecPartialOrder ⊑-isDecPartialOrder
   using (antisym; isPartialOrder; isPreorder; refl; reflexive; trans)
   
+-- Precision implies consistency
+⊑to~ : ∀ {τ τ'}
+     → τ ⊑ τ'     →  τ ~ τ'
+⊑to~   ⊑□         =  ~?₂
+⊑to~   ⊑*         =  ~*
+⊑to~   ⊑Var       =  ~Var
+⊑to~  (⊑+ p₁ p₂)  =  ~+ (⊑to~ p₁) (⊑to~ p₂)
+⊑to~  (⊑× p₁ p₂)  =  ~× (⊑to~ p₁) (⊑to~ p₂)
+⊑to~  (⊑⇒ p₁ p₂)  =  ~⇒ (⊑to~ p₁) (⊑to~ p₂)
+⊑to~  (⊑∀ p)      =  ~∀ (⊑to~ p)
+
+-- Slices of the same type are consistent
+⊑-consistent : ∀ {τ₁ τ₂ τ}
+             → τ₁ ⊑ τ    →  τ₂ ⊑ τ     →  τ₁ ~ τ₂
+⊑-consistent   ⊑□           _          =  ~?₂
+⊑-consistent   _            ⊑□         =  ~?₁
+⊑-consistent   ⊑*           ⊑*         =  ~*
+⊑-consistent   ⊑Var         ⊑Var       =  ~Var
+⊑-consistent  (⊑+ p₁ p₂)   (⊑+ q₁ q₂)  =  ~+ (⊑-consistent p₁ q₁) (⊑-consistent p₂ q₂)
+⊑-consistent  (⊑× p₁ p₂)   (⊑× q₁ q₂)  =  ~× (⊑-consistent p₁ q₁) (⊑-consistent p₂ q₂)
+⊑-consistent  (⊑⇒ p₁ p₂)   (⊑⇒ q₁ q₂)  =  ~⇒ (⊑-consistent p₁ q₁) (⊑-consistent p₂ q₂)
+⊑-consistent  (⊑∀ p)       (⊑∀ q)      =  ~∀ (⊑-consistent p q)
+
 -- Instantiate generic Slice module for types
 open import Core.Slice ⊑-isDecPartialOrder public

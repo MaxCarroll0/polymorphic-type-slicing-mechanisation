@@ -2,6 +2,7 @@ module Core.Typ.Consistency where
 
 open import Data.Nat using (ℕ) renaming (_≟_ to _≟ℕ_)
 open import Data.Product using (_,_; uncurry)
+open import Data.Sum using (_⊎_; inj₁; inj₂)
 open import Relation.Binary.PropositionalEquality using (_≡_; _≢_; refl; inspect; [_])
 open import Relation.Binary.Definitions using (Reflexive; Symmetric; Transitive)
 open import Relation.Nullary using (Dec; yes; no; ¬_; map′)
@@ -81,6 +82,17 @@ private
 ~-isCompatibility = record { reflexive = ~-refl ; symmetric = ~-sym }
 
 -- For fun: counterexample to transitivity: ⟨0⟩ ~ □ and □ ~ ⟨1⟩, but ⟨0⟩ ≁ ⟨1⟩
+-- Consistent types have the same kind (top constructor) unless one is □
+~-same-kind : ∀ {τ τ'} → τ ~ τ' → (diag τ τ' ≢ diff) ⊎ (τ ≡ □) ⊎ (τ' ≡ □)
+~-same-kind ~*         = inj₁ (λ ())
+~-same-kind ~Var       = inj₁ (λ ())
+~-same-kind ~?₁        = inj₂ (inj₂ refl)
+~-same-kind ~?₂        = inj₂ (inj₁ refl)
+~-same-kind (~+ _ _)   = inj₁ (λ ())
+~-same-kind (~× _ _)   = inj₁ (λ ())
+~-same-kind (~⇒ _ _)   = inj₁ (λ ())
+~-same-kind (~∀ _)     = inj₁ (λ ())
+
 ~-not-trans : ¬ Transitive _~_
 ~-not-trans trans with trans {⟨ 0 ⟩} {□} {⟨ 1 ⟩} ~?₁ ~?₂
 ...                  | ()

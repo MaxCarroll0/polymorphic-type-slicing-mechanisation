@@ -16,7 +16,6 @@ open import Core.Typ.Base
 open import Core.Typ.Equality
 open import Core.Typ.Consistency
 open import Core.Typ.Precision renaming (⊤ₛ to ⊤ₛ')
-open import Core.Typ.Properties
 
 -- TODO: separate all lattice modules into different directory and import from Core
 
@@ -37,6 +36,7 @@ _⊓_ : Typ → Typ → Typ
 infixl 6 _⊓_
 
 -- Join operator. Note: Only a LUB on consistent types
+-- TODO: consider returning Maybe Typ to distinguish join failure from □
 _⊔_ : Typ → Typ → Typ
 τ ⊔ τ' with diag τ τ'
 ...       | kind□  = □
@@ -46,9 +46,10 @@ _⊔_ : Typ → Typ → Typ
 ...       | kind⇒ {τ₁} {τ₂} {τ₁'} {τ₂'} = (τ₁ ⊔ τ₁') ⇒ (τ₂ ⊔ τ₂')
 ...       | kind∀ {τ} {τ'} = ∀· (τ ⊔ τ')
 ...       | kindVar {m} {n} = ⟨ m ⟩
-τ ⊔ τ'    | diff with τ ≟ □
-...                 | yes _  = τ'
-...                 | no  _  = τ
+τ ⊔ τ'    | diff with τ ≟ □ | τ' ≟ □
+...                 | yes _  | _      = τ'
+...                 | no  _  | yes _  = τ
+...                 | no  _  | no  _  = □
 
 infixl 6 _⊔_
 
@@ -115,17 +116,19 @@ private
   ⊔-identityₗ : ∀ τ → □ ⊔ τ ≡ τ
   ⊔-identityₗ τ with diag □ τ
   ⊔-identityₗ □         | kind□ = refl
-  ⊔-identityₗ _         | diff = refl
+  ⊔-identityₗ τ         | diff with □ ≟ □ | τ ≟ □
+  ...                          | yes _  | _      = refl
+  ...                          | no □≢□ | _      = ⊥-elim (□≢□ refl)
 
   ⊔-identityᵣ : ∀ τ → τ ⊔ □ ≡ τ
   ⊔-identityᵣ τ with diag τ □
   ⊔-identityᵣ □         | kind□ = refl
-  ⊔-identityᵣ τ         | diff with τ ≟ □
-  ...                          | yes refl = refl
-  ...                          | no  _    = refl
+  ⊔-identityᵣ τ         | diff with τ ≟ □ | □ ≟ □
+  ...                          | yes refl | _      = refl
+  ...                          | no  _    | yes _  = refl
+  ...                          | no  _    | no □≢□ = ⊥-elim (□≢□ refl)
 
 
--- TODO: refactor consistency properties into Typ.Properties
 -- Join upper bounds (requires consistency)
 module ~ where
   ⊔-ub₁ : ∀ {τ₁ τ₂} → τ₁ ~ τ₂ → τ₁ ⊑ τ₁ ⊔ τ₂

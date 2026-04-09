@@ -17,6 +17,7 @@ open import Core.Assms.Precision renaming (⊤ₛ to ⊤ₛ')
 module Core.Assms.Lattice where
 
 -- Pointwise meet and join
+-- TODO: consider returning Maybe Assms to distinguish meet/join failure from []
 _⊓_ : Assms → Assms → Assms
 []       ⊓ []         = []
 (τ ∷ Γ₁) ⊓ (τ' ∷ Γ₂)  = (τ ⊓t τ') ∷ (Γ₁ ⊓ Γ₂)

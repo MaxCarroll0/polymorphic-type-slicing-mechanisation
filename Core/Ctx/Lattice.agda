@@ -22,6 +22,7 @@ open import Core.Ctx.Equality using () renaming (_≟_ to _≟Ctx_)
 open import Core.Ctx.Precision renaming (⊤ₛ to ⊤ₛ')
 
 -- Meet operator
+-- TODO: consider returning Maybe Ctx to distinguish meet failure from ○
 _⊓_ : Ctx → Ctx → Ctx
 C ⊓ C' with diag C C'
 ...       | diff                                   = ○
