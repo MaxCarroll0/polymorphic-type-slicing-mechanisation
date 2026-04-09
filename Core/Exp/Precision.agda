@@ -21,6 +21,8 @@ data _⊑_ : Exp → Exp → Set where
   ⊑Var  : ∀ {n}                →                         ⟨ n ⟩       ⊑ ⟨ n ⟩
   ⊑λ    : ∀ {τ τ' e e'}        →  τ ⊑t τ' → e ⊑ e'    →  λ: τ ⇒ e    ⊑ λ: τ' ⇒ e'
   ⊑λu   : ∀ {e e'}             →  e ⊑ e'              →  λ⇒ e        ⊑ λ⇒ e'
+  -- TODO: λ⇒ e ⊑ λ: τ ⇒ e' (unannotated as slice of annotated). Note: wide-ranging
+  -- consequences for antisymmetry, diag/kind classification, meets, joins, and lattice proofs
   ⊑∘    : ∀ {e₁ e₂ e₁' e₂'}    →  e₁ ⊑ e₁' → e₂ ⊑ e₂' →  e₁ ∘ e₂     ⊑ e₁' ∘ e₂'
   ⊑<>   : ∀ {e e' τ τ'}        →  e ⊑ e' → τ ⊑t τ'    →  e < τ >     ⊑ e' < τ' >
   ⊑&    : ∀ {e₁ e₂ e₁' e₂'}    →  e₁ ⊑ e₁' → e₂ ⊑ e₂' →  e₁ & e₂     ⊑ e₁' & e₂'
