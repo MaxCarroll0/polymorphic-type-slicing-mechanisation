@@ -8,9 +8,11 @@ open import Relation.Nullary using (Dec; yes; no; map′; ¬_)
 open import Relation.Nullary.Decidable using (_×-dec_)
 
 open import Core.Typ using (Typ)
+open import Core.Typ.Precision as TP using ()
   renaming (_⊑_ to _⊑t_; _⊑?_ to _⊑t?_;
             module ⊑ to ⊑t)
 open import Core.Exp using (Exp; ⊑□; ⊑∘; ⊑&; ⊑def; ⊑λ; ⊑ι₁; ⊑ι₂; ⊑Λ; ⊑λu; ⊑<>; ⊑case; ⊑π₁; ⊑π₂)
+open import Core.Exp.Precision as EP using ()
   renaming (_⊑_ to _⊑e_; _⊑?_ to _⊑e?_;
             module ⊑ to ⊑e)
 
@@ -176,8 +178,9 @@ C ⊑? C'                         with diag C C'  | inspect (diag C) C'
                                                             (e ⊑e? e' ×-dec C₁ ⊑? C₁')
 _              ⊑? _                | diff       | [ eq ] = no (shallow-imprecision eq)
 
-⊑-isDecPartialOrder : IsDecPartialOrder _≡_ _⊑_
-⊑-isDecPartialOrder = record
+private
+  ⊑-isDecPartialOrder : IsDecPartialOrder _≡_ _⊑_
+  ⊑-isDecPartialOrder = record
                       { isPartialOrder = ⊑-isPartialOrder
                       ; _≟_            = _≟Ctx_
                       ; _≤?_           = _⊑?_
@@ -215,4 +218,5 @@ instance
   ctx-slice : I.HasSlice Ctx
   ctx-slice = record
     { SliceOf = SliceOf ; ↓ = ↓ ; _isSlice_ = _isSlice_ ; ↑ = ↑
-    ; weaken = weaken ; _≈ₛ_ = _≈ₛ_ ; _≈ₛ?_ = _≈ₛ?_ }
+    ; weaken = weaken ; _≈ₛ_ = _≈ₛ_
+    ; _≈ₛ?_ = _≈ₛ?_ ; _⊑ₛ?_ = _⊑ₛ?_ }

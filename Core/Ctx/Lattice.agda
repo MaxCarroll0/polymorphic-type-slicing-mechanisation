@@ -10,13 +10,21 @@ open import Relation.Binary.Lattice.Definitions using (Infimum; Supremum)
 open import Function using (_on_)
 
 open import Core.Typ using (Typ)
-  renaming (⊑□ to ⊑t□; _⊑_ to _⊑t_; _⊓_ to _⊓t_; _⊔_ to _⊔t_;
-            module ⊑ₛLat to ⊑tₛLat; module ⊑ to ⊑t; module ⊑ₛ to ⊑tₛ;
+  renaming (⊑□ to ⊑t□)
+open import Core.Typ.Precision as TP using ()
+  renaming (_⊑_ to _⊑t_; module ⊑ to ⊑t; module ⊑ₛ to ⊑tₛ;
             _isSlice_ to _isSlicet_; ↑ to ↑t)
+open import Core.Typ.Lattice as TL using ()
+  renaming (_⊓_ to _⊓t_; _⊔_ to _⊔t_;
+            module ⊑ₛLat to ⊑tₛLat)
 open import Core.Exp using (Exp)
-  renaming (⊑□ to ⊑e□; _⊑_ to _⊑e_; _⊓_ to _⊓e_; _⊔_ to _⊔e_;
-            module ⊑ₛLat to ⊑eₛLat; module ⊑ to ⊑e; module ⊑ₛ to ⊑eₛ;
+  renaming (⊑□ to ⊑e□)
+open import Core.Exp.Precision as EP using ()
+  renaming (_⊑_ to _⊑e_; module ⊑ to ⊑e; module ⊑ₛ to ⊑eₛ;
             _isSlice_ to _isSlicee_; ↑ to ↑e)
+open import Core.Exp.Lattice as EL using ()
+  renaming (_⊓_ to _⊓e_; _⊔_ to _⊔e_;
+            module ⊑ₛLat to ⊑eₛLat)
 open import Core.Ctx.Base
 open import Core.Ctx.Equality using () renaming (_≟_ to _≟Ctx_)
 open import Core.Ctx.Precision renaming (⊤ₛ to ⊤ₛ')

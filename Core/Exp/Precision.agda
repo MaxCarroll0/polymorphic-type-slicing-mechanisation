@@ -9,6 +9,7 @@ open import Relation.Nullary using (Dec; yes; no; ¬_; map′)
 open import Relation.Nullary.Decidable using (_×-dec_)
 
 open import Core.Typ using (Typ)
+open import Core.Typ.Precision as TP using ()
   renaming (⊑□ to ⊑t□; _⊑_ to _⊑t_; _⊑?_ to _⊑t?_;
             module ⊑ to ⊑t)
 open import Core.Exp.Base
@@ -139,8 +140,9 @@ e            ⊑? e'               | diff      | [ as ] with e ≟e □
 ...                                                      | yes refl = yes ⊑□
 ...                                                      | no  e≢□  = no (shallow-imprecision e≢□ as)
 
-⊑-isDecPartialOrder : IsDecPartialOrder _≡_ _⊑_
-⊑-isDecPartialOrder = record
+private
+  ⊑-isDecPartialOrder : IsDecPartialOrder _≡_ _⊑_
+  ⊑-isDecPartialOrder = record
                       { isPartialOrder = ⊑-isPartialOrder
                       ; _≟_            = _≟e_
                       ; _≤?_           = _⊑?_
@@ -158,4 +160,5 @@ instance
   exp-slice : I.HasSlice Exp
   exp-slice = record
     { SliceOf = SliceOf ; ↓ = ↓ ; _isSlice_ = _isSlice_ ; ↑ = ↑
-    ; weaken = weaken ; _≈ₛ_ = _≈ₛ_ ; _≈ₛ?_ = _≈ₛ?_ }
+    ; weaken = weaken ; _≈ₛ_ = _≈ₛ_
+    ; _≈ₛ?_ = _≈ₛ?_ ; _⊑ₛ?_ = _⊑ₛ?_ }

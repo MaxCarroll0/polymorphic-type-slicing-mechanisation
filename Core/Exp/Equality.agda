@@ -6,7 +6,8 @@ open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong
 open import Relation.Nullary using (Dec; yes; no; map′)
 open import Relation.Nullary.Decidable using (_×-dec_)
 
-open import Core.Typ using (Typ) renaming (_≟_ to _≟t_)
+open import Core.Typ using (Typ)
+open import Core.Typ.Equality renaming (_≟_ to _≟t_)
 open import Core.Exp.Base
 
 _≟_ : (e e' : Exp) → Dec (e ≡ e')

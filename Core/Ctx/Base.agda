@@ -4,7 +4,7 @@ open import Relation.Nullary using (¬_)
 open import Relation.Binary.PropositionalEquality using (_≡_)
 
 open import Core.Typ using (Typ) renaming (□ to □t)
-open import Core.Exp renaming (□ to □e; _kind?_ to _kind?e_; diag to diag-e; shallow-disequality to shallow-disequality-e)
+open import Core.Exp.Base renaming (□ to □e; _kind?_ to _kind?e_; diag to diag-e; shallow-disequality to shallow-disequality-e)
 
 -- Expression contexts with exactly one mark ○ to plug expressions into
 -- Note: Do not confuse with the typing assumptions (often referred to as contexts)

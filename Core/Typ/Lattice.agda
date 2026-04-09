@@ -130,6 +130,7 @@ private
 
 
 -- Join upper bounds (requires consistency)
+-- TODO: refactor into Typ.Properties
 module ~ where
   ⊔-ub₁ : ∀ {τ₁ τ₂} → τ₁ ~ τ₂ → τ₁ ⊑ τ₁ ⊔ τ₂
   ⊔-ub₁ ~*               = ⊑*

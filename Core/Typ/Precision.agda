@@ -86,12 +86,13 @@ _⊑?_ : ∀ τ τ' → Dec (τ ⊑ τ')
 ...                                                    | yes refl = yes ⊑□
 ...                                                    | no  τ≢□  = no (shallow-imprecision τ≢□ as)
 
-⊑-isDecPartialOrder : IsDecPartialOrder _≡_ _⊑_
-⊑-isDecPartialOrder = record
-                      { isPartialOrder = ⊑-isPartialOrder
-                      ; _≟_            = _≟t_
-                      ; _≤?_           = _⊑?_
-                      }
+private
+  ⊑-isDecPartialOrder : IsDecPartialOrder _≡_ _⊑_
+  ⊑-isDecPartialOrder = record
+                        { isPartialOrder = ⊑-isPartialOrder
+                        ; _≟_            = _≟t_
+                        ; _≤?_           = _⊑?_
+                        }
 
 module ⊑ = IsDecPartialOrder ⊑-isDecPartialOrder
   using (antisym; isPartialOrder; isPreorder; refl; reflexive; trans)
@@ -129,4 +130,5 @@ instance
   typ-slice : I.HasSlice Typ
   typ-slice = record
     { SliceOf = SliceOf ; ↓ = ↓ ; _isSlice_ = _isSlice_ ; ↑ = ↑
-    ; weaken = weaken ; _≈ₛ_ = _≈ₛ_ ; _≈ₛ?_ = _≈ₛ?_ }
+    ; weaken = weaken ; _≈ₛ_ = _≈ₛ_
+    ; _≈ₛ?_ = _≈ₛ?_ ; _⊑ₛ?_ = _⊑ₛ?_ }

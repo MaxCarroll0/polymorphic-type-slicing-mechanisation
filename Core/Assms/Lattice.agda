@@ -8,9 +8,13 @@ open import Relation.Binary.Lattice.Definitions using (Infimum; Supremum)
 open import Function using (_on_)
 
 open import Core.Typ using (Typ)
-  renaming (⊑□ to ⊑t□; _⊑_ to _⊑t_; _⊓_ to _⊓t_; _⊔_ to _⊔t_;
-            module ⊑ₛLat to ⊑tₛLat; module ⊑ to ⊑t; module ⊑ₛ to ⊑tₛ;
+  renaming (⊑□ to ⊑t□)
+open import Core.Typ.Precision as TP using ()
+  renaming (_⊑_ to _⊑t_; module ⊑ to ⊑t; module ⊑ₛ to ⊑tₛ;
             _isSlice_ to _isSlicet_; ↑ to ↑t)
+open import Core.Typ.Lattice as TL using ()
+  renaming (_⊓_ to _⊓t_; _⊔_ to _⊔t_;
+            module ⊑ₛLat to ⊑tₛLat)
 open import Core.Assms.Base
 open import Core.Assms.Precision renaming (⊤ₛ to ⊤ₛ')
 

@@ -10,7 +10,9 @@ open import Relation.Nullary.Decidable using (map′; _×-dec_)
 open import Function using (_on_)
 
 open import Core.Typ using (Typ)
-  renaming (⊑□ to ⊑t□; _⊑_ to _⊑t_; _⊑?_ to _⊑t?_;
+  renaming (⊑□ to ⊑t□)
+open import Core.Typ.Precision as TP using ()
+  renaming (_⊑_ to _⊑t_; _⊑?_ to _⊑t?_;
             module ⊑ to ⊑t)
 open import Core.Assms.Base
 open import Core.Assms.Equality
@@ -53,8 +55,9 @@ _⊑?_ : ∀ Γ Γ' → Dec (Γ ⊑ Γ')
 (_ ∷ _) ⊑? []        = no λ ()
 (τ ∷ Γ) ⊑? (τ' ∷ Γ') = map′ (uncurry ⊑∷) (λ where (⊑∷ p q) → p , q)
                             (τ ⊑t? τ' ×-dec Γ ⊑? Γ')
-⊑-isDecPartialOrder : IsDecPartialOrder _≡_ _⊑_
-⊑-isDecPartialOrder = record
+private
+  ⊑-isDecPartialOrder : IsDecPartialOrder _≡_ _⊑_
+  ⊑-isDecPartialOrder = record
                       { isPartialOrder = ⊑-isPartialOrder
                         ; _≟_            = _≟_
                       ; _≤?_           = _⊑?_
@@ -71,4 +74,5 @@ instance
   assms-slice : I.HasSlice Assms
   assms-slice = record
     { SliceOf = SliceOf ; ↓ = ↓ ; _isSlice_ = _isSlice_ ; ↑ = ↑
-    ; weaken = weaken ; _≈ₛ_ = _≈ₛ_ ; _≈ₛ?_ = _≈ₛ?_ }
+    ; weaken = weaken ; _≈ₛ_ = _≈ₛ_
+    ; _≈ₛ?_ = _≈ₛ?_ ; _⊑ₛ?_ = _⊑ₛ?_ }
