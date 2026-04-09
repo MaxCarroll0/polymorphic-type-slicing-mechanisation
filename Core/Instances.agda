@@ -50,13 +50,13 @@ record SliceLattice {A : Set} (⌊_⌋ : A → Set) (↓' : ∀ {a} → ⌊ a �
     _⊑ₛ_  : ∀ {a} → ⌊ a ⌋ → ⌊ a ⌋ → Set
     _⊓ₛ_  : ∀ {a} → ⌊ a ⌋ → ⌊ a ⌋ → ⌊ a ⌋
     _⊔ₛ_  : ∀ {a} → ⌊ a ⌋ → ⌊ a ⌋ → ⌊ a ⌋
-  infix 4 _⊑ₛ_
-  infixl 6 _⊓ₛ_
-  infixl 7 _⊔ₛ_
     ⊤ₛ    : ∀ {a} → ⌊ a ⌋
     ⊥ₛ    : ∀ {a} → ⌊ a ⌋
     isBoundedLattice      : ∀ {a} → IsBoundedLattice (_≡_ on ↓') (_⊑ₛ_ {a}) _⊔ₛ_ _⊓ₛ_ ⊤ₛ ⊥ₛ
     isDistributiveLattice : ∀ {a} → IsDistributiveLattice (_≡_ on ↓') (_⊑ₛ_ {a}) _⊔ₛ_ _⊓ₛ_
+  infix 4 _⊑ₛ_
+  infixl 6 _⊓ₛ_
+  infixl 7 _⊔ₛ_
 open SliceLattice ⦃...⦄ public hiding (isBoundedLattice; isDistributiveLattice; ⊤ₛ; ⊥ₛ)
 
 -- Overloaded ⊑ₛLat module
