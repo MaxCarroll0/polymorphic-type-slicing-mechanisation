@@ -86,13 +86,12 @@ _⊑?_ : ∀ τ τ' → Dec (τ ⊑ τ')
 ...                                                    | yes refl = yes ⊑□
 ...                                                    | no  τ≢□  = no (shallow-imprecision τ≢□ as)
 
-private 
-  ⊑-isDecPartialOrder : IsDecPartialOrder _≡_ _⊑_
-  ⊑-isDecPartialOrder = record
-                        { isPartialOrder = ⊑-isPartialOrder
-                        ; _≟_            = _≟t_
-                        ; _≤?_           = _⊑?_
-                        }
+⊑-isDecPartialOrder : IsDecPartialOrder _≡_ _⊑_
+⊑-isDecPartialOrder = record
+                      { isPartialOrder = ⊑-isPartialOrder
+                      ; _≟_            = _≟t_
+                      ; _≤?_           = _⊑?_
+                      }
 
 module ⊑ = IsDecPartialOrder ⊑-isDecPartialOrder
   using (antisym; isPartialOrder; isPreorder; refl; reflexive; trans)
@@ -125,4 +124,4 @@ open import Core.Slice ⊑-isDecPartialOrder public
 
 import Core.Instances as I
 instance typ-precision : I.HasPrecision Typ
-         typ-precision = record { _⊑_ = _⊑_ }
+         typ-precision = record { _⊑_ = _⊑_ ; isDecPartialOrder = ⊑-isDecPartialOrder }

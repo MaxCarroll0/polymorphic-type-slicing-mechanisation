@@ -181,3 +181,10 @@ instance
   assms-meet = record { _⊓_ = _⊓_ }
   assms-join : I.HasJoin Assms
   assms-join = record { _⊔_ = _⊔_ }
+  assms-sliceLattice : I.SliceLattice SliceOf ↓
+  assms-sliceLattice = record
+    { _⊑ₛ_ = _⊑ₛ_ ; _⊓ₛ_ = _⊓ₛ_ ; _⊔ₛ_ = _⊔ₛ_
+    ; ⊤ₛ = ⊤ₛ' ; ⊥ₛ = ⊥ₛ'
+    ; isBoundedLattice = ⊑ₛ-isBoundedLattice
+    ; isDistributiveLattice = ⊑ₛ-isDistributiveLattice
+    }

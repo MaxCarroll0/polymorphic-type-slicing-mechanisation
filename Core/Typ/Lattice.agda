@@ -291,3 +291,12 @@ instance
   typ-meet = record { _⊓_ = _⊓_ }
   typ-join : I.HasJoin Typ
   typ-join = record { _⊔_ = _⊔_ }
+  typ-meetSemilattice : I.HasMeetSemilattice Typ
+  typ-meetSemilattice = record { isMeetSemilattice = ⊑-isMeetSemilattice }
+  typ-sliceLattice : I.SliceLattice SliceOf ↓
+  typ-sliceLattice = record
+    { _⊑ₛ_ = _⊑ₛ_ ; _⊓ₛ_ = _⊓ₛ_ ; _⊔ₛ_ = _⊔ₛ_
+    ; ⊤ₛ = ⊤ₛ' ; ⊥ₛ = ⊥ₛ'
+    ; isBoundedLattice = ⊑ₛ-isBoundedLattice
+    ; isDistributiveLattice = ⊑ₛ-isDistributiveLattice
+    }
