@@ -1,5 +1,3 @@
-{-# OPTIONS --allow-unsolved-metas #-}
-
 open import Data.List using (List; []; _∷_; length)
 open import Data.Product using (_,_; proj₁; proj₂)
 open import Relation.Binary using (IsPartialOrder; IsDecPartialOrder)
@@ -123,7 +121,8 @@ private
   ⊓ₛ-distribˡ-⊔ₛ : ∀ {τ} (υ₁ υ₂ υ₃ : ⌊ τ ⌋) → (υ₁ ⊓ₛ (υ₂ ⊔ₛ υ₃)) ≈ₛ ((υ₁ ⊓ₛ υ₂) ⊔ₛ (υ₁ ⊓ₛ υ₃))
   ⊓ₛ-distribˡ-⊔ₛ (_ isSlice ⊑[]) (_ isSlice ⊑[]) (_ isSlice ⊑[]) = refl
   ⊓ₛ-distribˡ-⊔ₛ (γ₁ isSlice ⊑∷ p₁ q₁) (γ₂ isSlice ⊑∷ p₂ q₂) (γ₃ isSlice ⊑∷ p₃ q₃)
-    = {!!}
+    = cong₂ _∷_ (⊑tₛLat.⊓ₛ-distribˡ-⊔ₛ (↑t p₁) (↑t p₂) (↑t p₃))
+                (⊓ₛ-distribˡ-⊔ₛ (↑ q₁) (↑ q₂) (↑ q₃))
 
 
   ⊑ₛ-isMeetSemilattice : ∀ {Γ} → IsMeetSemilattice (_≡_ on ↓) (_⊑ₛ_ {Γ}) _⊓ₛ_
@@ -155,7 +154,7 @@ private
   ⊑ₛ-isDistributiveLattice : ∀ {Γ} → IsDistributiveLattice (_≡_ on ↓) (_⊑ₛ_ {Γ}) _⊔ₛ_ _⊓ₛ_
   ⊑ₛ-isDistributiveLattice = record
                              { isLattice = ⊑ₛ-isLattice
-                             ; ∧-distribˡ-∨ = {!!}
+                             ; ∧-distribˡ-∨ = ⊓ₛ-distribˡ-⊔ₛ
                              }
 
 module ⊑ₛLat {Γ} where
