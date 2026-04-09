@@ -207,4 +207,4 @@ plug-preserves-⊑ (⊑def₁ q r) p      = ⊑def  (plug-preserves-⊑ q p) r
 plug-preserves-⊑ (⊑def₂ q r) p      = ⊑def  q (plug-preserves-⊑ r p)
 
 -- Instantiate generic Slice module for contexts
-open import Slice ⊑-isDecPartialOrder public
+open import Core.Slice ⊑-isDecPartialOrder public

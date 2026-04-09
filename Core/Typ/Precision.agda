@@ -97,4 +97,4 @@ module ⊑ = IsDecPartialOrder ⊑-isDecPartialOrder
   using (antisym; isPartialOrder; isPreorder; refl; reflexive; trans)
   
 -- Instantiate generic Slice module for types
-open import Slice ⊑-isDecPartialOrder public
+open import Core.Slice ⊑-isDecPartialOrder public

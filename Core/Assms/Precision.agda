@@ -63,4 +63,4 @@ private
 
 module ⊑ = IsDecPartialOrder ⊑-isDecPartialOrder using (antisym; isPartialOrder; isPreorder; refl; reflexive; trans)
 
-open import Slice ⊑-isDecPartialOrder public
+open import Core.Slice ⊑-isDecPartialOrder public

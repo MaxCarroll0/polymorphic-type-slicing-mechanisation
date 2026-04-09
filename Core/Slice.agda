@@ -1,12 +1,10 @@
 open import Data.Product using (_,_)
-open import Relation.Binary using (IsPartialOrder; IsDecPartialOrder; Maximum; IsEquivalence)
+open import Relation.Binary using (IsPartialOrder; IsDecPartialOrder; Maximum; IsEquivalence; IsDecEquivalence)
 open import Relation.Binary.Lattice using (IsMeetSemilattice; IsBoundedMeetSemilattice)
 open import Relation.Nullary using (Dec; yes; no)
 
--- TODO: move into core
-
 -- Lift partial order to a partial order on elements less than some top
-module Slice
+module Core.Slice
   {A : Set}
   {_≈_ _⊑_ : A → A → Set}
   (O : IsDecPartialOrder _≈_ _⊑_)
@@ -30,16 +28,24 @@ module Slice
   _≈ₛ_ : ∀ {a a'} → ⌊ a ⌋ → ⌊ a' ⌋ → Set
   s₁ ≈ₛ s₂ = s₁ .↓ ≈ s₂ .↓
 
-  private 
+  _≈ₛ?_ : ∀ {a} (s₁ s₂ : ⌊ a ⌋) → Dec (s₁ ≈ₛ s₂)
+  s₁ ≈ₛ? s₂ = s₁ .↓ ≟ s₂ .↓
+
+  private
     ≈ₛ-isEquivalence : ∀ {a} → IsEquivalence (_≈ₛ_ {a} {a})
     ≈ₛ-isEquivalence = record
                       { refl = Eq.refl
                       ; sym = Eq.sym
                       ; trans = Eq.trans
                       }
-                      
-  -- TODO: make decidable and hide regular equivalence            
-  module ≈ₛ {a : A} = IsEquivalence (≈ₛ-isEquivalence {a})
+
+    ≈ₛ-isDecEquivalence : ∀ {a} → IsDecEquivalence (_≈ₛ_ {a} {a})
+    ≈ₛ-isDecEquivalence = record
+                          { isEquivalence = ≈ₛ-isEquivalence
+                          ; _≟_           = _≈ₛ?_
+                          }
+
+  module ≈ₛ {a : A} = IsDecEquivalence (≈ₛ-isDecEquivalence {a})
 
   -- Lifted ordering on slices
   _⊑ₛ_ : ∀ {a a'} → ⌊ a ⌋ → ⌊ a' ⌋ → Set
@@ -58,9 +64,6 @@ module Slice
                                        }
                         ; antisym = antisym
                         }
-
-  _≈ₛ?_ : ∀ {a} (s₁ s₂ : ⌊ a ⌋) → Dec (s₁ ≈ₛ s₂)
-  s₁ ≈ₛ? s₂ = s₁ .↓ ≟ s₂ .↓
 
   _⊑ₛ?_ : ∀ {a} (s₁ s₂ : ⌊ a ⌋) → Dec (s₁ ⊑ₛ s₂)
   s₁ ⊑ₛ? s₂ = s₁ .↓ ≤? s₂ .↓
