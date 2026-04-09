@@ -368,3 +368,10 @@ module ⊑ₛLat {e} where
     using () renaming (∧-distribˡ-∨ to ⊓ₛ-distribˡ-⊔ₛ)
 
   isDistributiveLattice = ⊑ₛ-isDistributiveLattice
+
+import Core.Instances as I
+instance
+  exp-meet : I.HasMeet Exp
+  exp-meet = record { _⊓_ = _⊓_ }
+  exp-join : I.HasJoin Exp
+  exp-join = record { _⊔_ = _⊔_ }

@@ -64,3 +64,7 @@ private
 module ⊑ = IsDecPartialOrder ⊑-isDecPartialOrder using (antisym; isPartialOrder; isPreorder; refl; reflexive; trans)
 
 open import Core.Slice ⊑-isDecPartialOrder public
+
+import Core.Instances as I
+instance assms-precision : I.HasPrecision Assms
+         assms-precision = record { _⊑_ = _⊑_ }

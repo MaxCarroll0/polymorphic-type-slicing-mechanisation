@@ -151,3 +151,7 @@ module ⊑ = IsDecPartialOrder ⊑-isDecPartialOrder using (antisym; isPartialOr
 
 -- Instantiate generic Slice module for expressions
 open import Core.Slice ⊑-isDecPartialOrder public
+
+import Core.Instances as I
+instance exp-precision : I.HasPrecision Exp
+         exp-precision = record { _⊑_ = _⊑_ }

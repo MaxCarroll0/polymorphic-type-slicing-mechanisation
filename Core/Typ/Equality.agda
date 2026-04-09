@@ -26,3 +26,7 @@ _≟_ : (τ τ' : Typ) → Dec (τ ≡ τ')
 ∀· τ    ≟ ∀· τ'     | kind∀   | _      = map′ (cong ∀·)
                                               (λ where refl → refl) (τ ≟ τ')
 ...                 | diff    | [ as ] = no λ where refl → shallow-disequality as
+
+import Core.Instances as I
+instance typ-decEq : I.HasDecEq Typ
+         typ-decEq = record { _≟_ = _≟_ }

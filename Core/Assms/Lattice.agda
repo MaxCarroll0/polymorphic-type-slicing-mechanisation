@@ -175,3 +175,9 @@ module ⊑ₛLat {Γ} where
 
   isDistributiveLattice = ⊑ₛ-isDistributiveLattice
 
+import Core.Instances as I
+instance
+  assms-meet : I.HasMeet Assms
+  assms-meet = record { _⊓_ = _⊓_ }
+  assms-join : I.HasJoin Assms
+  assms-join = record { _⊔_ = _⊔_ }
