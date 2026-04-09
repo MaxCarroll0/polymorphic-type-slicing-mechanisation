@@ -5,8 +5,8 @@ open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong
 open import Relation.Nullary using (Dec; yes; no; map′)
 open import Relation.Nullary.Decidable using (_×-dec_)
 
-open import Core.Typ using () renaming (_≟_ to _≟t_)
-open import Core.Exp using () renaming (_≟_ to _≟e_)
+open import Core.Typ.Equality renaming (_≟_ to _≟t_)
+open import Core.Exp.Equality renaming (_≟_ to _≟e_)
 open import Core.Ctx.Base
 
 _≟_ : (C C' : Ctx) → Dec (C ≡ C')

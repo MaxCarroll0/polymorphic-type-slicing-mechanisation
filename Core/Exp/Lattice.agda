@@ -13,11 +13,12 @@ open import Relation.Nullary using (yes; no)
 open import Function using (_on_)
 
 open import Core.Typ using (Typ)
-  renaming (_⊑_ to _⊑t_; _⊓_ to _⊓t_; _⊔_ to _⊔t_;
-            ⊑-consistent to ⊑t-consistent;
-            module ~ to ~t; module ⊑ to ⊑t;
-            module ⊑Lat to ⊑tLat; module ⊑ₛLat to ⊑tₛLat;
-            ↑ to ↑t)
+  renaming (⊑-consistent to ⊑t-consistent; module ~ to ~t)
+open import Core.Typ.Precision as TP using ()
+  renaming (_⊑_ to _⊑t_; module ⊑ to ⊑t; ↑ to ↑t)
+open import Core.Typ.Lattice as TL using ()
+  renaming (_⊓_ to _⊓t_; _⊔_ to _⊔t_;
+            module ⊑Lat to ⊑tLat; module ⊑ₛLat to ⊑tₛLat)
 open import Core.Exp.Base
 open import Core.Exp.Equality renaming (_≟_ to _≟e_)
 open import Core.Exp.Precision renaming (⊤ₛ to ⊤ₛ')
