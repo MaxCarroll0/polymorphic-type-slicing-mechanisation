@@ -208,3 +208,7 @@ plug-preserves-⊑ (⊑def₂ q r) p      = ⊑def  q (plug-preserves-⊑ r p)
 
 -- Instantiate generic Slice module for contexts
 open import Core.Slice ⊑-isDecPartialOrder public
+
+import Core.Instances as I
+instance ctx-precision : I.HasPrecision Ctx
+         ctx-precision = record { _⊑_ = _⊑_ }

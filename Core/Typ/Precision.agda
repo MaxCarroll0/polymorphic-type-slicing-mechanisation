@@ -122,3 +122,7 @@ module ⊑ = IsDecPartialOrder ⊑-isDecPartialOrder
 
 -- Instantiate generic Slice module for types
 open import Core.Slice ⊑-isDecPartialOrder public
+
+import Core.Instances as I
+instance typ-precision : I.HasPrecision Typ
+         typ-precision = record { _⊑_ = _⊑_ }

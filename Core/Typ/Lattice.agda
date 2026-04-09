@@ -285,3 +285,9 @@ module ⊑ₛLat {τ} where
 
   isDistributiveLattice = ⊑ₛ-isDistributiveLattice
 
+import Core.Instances as I
+instance
+  typ-meet : I.HasMeet Typ
+  typ-meet = record { _⊓_ = _⊓_ }
+  typ-join : I.HasJoin Typ
+  typ-join = record { _⊔_ = _⊔_ }

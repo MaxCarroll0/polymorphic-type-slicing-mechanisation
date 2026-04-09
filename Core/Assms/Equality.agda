@@ -10,3 +10,7 @@ open import Core.Assms.Base
 
 _≟_ : (Γ Γ' : Assms) → Dec (Γ ≡ Γ')
 _≟_ = ≡-dec _≟t_
+
+import Core.Instances as I
+instance assms-decEq : I.HasDecEq Assms
+         assms-decEq = record { _≟_ = _≟_ }

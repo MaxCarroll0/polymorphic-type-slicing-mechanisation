@@ -57,3 +57,7 @@ C         ≟ C'               with diag C C' | inspect (diag C) C'
                                                        (λ where refl → refl , refl)
                                                        (e ≟e e' ×-dec C₁ ≟ C₁')
 ...                             | diff      | [ as ] = no λ where refl → shallow-disequality as
+
+import Core.Instances as I
+instance ctx-decEq : I.HasDecEq Ctx
+         ctx-decEq = record { _≟_ = _≟_ }

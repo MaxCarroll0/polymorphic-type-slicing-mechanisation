@@ -47,3 +47,7 @@ e₁ & e₂       ≟ e₁' & e₂'                 | kind&     | _    = map′ 
                                                                     (λ where refl → refl , refl)
                                                                     (e₁ ≟ e₁' ×-dec e₂ ≟ e₂')
 ...                                       | diff      | [ as ] = no λ where refl → shallow-disequality as
+
+import Core.Instances as I
+instance exp-decEq : I.HasDecEq Exp
+         exp-decEq = record { _≟_ = _≟_ }
