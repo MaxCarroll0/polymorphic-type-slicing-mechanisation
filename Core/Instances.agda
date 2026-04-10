@@ -3,7 +3,8 @@ module Core.Instances where
 open import Data.Product using (_,_)
 open import Relation.Nullary using (Dec)
 open import Relation.Binary using (IsPartialOrder; IsDecPartialOrder; IsEquivalence; IsDecEquivalence; Maximum)
-open import Relation.Binary.Lattice using (IsMeetSemilattice; IsBoundedLattice; IsDistributiveLattice; IsBoundedMeetSemilattice)
+open import Relation.Binary.Definitions using (Minimum)
+open import Relation.Binary.Lattice using (IsMeetSemilattice; IsBoundedLattice; IsDistributiveLattice; IsBoundedMeetSemilattice; IsLattice; Infimum; Supremum)
 open import Relation.Binary.PropositionalEquality as Eq using (_≡_; refl)
 open import Function using (_on_)
 
@@ -155,42 +156,60 @@ module ⊓ₛ
     hiding (trans; isPartialOrder)
 
 
-  private
-    isBoundedMeetSemilattice' : ∀ {a} → IsBoundedMeetSemilattice (_≈ₛ_ {a = a} {a' = a}) _⊑ₛ_ _⊓ₛ_ ⊤ₛ
-    isBoundedMeetSemilattice' = record
-      { isMeetSemilattice = record
-        { isPartialOrder = ⊑ₛ.isPartialOrder
-        ; infimum = λ s₁ s₂ →
-                    x∧y≤x (s₁ .↓) (s₂ .↓)
-                  , x∧y≤y (s₁ .↓) (s₂ .↓)
-                  , λ _ → ∧-greatest
-        }
-      ; maximum = ⊤ₛ-max
+  isBoundedMeetSemilattice : ∀ {a} → IsBoundedMeetSemilattice (_≈ₛ_ {a = a} {a' = a}) _⊑ₛ_ _⊓ₛ_ ⊤ₛ
+  isBoundedMeetSemilattice = record
+    { isMeetSemilattice = record
+      { isPartialOrder = ⊑ₛ.isPartialOrder
+      ; infimum = λ s₁ s₂ →
+                  x∧y≤x (s₁ .↓) (s₂ .↓)
+                , x∧y≤y (s₁ .↓) (s₂ .↓)
+                , λ _ → ∧-greatest
       }
+    ; maximum = ⊤ₛ-max
+    }
 
-  open IsBoundedMeetSemilattice (isBoundedMeetSemilattice' {a}) public
+  open IsBoundedMeetSemilattice (isBoundedMeetSemilattice {a}) public
     using (infimum; isMeetSemilattice; maximum)
     renaming (x∧y≤x to x⊓ₛy⊑ₛx; x∧y≤y to x⊓ₛy⊑ₛy; ∧-greatest to ⊓ₛ-greatest)
 
-  isBoundedMeetSemilattice = isBoundedMeetSemilattice'
-
+-- Full bounded distributive lattice on slices
 record SliceLattice (A : Set) ⦃ hp : HasPrecision A ⦄ ⦃ hm : HasMeet A ⦄ ⦃ hj : HasJoin A ⦄ : Set₁ where
   field
-    ⊥ₛ    : ∀ {a} → ⌊ a ⌋
-    isBoundedLattice      : ∀ {a} → IsBoundedLattice (_≡_ on ↓) (_⊑ₛ_ {A} ⦃ hp ⦄ {a} {a}) _⊔ₛ_ _⊓ₛ_ (⊤ₛ {A} ⦃ hp ⦄ {a}) ⊥ₛ
-    isDistributiveLattice : ∀ {a} → IsDistributiveLattice (_≡_ on ↓) (_⊑ₛ_ {A} ⦃ hp ⦄ {a} {a}) _⊔ₛ_ _⊓ₛ_
-  infixl 6 _⊓ₛ_
-  infixl 7 _⊔ₛ_
+    ⊥ₛ              : ∀ {a} → ⌊ a ⌋
+    ⊥ₛ-min          : ∀ {a} → Minimum (_⊑ₛ_ {A} ⦃ hp ⦄ {a} {a}) ⊥ₛ
+    x⊓ₛy⊑ₛx        : ∀ {a} (s₁ s₂ : ⌊ a ⌋) → _⊓ₛ_ {A} {a} s₁ s₂ ⊑ₛ s₁
+    x⊓ₛy⊑ₛy        : ∀ {a} (s₁ s₂ : ⌊ a ⌋) → _⊓ₛ_ {A} {a} s₁ s₂ ⊑ₛ s₂
+    ⊓ₛ-greatest     : ∀ {a} {s s₁ s₂ : ⌊ a ⌋} → s ⊑ₛ s₁ → s ⊑ₛ s₂ → s ⊑ₛ _⊓ₛ_ {A} {a} s₁ s₂
+    x⊑ₛx⊔ₛy        : ∀ {a} (s₁ s₂ : ⌊ a ⌋) → s₁ ⊑ₛ _⊔ₛ_ {A} {a} s₁ s₂
+    y⊑ₛx⊔ₛy        : ∀ {a} (s₁ s₂ : ⌊ a ⌋) → s₂ ⊑ₛ _⊔ₛ_ {A} {a} s₁ s₂
+    ⊓ₛ-distribˡ-⊔ₛ  : ∀ {a} (s₁ s₂ s₃ : ⌊ a ⌋) → _⊓ₛ_ {A} {a} s₁ (_⊔ₛ_ {A} {a} s₂ s₃) ≈ₛ _⊔ₛ_ {A} {a} (_⊓ₛ_ {A} {a} s₁ s₂) (_⊓ₛ_ {A} {a} s₁ s₃)
 open SliceLattice ⦃...⦄ public using (⊥ₛ)
 
 module ⊑ₛLat {A : Set} ⦃ hp : HasPrecision A ⦄ ⦃ hm : HasMeet A ⦄ ⦃ hj : HasJoin A ⦄ ⦃ sl : SliceLattice A ⦄ {a : A} where
-  open IsBoundedLattice (SliceLattice.isBoundedLattice sl {a}) public
+
+  isBoundedLattice : IsBoundedLattice (_≡_ on ↓) (_⊑ₛ_ {A} ⦃ hp ⦄ {a} {a}) _⊔ₛ_ _⊓ₛ_ (⊤ₛ {A} ⦃ hp ⦄ {a}) (SliceLattice.⊥ₛ sl)
+  isBoundedLattice = record
+    { isLattice = record
+      { isPartialOrder = ⊑ₛ.isPartialOrder
+      ; supremum       = λ s₁ s₂ → SliceLattice.x⊑ₛx⊔ₛy sl s₁ s₂ , SliceLattice.y⊑ₛx⊔ₛy sl s₁ s₂ , λ _ p q → HasJoin.closure hj p q
+      ; infimum        = λ s₁ s₂ → SliceLattice.x⊓ₛy⊑ₛx sl s₁ s₂ , SliceLattice.x⊓ₛy⊑ₛy sl s₁ s₂ , λ s p q → SliceLattice.⊓ₛ-greatest sl {s = s} {s₁} {s₂} p q
+      }
+    ; maximum   = ⊤ₛ-max
+    ; minimum   = SliceLattice.⊥ₛ-min sl
+    }
+
+  open IsBoundedLattice isBoundedLattice public
     using (infimum; supremum;
            isBoundedJoinSemilattice; isBoundedMeetSemilattice; isJoinSemilattice; isMeetSemilattice; isLattice)
     renaming (x∧y≤x to x⊓ₛy⊑ₛx; x∧y≤y to x⊓ₛy⊑ₛy; x≤x∨y to x⊑ₛx⊔ₛy; y≤x∨y to y⊑ₛx⊔ₛy;
               ∧-greatest to ⊓ₛ-greatest; ∨-least to ⊔ₛ-least;
               maximum to ⊤ₛ-max; minimum to ⊥ₛ-min)
-  isBoundedLattice = SliceLattice.isBoundedLattice sl
-  open IsDistributiveLattice (SliceLattice.isDistributiveLattice sl {a}) public
+
+  isDistributiveLattice : IsDistributiveLattice (_≡_ on ↓) (_⊑ₛ_ {A} ⦃ hp ⦄ {a} {a}) _⊔ₛ_ _⊓ₛ_
+  isDistributiveLattice = record
+    { isLattice    = IsBoundedLattice.isLattice isBoundedLattice
+    ; ∧-distribˡ-∨ = SliceLattice.⊓ₛ-distribˡ-⊔ₛ sl
+    }
+
+  open IsDistributiveLattice isDistributiveLattice public
     using () renaming (∧-distribˡ-∨ to ⊓ₛ-distribˡ-⊔ₛ)
-  isDistributiveLattice = SliceLattice.isDistributiveLattice sl
