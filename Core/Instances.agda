@@ -19,6 +19,8 @@ record HasPrecision (A : Set) : Set₁ where
     _⊑_                : A → A → Set
     isDecPartialOrder  : IsDecPartialOrder _≡_ _⊑_
   infix 4 _⊑_
+
+  _⊑?_ = IsDecPartialOrder._≤?_ isDecPartialOrder
 open HasPrecision ⦃...⦄ public hiding (isDecPartialOrder)
 
 -- Overloaded ⊑ module
