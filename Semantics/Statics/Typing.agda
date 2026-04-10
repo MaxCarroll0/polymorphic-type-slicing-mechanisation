@@ -1,4 +1,4 @@
-open import Data.Nat hiding (_+_)
+open import Data.Nat hiding (_+_; _⊔_)
 open import Data.Maybe
 open import Data.List
 open import Relation.Binary.PropositionalEquality
