@@ -8,24 +8,25 @@ open import Relation.Nullary.Decidable using (_×-dec_)
 
 open import Core.Typ.Base
 
-_≟_ : (τ τ' : Typ) → Dec (τ ≡ τ')
-τ       ≟ τ' with diag τ τ'   | inspect (diag τ) τ'
-...                 | kind*   | _      = yes refl
-...                 | kind□   | _      = yes refl
-⟨ m ⟩   ≟ ⟨ n ⟩     | kindVar | _      = map′ (cong ⟨_⟩)
-                                              (λ where refl → refl) (m ≟ℕ n)
-τ₁ + τ₂ ≟ τ₁' + τ₂' | kind+   | _      = map′ (uncurry (cong₂ _+_))
-                                              (λ where refl → refl , refl)
-                                              (τ₁ ≟ τ₁' ×-dec τ₂ ≟ τ₂')
-τ₁ × τ₂ ≟ τ₁' × τ₂' | kind×   | _      = map′ (uncurry (cong₂ _×_))
-                                              (λ where refl → refl , refl)
-                                              (τ₁ ≟ τ₁' ×-dec τ₂ ≟ τ₂')
-τ₁ ⇒ τ₂ ≟ τ₁' ⇒ τ₂' | kind⇒   | _      = map′ (uncurry (cong₂ _⇒_))
-                                              (λ where refl → refl , refl)
-                                              (τ₁ ≟ τ₁' ×-dec τ₂ ≟ τ₂')
-∀· τ    ≟ ∀· τ'     | kind∀   | _      = map′ (cong ∀·)
-                                              (λ where refl → refl) (τ ≟ τ')
-...                 | diff    | [ as ] = no λ where refl → shallow-disequality as
+private 
+  _≟_ : (τ τ' : Typ) → Dec (τ ≡ τ')
+  τ       ≟ τ' with diag τ τ'   | inspect (diag τ) τ'
+  ...                 | kind*   | _      = yes refl
+  ...                 | kind□   | _      = yes refl
+  ⟨ m ⟩   ≟ ⟨ n ⟩     | kindVar | _      = map′ (cong ⟨_⟩)
+                                                (λ where refl → refl) (m ≟ℕ n)
+  τ₁ + τ₂ ≟ τ₁' + τ₂' | kind+   | _      = map′ (uncurry (cong₂ _+_))
+                                                (λ where refl → refl , refl)
+                                                (τ₁ ≟ τ₁' ×-dec τ₂ ≟ τ₂')
+  τ₁ × τ₂ ≟ τ₁' × τ₂' | kind×   | _      = map′ (uncurry (cong₂ _×_))
+                                                (λ where refl → refl , refl)
+                                                (τ₁ ≟ τ₁' ×-dec τ₂ ≟ τ₂')
+  τ₁ ⇒ τ₂ ≟ τ₁' ⇒ τ₂' | kind⇒   | _      = map′ (uncurry (cong₂ _⇒_))
+                                                (λ where refl → refl , refl)
+                                                (τ₁ ≟ τ₁' ×-dec τ₂ ≟ τ₂')
+  ∀· τ    ≟ ∀· τ'     | kind∀   | _      = map′ (cong ∀·)
+                                                (λ where refl → refl) (τ ≟ τ')
+  ...                 | diff    | [ as ] = no λ where refl → shallow-disequality as
 
 import Core.Instances as I
 instance typ-decEq : I.HasDecEq Typ

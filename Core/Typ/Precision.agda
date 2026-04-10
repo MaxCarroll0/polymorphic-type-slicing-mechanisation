@@ -9,24 +9,27 @@ open import Data.Nat using (ℕ) renaming (_≟_ to _≟ℕ_)
 open import Data.Product using (_,_; uncurry)
 open import Function using (_on_)
 
+-- TODO: create the lifted instances in Core.Slice to avoid name clashes
+open import Core.Instances hiding (⌊_⌋; SliceOf; ↓; _isSlice_; 
+         ↑; weaken; _≈ₛ_; _≈ₛ?_; _⊑ₛ?_; _⊑ₛ_; _⊓ₛ_; _⊔ₛ_; module ⊑ₛLat)
 open import Core.Typ.Base
-open import Core.Typ.Equality renaming (_≟_ to _≟t_)
+open import Core.Typ.Equality
 open import Core.Typ.Consistency
 
 -- Precision relation
-data _⊑_ : Typ → Typ → Set where
-  ⊑□   : ∀ {τ}             →                       □       ⊑ τ
-  ⊑*   :                                           *       ⊑ *
-  ⊑Var : ∀ {n}             →                       ⟨ n ⟩   ⊑ ⟨ n ⟩
-  ⊑+   : ∀ {τ₁ τ₂ τ₁' τ₂'} → τ₁ ⊑ τ₁' → τ₂ ⊑ τ₂' → τ₁ + τ₂ ⊑ τ₁' + τ₂'
-  ⊑×   : ∀ {τ₁ τ₂ τ₁' τ₂'} → τ₁ ⊑ τ₁' → τ₂ ⊑ τ₂' → τ₁ × τ₂ ⊑ τ₁' × τ₂'
-  ⊑⇒   : ∀ {τ₁ τ₂ τ₁' τ₂'} → τ₁ ⊑ τ₁' → τ₂ ⊑ τ₂' → τ₁ ⇒ τ₂ ⊑ τ₁' ⇒ τ₂'
-  ⊑∀   : ∀ {τ τ'}          → τ ⊑ τ'               → ∀· τ    ⊑ ∀· τ'
+data _⊑t_ : Typ → Typ → Set where
+  ⊑□   : ∀ {τ}             →                       □       ⊑t τ
+  ⊑*   :                                           *       ⊑t *
+  ⊑Var : ∀ {n}             →                       ⟨ n ⟩   ⊑t ⟨ n ⟩
+  ⊑+   : ∀ {τ₁ τ₂ τ₁' τ₂'} → τ₁ ⊑t τ₁' → τ₂ ⊑t τ₂' → τ₁ + τ₂ ⊑t τ₁' + τ₂'
+  ⊑×   : ∀ {τ₁ τ₂ τ₁' τ₂'} → τ₁ ⊑t τ₁' → τ₂ ⊑t τ₂' → τ₁ × τ₂ ⊑t τ₁' × τ₂'
+  ⊑⇒   : ∀ {τ₁ τ₂ τ₁' τ₂'} → τ₁ ⊑t τ₁' → τ₂ ⊑t τ₂' → τ₁ ⇒ τ₂ ⊑t τ₁' ⇒ τ₂'
+  ⊑∀   : ∀ {τ τ'}          → τ ⊑t τ'               → ∀· τ    ⊑t ∀· τ'
 
-infix 4 _⊑_
+infix 4 _⊑t_
 
 private
-  ⊑-refl : Reflexive _⊑_
+  ⊑-refl : Reflexive _⊑t_
   ⊑-refl {⟨ _ ⟩}   = ⊑Var
   ⊑-refl {*}       = ⊑*
   ⊑-refl {□}       = ⊑□
@@ -35,7 +38,7 @@ private
   ⊑-refl {_ ⇒ _}   = ⊑⇒ ⊑-refl ⊑-refl
   ⊑-refl {∀· _}    = ⊑∀ ⊑-refl
 
-  ⊑-trans : Transitive _⊑_
+  ⊑-trans : Transitive _⊑t_
   ⊑-trans ⊑□ _              = ⊑□
   ⊑-trans ⊑* ⊑*             = ⊑*
   ⊑-trans ⊑Var ⊑Var         = ⊑Var
@@ -44,7 +47,7 @@ private
   ⊑-trans (⊑⇒ p q) (⊑⇒ r s) = ⊑⇒ (⊑-trans p r) (⊑-trans q s)
   ⊑-trans (⊑∀ p) (⊑∀ q)     = ⊑∀ (⊑-trans p q)
 
-  ⊑-antisym : Antisymmetric _≡_ _⊑_
+  ⊑-antisym : Antisymmetric _≡_ _⊑t_
   ⊑-antisym ⊑□ ⊑□             = refl
   ⊑-antisym ⊑* ⊑*             = refl
   ⊑-antisym ⊑Var ⊑Var         = refl
@@ -53,7 +56,7 @@ private
   ⊑-antisym (⊑⇒ p q) (⊑⇒ r s) = cong₂ _⇒_ (⊑-antisym p r) (⊑-antisym q s)
   ⊑-antisym (⊑∀ p) (⊑∀ q)     = cong ∀· (⊑-antisym p q)
 
-  ⊑-isPartialOrder : IsPartialOrder _≡_ _⊑_
+  ⊑-isPartialOrder : IsPartialOrder _≡_ _⊑t_
   ⊑-isPartialOrder = record
     { isPreorder = record
       { isEquivalence = Eq.isEquivalence
@@ -63,43 +66,41 @@ private
     ; antisym = ⊑-antisym
     }
 
-  shallow-imprecision : ∀ {τ τ'} → τ ≢ □ → diag τ τ' ≡ diff → ¬(τ ⊑ τ')
+  shallow-imprecision : ∀ {τ τ'} → τ ≢ □ → diag τ τ' ≡ diff → ¬(τ ⊑t τ')
   shallow-imprecision τ≢□ _ ⊑□ = τ≢□ refl
 
-_⊑?_ : ∀ τ τ' → Dec (τ ⊑ τ')
-τ ⊑? τ'                      with diag τ τ' | Eq.inspect (diag τ) τ'
-...                            | kind□   | _    = yes  ⊑□
-...                            | kind*   | _    = yes  ⊑*
-⟨ m ⟩     ⊑? ⟨ n ⟩             | kindVar | _    = map′ (λ where refl → ⊑Var)
-                                                       (λ where ⊑Var → refl) (m ≟ℕ n)
-(τ₁ + τ₂) ⊑? (τ₁' + τ₂')       | kind+   | _    = map′ (uncurry ⊑+)
-                                                       (λ where (⊑+ p q) → p , q)
-                                                       (τ₁ ⊑? τ₁' ×-dec τ₂ ⊑? τ₂')
-(τ₁ × τ₂) ⊑? (τ₁' × τ₂')       | kind×   | _    = map′ (uncurry ⊑×)
-                                                       (λ where (⊑× p q) → p , q)
-                                                       (τ₁ ⊑? τ₁' ×-dec τ₂ ⊑? τ₂')
-(τ₁ ⇒ τ₂) ⊑? (τ₁' ⇒ τ₂')       | kind⇒   | _    = map′ (uncurry ⊑⇒)
-                                                       (λ where (⊑⇒ p q) → p , q)
-                                                       (τ₁ ⊑? τ₁' ×-dec τ₂ ⊑? τ₂')
-(∀· τ)    ⊑? (∀· τ')           | kind∀   | _    = map′ ⊑∀ (λ where (⊑∀ p) → p) (τ ⊑? τ')
-τ         ⊑? τ'                | diff    | [ as ] with τ ≟t □
-...                                                    | yes refl = yes ⊑□
-...                                                    | no  τ≢□  = no (shallow-imprecision τ≢□ as)
+  _⊑t?_ : ∀ τ τ' → Dec (τ ⊑t τ')
+  τ ⊑t? τ'                      with diag τ τ' | Eq.inspect (diag τ) τ'
+  ...                            | kind□   | _    = yes  ⊑□
+  ...                            | kind*   | _    = yes  ⊑*
+  ⟨ m ⟩     ⊑t? ⟨ n ⟩             | kindVar | _    = map′ (λ where refl → ⊑Var)
+                                                          (λ where ⊑Var → refl) (m ≟ℕ n)
+  (τ₁ + τ₂) ⊑t? (τ₁' + τ₂')       | kind+   | _    = map′ (uncurry ⊑+)
+                                                          (λ where (⊑+ p q) → p , q)
+                                                          (τ₁ ⊑t? τ₁' ×-dec τ₂ ⊑t? τ₂')
+  (τ₁ × τ₂) ⊑t? (τ₁' × τ₂')       | kind×   | _    = map′ (uncurry ⊑×)
+                                                          (λ where (⊑× p q) → p , q)
+                                                          (τ₁ ⊑t? τ₁' ×-dec τ₂ ⊑t? τ₂')
+  (τ₁ ⇒ τ₂) ⊑t? (τ₁' ⇒ τ₂')       | kind⇒   | _    = map′ (uncurry ⊑⇒)
+                                                          (λ where (⊑⇒ p q) → p , q)
+                                                          (τ₁ ⊑t? τ₁' ×-dec τ₂ ⊑t? τ₂')
+  (∀· τ)    ⊑t? (∀· τ')           | kind∀   | _    = map′ ⊑∀ (λ where (⊑∀ p) → p) (τ ⊑t? τ')
+  τ         ⊑t? τ'                | diff    | [ as ] with τ ≟ □
+  ...                                                    | yes refl = yes ⊑□
+  ...                                                    | no  τ≢□  = no (shallow-imprecision τ≢□ as)
 
-private
-  ⊑-isDecPartialOrder : IsDecPartialOrder _≡_ _⊑_
+  ⊑-isDecPartialOrder : IsDecPartialOrder _≡_ _⊑t_
   ⊑-isDecPartialOrder = record
                         { isPartialOrder = ⊑-isPartialOrder
-                        ; _≟_            = _≟t_
-                        ; _≤?_           = _⊑?_
+                        ; _≟_            = _≟_
+                        ; _≤?_           = _⊑t?_
                         }
 
-module ⊑ = IsDecPartialOrder ⊑-isDecPartialOrder
-  using (antisym; isPartialOrder; isPreorder; refl; reflexive; trans)
-  
+
+-- TODO: Move to Typ.Properties
 -- Precision implies consistency
 ⊑to~ : ∀ {τ τ'}
-     → τ ⊑ τ'     →  τ ~ τ'
+     → τ ⊑t τ'     →  τ ~ τ'
 ⊑to~   ⊑□         =  ~?₂
 ⊑to~   ⊑*         =  ~*
 ⊑to~   ⊑Var       =  ~Var
@@ -110,7 +111,7 @@ module ⊑ = IsDecPartialOrder ⊑-isDecPartialOrder
 
 -- Slices of the same type are consistent
 ⊑-consistent : ∀ {τ₁ τ₂ τ}
-             → τ₁ ⊑ τ    →  τ₂ ⊑ τ     →  τ₁ ~ τ₂
+             → τ₁ ⊑t τ    →  τ₂ ⊑t τ     →  τ₁ ~ τ₂
 ⊑-consistent   ⊑□           _          =  ~?₂
 ⊑-consistent   _            ⊑□         =  ~?₁
 ⊑-consistent   ⊑*           ⊑*         =  ~*
@@ -121,13 +122,13 @@ module ⊑ = IsDecPartialOrder ⊑-isDecPartialOrder
 ⊑-consistent  (⊑∀ p)       (⊑∀ q)      =  ~∀ (⊑-consistent p q)
 
 -- Instantiate generic Slice module for types
+-- TODO: make Slice create an instance of lifted operations to avoid name clashes (see below)
 open import Core.Slice ⊑-isDecPartialOrder public
 
-import Core.Instances as I
 instance
-  typ-precision : I.HasPrecision Typ
-  typ-precision = record { _⊑_ = _⊑_ ; isDecPartialOrder = ⊑-isDecPartialOrder }
-  typ-slice : I.HasSlice Typ
+  typ-precision : HasPrecision Typ
+  typ-precision = record { _⊑_ = _⊑t_ ; isDecPartialOrder = ⊑-isDecPartialOrder }
+  typ-slice : HasSlice Typ
   typ-slice = record
     { SliceOf = SliceOf ; ↓ = ↓ ; _isSlice_ = _isSlice_ ; ↑ = ↑
     ; weaken = weaken ; _≈ₛ_ = _≈ₛ_
