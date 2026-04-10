@@ -10,6 +10,7 @@ open import Relation.Nullary.Decidable using (_×-dec_)
 
 open import Core.Typ.Base
 open import Core.Typ.Equality
+open import Core.Instances
 
 -- Type Consistency
 data _~_ : Typ → Typ → Set where

@@ -8,6 +8,7 @@ open import Core.Typ.Equality
 open import Core.Typ.Consistency
 open import Core.Typ.Precision
 open import Core.Typ.Lattice
+open import Core.Instances
 
 -- Decomposable join implies consistency with least specific compound type
 ⊔-⇒-~ : ∀ {τ τ₁ τ₂} → τ ⊔ (□ ⇒ □) ≡ τ₁ ⇒ τ₂ → τ ~ □ ⇒ □
