@@ -5,13 +5,13 @@ open import Data.List.Properties using (≡-dec)
 open import Relation.Binary.PropositionalEquality using (_≡_)
 open import Relation.Nullary using (Dec)
 
-open import Core.Typ using (Typ)
-open import Core.Typ.Equality renaming (_≟_ to _≟t_)
+open import Core.Instances
+open import Core.Typ
 open import Core.Assms.Base
 
-_≟_ : (Γ Γ' : Assms) → Dec (Γ ≡ Γ')
-_≟_ = ≡-dec _≟t_
+private
+  _≟a_ : (Γ Γ' : Assms) → Dec (Γ ≡ Γ')
+  _≟a_ = ≡-dec _≟_
 
-import Core.Instances as I
-instance assms-decEq : I.HasDecEq Assms
-         assms-decEq = record { _≟_ = _≟_ }
+instance assms-decEq : HasDecEq Assms
+         assms-decEq = record { _≟_ = _≟a_ }

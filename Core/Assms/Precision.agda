@@ -9,36 +9,32 @@ open import Relation.Nullary using (Dec; yes; no)
 open import Relation.Nullary.Decidable using (map′; _×-dec_)
 open import Function using (_on_)
 
-open import Core.Typ using (Typ)
-  renaming (⊑□ to ⊑t□)
-open import Core.Typ.Precision as TP using ()
-  renaming (_⊑_ to _⊑t_; _⊑?_ to _⊑t?_;
-            module ⊑ to ⊑t)
+open import Core.Instances
+open import Core.Typ
 open import Core.Assms.Base
 open import Core.Assms.Equality
 
-
 -- Pointwise precision relation (for equal-length lists)
-data _⊑_ : Assms → Assms → Set where
-  ⊑[]  :                                    []       ⊑ []
-  ⊑∷   : ∀ {τ τ' Γ Γ'} → τ ⊑t τ' → Γ ⊑ Γ' → (τ ∷ Γ)  ⊑ (τ' ∷ Γ')
+data _⊑a_ : Assms → Assms → Set where
+  ⊑[]  :                                    []       ⊑a []
+  ⊑∷   : ∀ {τ τ' Γ Γ'} → τ ⊑ τ' → Γ ⊑a Γ' → (τ ∷ Γ)  ⊑a (τ' ∷ Γ')
 
-infix 4 _⊑_
+infix 4 _⊑a_
 
 private
-  ⊑-refl : Reflexive _⊑_
+  ⊑-refl : Reflexive _⊑a_
   ⊑-refl {[]}    = ⊑[]
-  ⊑-refl {_ ∷ _} = ⊑∷ ⊑t.refl ⊑-refl
+  ⊑-refl {_ ∷ _} = ⊑∷ ⊑.refl ⊑-refl
 
-  ⊑-trans : Transitive _⊑_
+  ⊑-trans : Transitive _⊑a_
   ⊑-trans ⊑[]        ⊑[]        = ⊑[]
-  ⊑-trans (⊑∷ p₁ q₁) (⊑∷ p₂ q₂) = ⊑∷ (⊑t.trans p₁ p₂) (⊑-trans q₁ q₂)
+  ⊑-trans (⊑∷ p₁ q₁) (⊑∷ p₂ q₂) = ⊑∷ (⊑.trans p₁ p₂) (⊑-trans q₁ q₂)
 
-  ⊑-antisym : Antisymmetric _≡_ _⊑_
+  ⊑-antisym : Antisymmetric _≡_ _⊑a_
   ⊑-antisym ⊑[]        ⊑[]        = refl
-  ⊑-antisym (⊑∷ p₁ q₁) (⊑∷ p₂ q₂) = cong₂ _∷_ (⊑t.antisym p₁ p₂) (⊑-antisym q₁ q₂)
+  ⊑-antisym (⊑∷ p₁ q₁) (⊑∷ p₂ q₂) = cong₂ _∷_ (⊑.antisym p₁ p₂) (⊑-antisym q₁ q₂)
 
-  ⊑-isPartialOrder : IsPartialOrder _≡_ _⊑_
+  ⊑-isPartialOrder : IsPartialOrder _≡_ _⊑a_
   ⊑-isPartialOrder = record
     { isPreorder = record
       { isEquivalence = Eq.isEquivalence
@@ -49,30 +45,20 @@ private
     }
 
 -- Decidable precision
-_⊑?_ : ∀ Γ Γ' → Dec (Γ ⊑ Γ')
-[]      ⊑? []        = yes ⊑[]
-[]      ⊑? (_ ∷ _)   = no λ ()
-(_ ∷ _) ⊑? []        = no λ ()
-(τ ∷ Γ) ⊑? (τ' ∷ Γ') = map′ (uncurry ⊑∷) (λ where (⊑∷ p q) → p , q)
-                            (τ ⊑t? τ' ×-dec Γ ⊑? Γ')
+_⊑a?_ : ∀ Γ Γ' → Dec (Γ ⊑a Γ')
+[]      ⊑a? []        = yes ⊑[]
+[]      ⊑a? (_ ∷ _)   = no λ ()
+(_ ∷ _) ⊑a? []        = no λ ()
+(τ ∷ Γ) ⊑a? (τ' ∷ Γ') = map′ (uncurry ⊑∷) (λ where (⊑∷ p q) → p , q)
+                            (τ ⊑? τ' ×-dec Γ ⊑a? Γ')
 private
-  ⊑-isDecPartialOrder : IsDecPartialOrder _≡_ _⊑_
+  ⊑-isDecPartialOrder : IsDecPartialOrder _≡_ _⊑a_
   ⊑-isDecPartialOrder = record
                       { isPartialOrder = ⊑-isPartialOrder
-                        ; _≟_            = _≟_
-                      ; _≤?_           = _⊑?_
+                      ; _≟_            = _≟_
+                      ; _≤?_           = _⊑a?_
                       }
 
-module ⊑ = IsDecPartialOrder ⊑-isDecPartialOrder using (antisym; isPartialOrder; isPreorder; refl; reflexive; trans)
-
-open import Core.Slice ⊑-isDecPartialOrder public
-
-import Core.Instances as I
 instance
-  assms-precision : I.HasPrecision Assms
-  assms-precision = record { _⊑_ = _⊑_ ; isDecPartialOrder = ⊑-isDecPartialOrder }
-  assms-slice : I.HasSlice Assms
-  assms-slice = record
-    { SliceOf = SliceOf ; ↓ = ↓ ; _isSlice_ = _isSlice_ ; ↑ = ↑
-    ; weaken = weaken ; _≈ₛ_ = _≈ₛ_
-    ; _≈ₛ?_ = _≈ₛ?_ ; _⊑ₛ?_ = _⊑ₛ?_ }
+  assms-precision : HasPrecision Assms
+  assms-precision = record { _⊑_ = _⊑a_ ; isDecPartialOrder = ⊑-isDecPartialOrder }
