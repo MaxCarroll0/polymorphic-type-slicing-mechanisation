@@ -17,7 +17,6 @@ data Position : Set where
   synPos  : Position        
   anaPos  : Typ → Position  
 
--- What the focus must satisfy given the mode
 FocusTyping : Assms → Exp → CtxMode → Set
 FocusTyping Γ' e ⇒mode       = ∃ λ τ' → Γ' ⊢ e ↦ τ'
 FocusTyping Γ' e (⇐mode τ')  = Γ' ⊢ e ↤ τ'
@@ -227,3 +226,13 @@ mutual
   ... | Γ' , m , cls , ft = Γ' , m , aSub cls , ft
   plug-ana (def e₁ ⊢₂ C) (↤def d₁ d₂) with plug-ana C d₂
   ... | Γ' , m , cls , ft = Γ' , m , adef₂ d₁ cls , ft
+
+PositionTyping : Assms → Exp → Position → Set
+PositionTyping Γ e synPos     = ∃ λ τ → Γ ⊢ e ↦ τ
+PositionTyping Γ e (anaPos τ) = Γ ⊢ e ↤ τ
+
+-- Generalised plug decomposition: for well-typed plug C e in any mode,
+plug-decompose : ∀ {Γ e} (C : Ctx) (p : Position) →
+  PositionTyping Γ (plug C e) p → PlugResult Γ C e p
+plug-decompose C synPos     (_ , d) = plug-syn C d
+plug-decompose C (anaPos _) d       = plug-ana C d
