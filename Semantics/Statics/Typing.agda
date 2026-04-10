@@ -38,9 +38,10 @@ mutual
               Γ ⊢ def e' ⊢ e ↦ τ
 
     ↦Λ   : ∀ {Γ : Assms} {e : Exp} {τ : Typ} →
-             --(0 ∷ Γ) ⊢ e ↦ τ               → -- Representing type vars by ⟨ 0 ⟩. ALSO, fix instance resolution for 0 to ⟨ 0 ⟩. Also, well scoping needed???
-             ---------------
-             Γ ⊢ Λ e ↦ ∀· τ
+              Γ ⊢ e ↦ τ                        →
+              -- TODO: should be (0 ∷ Γ) ⊢ e ↦ τ once type vars are resolved
+              ---------------
+              Γ ⊢ Λ e ↦ ∀· τ
 
     ↦∘   : ∀ {Γ : Assms} {e₁ e₂ : Exp} {τ τ₁ τ₂ : Typ} →
               Γ ⊢ e₁ ↦ τ                               →
