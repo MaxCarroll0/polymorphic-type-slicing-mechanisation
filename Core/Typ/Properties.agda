@@ -10,7 +10,7 @@ open import Core.Typ.Precision
 open import Core.Typ.Lattice
 open import Core.Instances
 
--- Decomposable join implies consistency with least specific compound type
+-- Non-trivial join implies consistency with least specific compound type
 ⊔-⇒-~ : ∀ {τ τ₁ τ₂} → τ ⊔ (□ ⇒ □) ≡ τ₁ ⇒ τ₂ → τ ~ □ ⇒ □
 ⊔-⇒-~ {τ} eq with diag τ (□ ⇒ □)
 ⊔-⇒-~ {_ ⇒ _} _ | kind⇒ = ~⇒ ~?₁ ~?₁

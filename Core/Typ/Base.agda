@@ -1,6 +1,6 @@
 module Core.Typ.Base where
 
-open import Data.Nat using (ℕ; _≟_; suc) renaming (_⊔_ to max)
+open import Data.Nat using (ℕ; _≟_; suc)
 open import Data.Nat.Literals
 open import Data.Unit using (⊤; tt)
 open import Relation.Nullary using (¬_)

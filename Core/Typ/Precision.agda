@@ -10,8 +10,7 @@ open import Data.Product using (_,_; uncurry)
 open import Function using (_on_)
 
 -- TODO: create the lifted instances in Core.Slice to avoid name clashes
-open import Core.Instances hiding (⌊_⌋; SliceOf; ↓; _isSlice_; 
-         ↑; weaken; _≈ₛ_; _≈ₛ?_; _⊑ₛ?_; _⊑ₛ_; _⊓ₛ_; _⊔ₛ_; module ⊑ₛLat)
+open import Core.Instances
 open import Core.Typ.Base
 open import Core.Typ.Equality
 open import Core.Typ.Consistency
@@ -121,15 +120,6 @@ private
 ⊑-consistent  (⊑⇒ p₁ p₂)   (⊑⇒ q₁ q₂)  =  ~⇒ (⊑-consistent p₁ q₁) (⊑-consistent p₂ q₂)
 ⊑-consistent  (⊑∀ p)       (⊑∀ q)      =  ~∀ (⊑-consistent p q)
 
--- Instantiate generic Slice module for types
--- TODO: make Slice create an instance of lifted operations to avoid name clashes (see below)
-open import Core.Slice ⊑-isDecPartialOrder public
-
 instance
   typ-precision : HasPrecision Typ
   typ-precision = record { _⊑_ = _⊑t_ ; isDecPartialOrder = ⊑-isDecPartialOrder }
-  typ-slice : HasSlice Typ
-  typ-slice = record
-    { SliceOf = SliceOf ; ↓ = ↓ ; _isSlice_ = _isSlice_ ; ↑ = ↑
-    ; weaken = weaken ; _≈ₛ_ = _≈ₛ_
-    ; _≈ₛ?_ = _≈ₛ?_ ; _⊑ₛ?_ = _⊑ₛ?_ }

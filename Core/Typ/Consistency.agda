@@ -82,7 +82,6 @@ private
 ~-isCompatibility : IsCompatibility _~_
 ~-isCompatibility = record { reflexive = ~-refl ; symmetric = ~-sym }
 
--- For fun: counterexample to transitivity: ⟨0⟩ ~ □ and □ ~ ⟨1⟩, but ⟨0⟩ ≁ ⟨1⟩
 -- Consistent types have the same kind (top constructor) unless one is □
 ~-same-kind : ∀ {τ τ'} → τ ~ τ' → (diag τ τ' ≢ diff) ⊎ (τ ≡ □) ⊎ (τ' ≡ □)
 ~-same-kind ~*         = inj₁ (λ ())
@@ -94,6 +93,7 @@ private
 ~-same-kind (~⇒ _ _)   = inj₁ (λ ())
 ~-same-kind (~∀ _)     = inj₁ (λ ())
 
+-- For fun: counterexample to transitivity: ⟨0⟩ ~ □ and □ ~ ⟨1⟩, but ⟨0⟩ ≁ ⟨1⟩
 ~-not-trans : ¬ Transitive _~_
 ~-not-trans trans with trans {⟨ 0 ⟩} {□} {⟨ 1 ⟩} ~?₁ ~?₂
 ...                  | ()
