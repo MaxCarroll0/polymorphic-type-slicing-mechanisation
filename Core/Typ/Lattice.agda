@@ -15,10 +15,8 @@ open import Function using (_on_)
 open import Core.Typ.Base
 open import Core.Typ.Equality
 open import Core.Typ.Consistency
-open import Core.Typ.Precision renaming (⊤ₛ to ⊤ₛ')
-open import Core.Instances hiding (⌊_⌋; SliceOf; ↓; _isSlice_; ↑; weaken; _≈ₛ_; _≈ₛ?_; _⊑ₛ?_; _⊑ₛ_; _⊓ₛ_; _⊔ₛ_; module ⊑ₛLat)
-
--- TODO: separate all lattice modules into different directory and import from Core
+open import Core.Typ.Precision
+open import Core.Instances
 
 private
   -- Meet operator. Note: order theoretic, does not require consistent types
@@ -104,16 +102,13 @@ private
                         ; infimum        = ⊓-infimum
                         }
 
-
-  open LiftMeetSemilattice ⊑-isMeetSemilattice
-
   ⊔-identityₗ : ∀ τ → □ ⊔t τ ≡ τ
   ⊔-identityₗ τ with diag □ τ
   ⊔-identityₗ □         | kind□ = refl
   ⊔-identityₗ τ         | diff with □ ≟ □ | τ ≟ □
   ...                          | yes _  | _      = refl
   ...                          | no □≢□ | _      = ⊥-elim (□≢□ refl)
-  
+
   ⊔-identityᵣ : ∀ τ → τ ⊔t □ ≡ τ
   ⊔-identityᵣ τ with diag τ □
   ⊔-identityᵣ □         | kind□ = refl
@@ -122,9 +117,7 @@ private
   ...                          | no  _    | yes _  = refl
   ...                          | no  _    | no □≢□ = ⊥-elim (□≢□ refl)
 
-
-  -- Join upper bounds (requires consistency)
-  -- TODO: refactor into Typ.Properties
+-- Join upper bounds (requires consistency)
 module ~ where
   ⊔-ub₁ : ∀ {τ₁ τ₂} → τ₁ ~ τ₂ → τ₁ ⊑ τ₁ ⊔t τ₂
   ⊔-ub₁ ~*               = ⊑*
@@ -156,54 +149,32 @@ module ~ where
   ⊔-lub (~⇒ c₁ c₂)       (⊑⇒ p₁ p₂) (⊑⇒ q₁ q₂) = ⊑⇒ (⊔-lub c₁ p₁ q₁) (⊔-lub c₂ p₂ q₂)
   ⊔-lub (~∀ c)           (⊑∀ p)     (⊑∀ q)     = ⊑∀ (⊔-lub c p q)
 
+private
+  ⊔-preserves-⊑ : ∀ {τ₁ τ₂ τ} → τ₁ ⊑ τ → τ₂ ⊑ τ → τ₁ ⊔t τ₂ ⊑ τ
+  ⊔-preserves-⊑ p q = ~.⊔-lub (⊑-consistent p q) p q
+
+-- Register meet/join/slice instances
+import Core.Instances as I
+instance
+  typ-meet : I.HasMeet Typ
+  typ-meet = record { _⊓_ = _⊓t_ ; closure = λ p q → ⊑.trans (⊓-lb₁ _ _) p }
+  typ-join : I.HasJoin Typ
+  typ-join = record { _⊔_ = _⊔t_ ; closure = ⊔-preserves-⊑ }
+  typ-meetSemilattice : I.HasMeetSemilattice Typ
+  typ-meetSemilattice = record { isMeetSemilattice = ⊑-isMeetSemilattice }
 
 private
   ⊥ₛ' : ∀ {τ} → ⌊ τ ⌋
   ⊥ₛ' {τ} = □ isSlice ⊑□
 
-  ⊥ₛ-min : ∀ {τ} → Minimum (_⊑ₛ_ {τ}) ⊥ₛ'
+  ⊥ₛ-min : ∀ {τ} → Minimum (_⊑ₛ_ {a = τ}) ⊥ₛ'
   ⊥ₛ-min υ = ⊑□
 
-  ⊔-preserves-⊑ : ∀ {τ₁ τ₂ τ} → τ₁ ⊑ τ → τ₂ ⊑ τ → τ₁ ⊔t τ₂ ⊑ τ
-  ⊔-preserves-⊑ p q = ~.⊔-lub (⊑-consistent p q) p q
-
-  -- Lift joins
-  _⊔tₛ_ : ∀ {τ} → ⌊ τ ⌋ → ⌊ τ ⌋ → ⌊ τ ⌋
-  υ ⊔tₛ υ' = υ .↓ ⊔t υ' .↓ isSlice ⊔-preserves-⊑ (υ .proof) (υ' .proof)
-
-  infixl 7 _⊔tₛ_
-
-  ⊔ₛ-ub₁ : ∀ {τ} (υ₁ υ₂ : ⌊ τ ⌋) → υ₁ ⊑ₛ υ₁ ⊔tₛ υ₂
+  ⊔ₛ-ub₁ : ∀ {τ} (υ₁ υ₂ : ⌊ τ ⌋) → υ₁ ⊑ₛ (_⊔ₛ_ {Typ} {τ} υ₁ υ₂)
   ⊔ₛ-ub₁ υ₁ υ₂ = ~.⊔-ub₁ (⊑-consistent (υ₁ .proof) (υ₂ .proof))
 
-  ⊔ₛ-ub₂ : ∀ {τ} (υ₁ υ₂ : ⌊ τ ⌋) → υ₂ ⊑ₛ υ₁ ⊔tₛ υ₂
+  ⊔ₛ-ub₂ : ∀ {τ} (υ₁ υ₂ : ⌊ τ ⌋) → υ₂ ⊑ₛ (_⊔ₛ_ {Typ} {τ} υ₁ υ₂)
   ⊔ₛ-ub₂ υ₁ υ₂ = ~.⊔-ub₂ (⊑-consistent (υ₁ .proof) (υ₂ .proof))
-  ⊔ₛ-lub : ∀ {τ} {υ υ₁ υ₂ : ⌊ τ ⌋} → υ₁ ⊑ₛ υ → υ₂ ⊑ₛ υ → υ₁ ⊔tₛ υ₂ ⊑ₛ υ
-  ⊔ₛ-lub {_} {υ} {υ₁} {υ₂} p q = ⊔-preserves-⊑ p q
-
-  ⊔ₛ-supremum : ∀ {τ} → Supremum (_⊑ₛ_ {τ}) _⊔tₛ_
-  ⊔ₛ-supremum υ₁ υ₂ = ⊔ₛ-ub₁ υ₁ υ₂ , ⊔ₛ-ub₂ υ₁ υ₂ , λ υ → ⊔ₛ-lub {υ = υ} {υ₁} {υ₂}
-
-
-  ⊑ₛ-isJoinSemilattice : ∀ {τ} → IsJoinSemilattice (_≡_ on ↓) (_⊑ₛ_ {τ}) _⊔tₛ_
-  ⊑ₛ-isJoinSemilattice = record
-                         { isPartialOrder = ⊑ₛ.isPartialOrder
-                         ; supremum       = ⊔ₛ-supremum
-                         }
-
-  ⊑ₛ-isLattice : ∀ {τ} → IsLattice (_≡_ on ↓) (_⊑ₛ_ {τ}) _⊔tₛ_ _⊓ₛ_
-  ⊑ₛ-isLattice = record
-                 { isPartialOrder = ⊑ₛ.isPartialOrder
-                 ; supremum       = ⊔ₛ-supremum
-                 ; infimum        = ⊓ₛ.infimum
-                 }
-
-  ⊑ₛ-isBoundedLattice : ∀ {τ} → IsBoundedLattice (_≡_ on ↓) (_⊑ₛ_ {τ}) _⊔tₛ_ _⊓ₛ_ ⊤ₛ' ⊥ₛ'
-  ⊑ₛ-isBoundedLattice = record
-                        { isLattice = ⊑ₛ-isLattice
-                        ; maximum   = ⊤ₛ-max
-                        ; minimum   = ⊥ₛ-min
-                        }
 
   □⊓-absorb : ∀ τ → □ ⊓t τ ≡ □
   □⊓-absorb τ with diag □ τ
@@ -214,9 +185,6 @@ private
   ⊓□-absorb τ with diag τ □
   ... | kind□ = refl
   ... | diff  = refl
-
-  □⊔□ : □ ⊔t □ ≡ □
-  □⊔□ = refl
 
   dist : ∀ {τ τ₁ τ₂ τ₃} → τ₁ ⊑ τ → τ₂ ⊑ τ → τ₃ ⊑ τ → τ₁ ⊓t (τ₂ ⊔t τ₃) ≡ (τ₁ ⊓t τ₂) ⊔t (τ₁ ⊓t τ₃)
   dist {τ₂ = τ₂} {τ₃ = τ₃} ⊑□ _ _ =
@@ -250,27 +218,18 @@ private
   dist (⊑∀ p) (⊑∀ q) (⊑∀ r) =
     cong ∀· (dist p q r)
 
-  ⊓ₛ-distribˡ-⊔ₛ : ∀ {τ} (υ₁ υ₂ υ₃ : ⌊ τ ⌋) → (υ₁ ⊓ₛ (υ₂ ⊔tₛ υ₃)) ≈ₛ ((υ₁ ⊓ₛ υ₂) ⊔tₛ (υ₁ ⊓ₛ υ₃))
-  ⊓ₛ-distribˡ-⊔ₛ υ₁ υ₂ υ₃ = dist (υ₁ .proof) (υ₂ .proof) (υ₃ .proof)
+  ⊓ₛ-distribˡ-⊔ₛ' : ∀ {τ} (υ₁ υ₂ υ₃ : ⌊ τ ⌋) → (υ₁ ⊓ₛ (υ₂ ⊔ₛ υ₃)) ≈ₛ ((υ₁ ⊓ₛ υ₂) ⊔ₛ (υ₁ ⊓ₛ υ₃))
+  ⊓ₛ-distribˡ-⊔ₛ' υ₁ υ₂ υ₃ = dist (υ₁ .proof) (υ₂ .proof) (υ₃ .proof)
 
-  ⊑ₛ-isDistributiveLattice : ∀ {τ} → IsDistributiveLattice (_≡_ on ↓) (_⊑ₛ_ {τ}) _⊔tₛ_ _⊓ₛ_
-  ⊑ₛ-isDistributiveLattice = record
-                             { isLattice    = ⊑ₛ-isLattice
-                             ; ∧-distribˡ-∨ = ⊓ₛ-distribˡ-⊔ₛ
-                             }
-
-import Core.Instances as I
 instance
-  typ-meet : I.HasMeet Typ
-  typ-meet = record { _⊓_ = _⊓t_ }
-  typ-join : I.HasJoin Typ
-  typ-join = record { _⊔_ = _⊔t_ }
-  typ-meetSemilattice : I.HasMeetSemilattice Typ
-  typ-meetSemilattice = record { isMeetSemilattice = ⊑-isMeetSemilattice }
-  typ-sliceLattice : I.SliceLattice SliceOf ↓
+  typ-sliceLattice : I.SliceLattice Typ
   typ-sliceLattice = record
-    { _⊑ₛ_ = _⊑ₛ_ ; _⊓ₛ_ = _⊓ₛ_ ; _⊔ₛ_ = _⊔tₛ_
-    ; ⊤ₛ = ⊤ₛ' ; ⊥ₛ = ⊥ₛ'
-    ; isBoundedLattice = ⊑ₛ-isBoundedLattice
-    ; isDistributiveLattice = ⊑ₛ-isDistributiveLattice
+    { ⊥ₛ = ⊥ₛ'
+    ; ⊥ₛ-min = ⊥ₛ-min
+    ; x⊓ₛy⊑ₛx = λ s₁ s₂ → ⊓-lb₁ (s₁ .↓) (s₂ .↓)
+    ; x⊓ₛy⊑ₛy = λ s₁ s₂ → ⊓-lb₂ (s₁ .↓) (s₂ .↓)
+    ; ⊓ₛ-greatest = λ p q → ⊓-glb p q
+    ; x⊑ₛx⊔ₛy = ⊔ₛ-ub₁
+    ; y⊑ₛx⊔ₛy = ⊔ₛ-ub₂
+    ; ⊓ₛ-distribˡ-⊔ₛ = ⊓ₛ-distribˡ-⊔ₛ'
     }
