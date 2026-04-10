@@ -8,3 +8,4 @@ open import Core.Typ.Precision public
 open import Core.Typ.Lattice public
 open import Core.Typ.Properties public
 open import Core.Typ.Substitution public
+open import Core.Typ.WellFormedness public
