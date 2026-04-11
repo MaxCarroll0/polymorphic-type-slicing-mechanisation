@@ -61,4 +61,4 @@ private
 
 instance
   assms-precision : HasPrecision Assms
-  assms-precision = record { _⊑_ = _⊑a_ ; isDecPartialOrder = ⊑-isDecPartialOrder }
+  assms-precision = record { _≈_ = _≡_ ; _⊑_ = _⊑a_ ; isDecPartialOrder = ⊑-isDecPartialOrder }

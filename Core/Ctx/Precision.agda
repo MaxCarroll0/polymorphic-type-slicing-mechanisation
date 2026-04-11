@@ -203,4 +203,4 @@ plug-preserves-⊑ (⊑def₂ q r) p      = E.⊑def  q (plug-preserves-⊑ r p)
 
 instance
   ctx-precision : HasPrecision Ctx
-  ctx-precision = record { _⊑_ = _⊑c_ ; isDecPartialOrder = ⊑-isDecPartialOrder }
+  ctx-precision = record { _≈_ = _≡_ ; _⊑_ = _⊑c_ ; isDecPartialOrder = ⊑-isDecPartialOrder }

@@ -148,4 +148,4 @@ private
 
 instance
   exp-precision : HasPrecision Exp
-  exp-precision = record { _⊑_ = _⊑e_ ; isDecPartialOrder = ⊑-isDecPartialOrder }
+  exp-precision = record { _≈_ = _≡_ ; _⊑_ = _⊑e_ ; isDecPartialOrder = ⊑-isDecPartialOrder }

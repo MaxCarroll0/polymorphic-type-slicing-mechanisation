@@ -16,8 +16,9 @@ open HasDecEq ⦃...⦄ public
 
 record HasPrecision (A : Set) : Set₁ where
   field
+    _≈_                : A → A → Set
     _⊑_                : A → A → Set
-    isDecPartialOrder  : IsDecPartialOrder _≡_ _⊑_
+    isDecPartialOrder  : IsDecPartialOrder _≈_ _⊑_
   infix 4 _⊑_
 
   _⊑?_ = IsDecPartialOrder._≤?_ isDecPartialOrder
@@ -45,8 +46,11 @@ record HasJoin (A : Set) ⦃ _ : HasPrecision A ⦄ : Set where
 open HasJoin ⦃...⦄ public
 
 -- e (only for types/expression where we have a Meet Semilattice)
-record HasMeetSemilattice (A : Set) ⦃ _ : HasPrecision A ⦄ ⦃ _ : HasMeet A ⦄ : Set₁ where
-  field isMeetSemilattice : IsMeetSemilattice _≡_ _⊑_ _⊓_
+-- TODO: Unify _⊑_ with _⊑ₛ_ by giving ⌊ a ⌋ a HasPrecision instance
+-- with _≈_ = _≈ₛ_ and _⊑_ = _⊑ₛ_
+
+record HasMeetSemilattice (A : Set) ⦃ hp : HasPrecision A ⦄ ⦃ _ : HasMeet A ⦄ : Set₁ where
+  field isMeetSemilattice : IsMeetSemilattice (HasPrecision._≈_ hp) _⊑_ _⊓_
 open HasMeetSemilattice ⦃...⦄ public hiding (isMeetSemilattice)
 
 module ⊑Lat {A : Set} ⦃ hp : HasPrecision A ⦄ ⦃ hm : HasMeet A ⦄ ⦃ hms : HasMeetSemilattice A ⦄ where
@@ -55,8 +59,8 @@ module ⊑Lat {A : Set} ⦃ hp : HasPrecision A ⦄ ⦃ hm : HasMeet A ⦄ ⦃ h
     renaming (∧-greatest to ⊓-greatest; x∧y≤x to x⊓y⊑x; x∧y≤y to x⊓y⊑y)
   isMeetSemilattice = HasMeetSemilattice.isMeetSemilattice hms
 
-record HasJoinSemilattice (A : Set) ⦃ _ : HasPrecision A ⦄ ⦃ _ : HasJoin A ⦄ : Set₁ where
-  field isJoinSemilattice : IsJoinSemilattice _≡_ _⊑_ _⊔_
+record HasJoinSemilattice (A : Set) ⦃ hp : HasPrecision A ⦄ ⦃ _ : HasJoin A ⦄ : Set₁ where
+  field isJoinSemilattice : IsJoinSemilattice (HasPrecision._≈_ hp) _⊑_ _⊔_
 open HasJoinSemilattice ⦃...⦄ public hiding (isJoinSemilattice)
 
 module ⊔Lat {A : Set} ⦃ hp : HasPrecision A ⦄ ⦃ hj : HasJoin A ⦄ ⦃ hjs : HasJoinSemilattice A ⦄ where
@@ -80,7 +84,7 @@ open SliceOf public
 ⌊_⌋ = SliceOf
 
 _≈ₛ_ : ∀ {A : Set} ⦃ _ : HasPrecision A ⦄ {a a' : A} → ⌊ a ⌋ → ⌊ a' ⌋ → Set
-s₁ ≈ₛ s₂ = s₁ .↓ ≡ s₂ .↓
+s₁ ≈ₛ s₂ = _≈_ (s₁ .↓) (s₂ .↓)
 
 _≈ₛ?_ : ∀ {A : Set} ⦃ hp : HasPrecision A ⦄ {a : A} (s₁ s₂ : ⌊ a ⌋) → Dec (s₁ ≈ₛ s₂)
 _≈ₛ?_ ⦃ hp = hp ⦄ s₁ s₂ = IsDecPartialOrder._≟_ (HasPrecision.isDecPartialOrder hp) (s₁ .↓) (s₂ .↓)
@@ -105,15 +109,19 @@ _⊑ₛ?_ ⦃ hp = hp ⦄ s₁ s₂ = IsDecPartialOrder._≤?_ (HasPrecision.isD
 weaken : ∀ {A : Set} ⦃ _ : HasPrecision A ⦄ {a a' : A} → _⊑_ a a' → ⌊ a ⌋ → ⌊ a' ⌋
 weaken p s = s .↓ isSlice ⊑.trans (s .proof) p
 
-weaken-identity : ∀ {A : Set} ⦃ _ : HasPrecision A ⦄ {a a' : A} {s : ⌊ a ⌋} {p : _⊑_ a a'} → weaken p s ≈ₛ s
-weaken-identity = Eq.refl
+weaken-identity : ∀ {A : Set} ⦃ hp : HasPrecision A ⦄ {a a' : A} {s : ⌊ a ⌋} {p : _⊑_ a a'} → weaken p s ≈ₛ s
+weaken-identity ⦃ hp ⦄ = IsDecPartialOrder.Eq.refl (HasPrecision.isDecPartialOrder hp)
 
 private
+  module ≈-from-hp {A : Set} ⦃ hp : HasPrecision A ⦄ =
+    IsDecPartialOrder (HasPrecision.isDecPartialOrder hp)
+      using () renaming (module Eq to ≈Eq)
+
   ≈ₛ-isEquivalence : ∀ {A : Set} ⦃ hp : HasPrecision A ⦄ {a : A} → IsEquivalence (_≈ₛ_ {a = a} {a' = a})
-  ≈ₛ-isEquivalence = record
-    { refl  = Eq.refl
-    ; sym   = Eq.sym
-    ; trans = Eq.trans
+  ≈ₛ-isEquivalence ⦃ hp ⦄ = record
+    { refl  = ≈-from-hp.≈Eq.refl
+    ; sym   = ≈-from-hp.≈Eq.sym
+    ; trans = ≈-from-hp.≈Eq.trans
     }
 
   ≈ₛ-isDecEquivalence : ∀ {A : Set} ⦃ hp : HasPrecision A ⦄ {a : A} → IsDecEquivalence (_≈ₛ_ {a = a} {a' = a})
@@ -199,7 +207,7 @@ open SliceLattice ⦃...⦄ public using (⊥ₛ)
 
 module ⊑ₛLat {A : Set} ⦃ hp : HasPrecision A ⦄ ⦃ hm : HasMeet A ⦄ ⦃ hj : HasJoin A ⦄ ⦃ sl : SliceLattice A ⦄ {a : A} where
 
-  isBoundedLattice : IsBoundedLattice (_≡_ on ↓) (_⊑ₛ_ {A} ⦃ hp ⦄ {a} {a}) _⊔ₛ_ _⊓ₛ_ (⊤ₛ {A} ⦃ hp ⦄ {a}) (SliceLattice.⊥ₛ sl)
+  isBoundedLattice : IsBoundedLattice (_≈ₛ_) (_⊑ₛ_ {A} ⦃ hp ⦄ {a} {a}) _⊔ₛ_ _⊓ₛ_ (⊤ₛ {A} ⦃ hp ⦄ {a}) (SliceLattice.⊥ₛ sl)
   isBoundedLattice = record
     { isLattice = record
       { isPartialOrder = ⊑ₛ.isPartialOrder
@@ -217,7 +225,7 @@ module ⊑ₛLat {A : Set} ⦃ hp : HasPrecision A ⦄ ⦃ hm : HasMeet A ⦄ �
               ∧-greatest to ⊓ₛ-greatest; ∨-least to ⊔ₛ-least;
               maximum to ⊤ₛ-max; minimum to ⊥ₛ-min)
 
-  isDistributiveLattice : IsDistributiveLattice (_≡_ on ↓) (_⊑ₛ_ {A} ⦃ hp ⦄ {a} {a}) _⊔ₛ_ _⊓ₛ_
+  isDistributiveLattice : IsDistributiveLattice (_≈ₛ_) (_⊑ₛ_ {A} ⦃ hp ⦄ {a} {a}) _⊔ₛ_ _⊓ₛ_
   isDistributiveLattice = record
     { isLattice    = IsBoundedLattice.isLattice isBoundedLattice
     ; ∧-distribˡ-∨ = SliceLattice.⊓ₛ-distribˡ-⊔ₛ sl

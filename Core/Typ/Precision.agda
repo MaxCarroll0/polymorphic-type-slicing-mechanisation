@@ -122,4 +122,4 @@ private
 
 instance
   typ-precision : HasPrecision Typ
-  typ-precision = record { _⊑_ = _⊑t_ ; isDecPartialOrder = ⊑-isDecPartialOrder }
+  typ-precision = record { _≈_ = _≡_ ; _⊑_ = _⊑t_ ; isDecPartialOrder = ⊑-isDecPartialOrder }
