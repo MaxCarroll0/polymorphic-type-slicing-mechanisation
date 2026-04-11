@@ -71,7 +71,40 @@ mutual
                    n ； (τ' ∷ Γ) ⊢ e ↬ ě ⇑ τ →
                    n ； Γ ⊢ Exp.def e' ⊢ e ↬ M.def ě' ⊢ ě ⇑ τ
 
-    -- TODO: mark↦π₁, mark↦π₂, mark↦case (with error variants)
+    mark↦π₁    : ∀ {n Γ e ě τ τ₁ τ₂} →
+                   n ； Γ ⊢ e ↬ ě ⇑ τ →
+                   τ ⊔ □ × □ ≡ τ₁ × τ₂ →
+                   n ； Γ ⊢ Exp.π₁ e ↬ M.π₁ ě ⇑ τ₁
+
+    mark↦π₁⇑   : ∀ {n Γ e ě τ} →
+                   n ； Γ ⊢ e ↬ ě ⇑ τ →
+                   (∀ {τ₁ τ₂} → τ ⊔ □ × □ ≢ τ₁ × τ₂) →
+                   n ； Γ ⊢ Exp.π₁ e ↬ M.π₁ (ě ⦅▸×⦆) ⇑ □
+
+    mark↦π₂    : ∀ {n Γ e ě τ τ₁ τ₂} →
+                   n ； Γ ⊢ e ↬ ě ⇑ τ →
+                   τ ⊔ □ × □ ≡ τ₁ × τ₂ →
+                   n ； Γ ⊢ Exp.π₂ e ↬ M.π₂ ě ⇑ τ₂
+
+    mark↦π₂⇑   : ∀ {n Γ e ě τ} →
+                   n ； Γ ⊢ e ↬ ě ⇑ τ →
+                   (∀ {τ₁ τ₂} → τ ⊔ □ × □ ≢ τ₁ × τ₂) →
+                   n ； Γ ⊢ Exp.π₂ e ↬ M.π₂ (ě ⦅▸×⦆) ⇑ □
+
+    mark↦case  : ∀ {n Γ e e₁ e₂ ě ě₁ ě₂ τ τ₁ τ₂ τ₁' τ₂'} →
+                   n ； Γ ⊢ e ↬ ě ⇑ τ →
+                   τ ⊔ □ + □ ≡ τ₁ + τ₂ →
+                   n ； (τ₁ ∷ Γ) ⊢ e₁ ↬ ě₁ ⇑ τ₁' →
+                   n ； (τ₂ ∷ Γ) ⊢ e₂ ↬ ě₂ ⇑ τ₂' →
+                   τ₁' ~ τ₂' →
+                   n ； Γ ⊢ Exp.case e of e₁ · e₂ ↬ M.case ě of ě₁ · ě₂ ⇑ τ₁' ⊔ τ₂'
+
+    mark↦case⇑ : ∀ {n Γ e e₁ e₂ ě ě₁ ě₂ τ} →
+                   n ； Γ ⊢ e ↬ ě ⇑ τ →
+                   (∀ {τ₁ τ₂} → τ ⊔ □ + □ ≢ τ₁ + τ₂) →
+                   n ； Γ ⊢ e₁ ↬ ě₁ ⇑ □ →
+                   n ； Γ ⊢ e₂ ↬ ě₂ ⇑ □ →
+                   n ； Γ ⊢ Exp.case e of e₁ · e₂ ↬ M.case (ě ⦅▸+⦆) of ě₁ · ě₂ ⇑ □
 
   -- Analysis marking: n ； Γ ⊢ e ↬ ě ⇓ τ
   infix 4 _；_⊢_↬_⇓_
@@ -125,4 +158,16 @@ mutual
                    n ； (τ' ∷ Γ) ⊢ e ↬ ě ⇓ τ →
                    n ； Γ ⊢ Exp.def e' ⊢ e ↬ M.def ě' ⊢ ě ⇓ τ
 
-    -- TODO: mark↤case (with error variants)
+    mark↤case  : ∀ {n Γ e e₁ e₂ ě ě₁ ě₂ τ τ₀ τ₁ τ₂} →
+                   n ； Γ ⊢ e ↬ ě ⇑ τ₀ →
+                   τ₀ ⊔ □ + □ ≡ τ₁ + τ₂ →
+                   n ； (τ₁ ∷ Γ) ⊢ e₁ ↬ ě₁ ⇓ τ →
+                   n ； (τ₂ ∷ Γ) ⊢ e₂ ↬ ě₂ ⇓ τ →
+                   n ； Γ ⊢ Exp.case e of e₁ · e₂ ↬ M.case ě of ě₁ · ě₂ ⇓ τ
+
+    mark↤case⇑ : ∀ {n Γ e e₁ e₂ ě ě₁ ě₂ τ τ₀} →
+                   n ； Γ ⊢ e ↬ ě ⇑ τ₀ →
+                   (∀ {τ₁ τ₂} → τ₀ ⊔ □ + □ ≢ τ₁ + τ₂) →
+                   n ； (□ ∷ Γ) ⊢ e₁ ↬ ě₁ ⇓ τ →
+                   n ； (□ ∷ Γ) ⊢ e₂ ↬ ě₂ ⇓ τ →
+                   n ； Γ ⊢ Exp.case e of e₁ · e₂ ↬ M.case (ě ⦅▸+⦆) of ě₁ · ě₂ ⇓ τ
