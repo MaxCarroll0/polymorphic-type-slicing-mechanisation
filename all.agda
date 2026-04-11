@@ -9,3 +9,4 @@ module all where
   import Semantics.Marking.Erasure
   import Semantics.Marking.Judgment
   import Semantics.Marking.Metatheory
+  import Slicing.Synthesis

@@ -4,7 +4,7 @@ open import Data.Product using (_,_)
 open import Relation.Nullary using (Dec)
 open import Relation.Binary using (IsPartialOrder; IsDecPartialOrder; IsEquivalence; IsDecEquivalence; Maximum)
 open import Relation.Binary.Definitions using (Minimum)
-open import Relation.Binary.Lattice using (IsMeetSemilattice; IsBoundedLattice; IsDistributiveLattice; IsBoundedMeetSemilattice; IsLattice; Infimum; Supremum)
+open import Relation.Binary.Lattice using (IsMeetSemilattice; IsJoinSemilattice; IsBoundedLattice; IsDistributiveLattice; IsBoundedMeetSemilattice; IsLattice; Infimum; Supremum)
 open import Relation.Binary.PropositionalEquality as Eq using (_≡_; refl)
 open import Function using (_on_)
 
@@ -54,6 +54,16 @@ module ⊑Lat {A : Set} ⦃ hp : HasPrecision A ⦄ ⦃ hm : HasMeet A ⦄ ⦃ h
     using (infimum)
     renaming (∧-greatest to ⊓-greatest; x∧y≤x to x⊓y⊑x; x∧y≤y to x⊓y⊑y)
   isMeetSemilattice = HasMeetSemilattice.isMeetSemilattice hms
+
+record HasJoinSemilattice (A : Set) ⦃ _ : HasPrecision A ⦄ ⦃ _ : HasJoin A ⦄ : Set₁ where
+  field isJoinSemilattice : IsJoinSemilattice _≡_ _⊑_ _⊔_
+open HasJoinSemilattice ⦃...⦄ public hiding (isJoinSemilattice)
+
+module ⊔Lat {A : Set} ⦃ hp : HasPrecision A ⦄ ⦃ hj : HasJoin A ⦄ ⦃ hjs : HasJoinSemilattice A ⦄ where
+  open IsJoinSemilattice (HasJoinSemilattice.isJoinSemilattice hjs) public
+    using (supremum)
+    renaming (∨-least to ⊔-least; x≤x∨y to x⊑x⊔y; y≤x∨y to y⊑x⊔y)
+  isJoinSemilattice = HasJoinSemilattice.isJoinSemilattice hjs
 
 
 -- Lifting Precision to Precision on slices OF a fixed term a
