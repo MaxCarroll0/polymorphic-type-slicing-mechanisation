@@ -1,0 +1,128 @@
+module Semantics.Marking.Judgment where
+
+open import Data.Nat hiding (_+_; _⊔_)
+open import Data.Maybe
+open import Data.List
+open import Relation.Binary.PropositionalEquality using (_≡_; _≢_)
+open import Relation.Nullary using (¬_)
+open import Core
+open import Core.MExp as M
+open import Semantics.Statics.Typing using (_；_⊢_↦_; _；_⊢_↤_)
+
+mutual
+  -- Synthesis marking: n ； Γ ⊢ e ↬ ě ⇑ τ
+  infix 4 _；_⊢_↬_⇑_
+
+  data _；_⊢_↬_⇑_ : ℕ → Assms → Exp → MExp → Typ → Set where
+    mark↦*     : ∀ {n Γ} →
+                   n ； Γ ⊢ Exp.* ↬ M.* ⇑ *
+
+    mark↦□     : ∀ {n Γ} →
+                   n ； Γ ⊢ Exp.□ ↬ M.□ ⇑ □
+
+    mark↦Var   : ∀ {n Γ k τ} →
+                   Γ at k ≡ just τ →
+                   n ； Γ ⊢ Exp.⟨ k ⟩ ↬ M.⟨ k ⟩ ⇑ τ
+
+    mark↦Var⇑  : ∀ {n Γ k} →
+                   Γ at k ≡ nothing →
+                   n ； Γ ⊢ Exp.⟨ k ⟩ ↬ M.⟨ k ⟩⇑ ⇑ □
+
+    mark↦λ:    : ∀ {n Γ e ě τ₁ τ₂} →
+                   n ⊢wf τ₁ →
+                   n ； (τ₁ ∷ Γ) ⊢ e ↬ ě ⇑ τ₂ →
+                   n ； Γ ⊢ Exp.λ: τ₁ ⇒ e ↬ M.λ: τ₁ ⇒ ě ⇑ τ₁ ⇒ τ₂
+
+    mark↦Λ     : ∀ {n Γ e ě τ} →
+                   suc n ； shiftΓ (suc zero) Γ ⊢ e ↬ ě ⇑ τ →
+                   n ； Γ ⊢ Exp.Λ e ↬ M.Λ ě ⇑ ∀· τ
+
+    mark↦∘     : ∀ {n Γ e₁ e₂ ě₁ ě₂ τ τ₁ τ₂} →
+                   n ； Γ ⊢ e₁ ↬ ě₁ ⇑ τ →
+                   τ ⊔ □ ⇒ □ ≡ τ₁ ⇒ τ₂ →
+                   n ； Γ ⊢ e₂ ↬ ě₂ ⇓ τ₁ →
+                   n ； Γ ⊢ e₁ Exp.∘ e₂ ↬ ě₁ M.∘ ě₂ ⇑ τ₂
+
+    mark↦∘⇑    : ∀ {n Γ e₁ e₂ ě₁ ě₂ τ} →
+                   n ； Γ ⊢ e₁ ↬ ě₁ ⇑ τ →
+                   (∀ {τ₁ τ₂} → τ ⊔ □ ⇒ □ ≢ τ₁ ⇒ τ₂) →
+                   n ； Γ ⊢ e₂ ↬ ě₂ ⇓ □ →
+                   n ； Γ ⊢ e₁ Exp.∘ e₂ ↬ (ě₁ ⦅▸⇒⦆) M.∘ ě₂ ⇑ □
+
+    mark↦<>    : ∀ {n Γ e ě τ τ' σ} →
+                   n ； Γ ⊢ e ↬ ě ⇑ τ →
+                   τ ⊔ ∀· □ ≡ ∀· τ' →
+                   n ⊢wf σ →
+                   n ； Γ ⊢ e Exp.< σ > ↬ ě M.< σ > ⇑ [ zero ↦ σ ] τ'
+
+    mark↦<>⇑   : ∀ {n Γ e ě τ σ} →
+                   n ； Γ ⊢ e ↬ ě ⇑ τ →
+                   (∀ {τ'} → τ ⊔ ∀· □ ≢ ∀· τ') →
+                   n ⊢wf σ →
+                   n ； Γ ⊢ e Exp.< σ > ↬ (ě ⦅▸∀⦆) M.< σ > ⇑ □
+
+    mark↦&     : ∀ {n Γ e₁ e₂ ě₁ ě₂ τ₁ τ₂} →
+                   n ； Γ ⊢ e₁ ↬ ě₁ ⇑ τ₁ →
+                   n ； Γ ⊢ e₂ ↬ ě₂ ⇑ τ₂ →
+                   n ； Γ ⊢ e₁ Exp.& e₂ ↬ ě₁ M.& ě₂ ⇑ τ₁ × τ₂
+
+    mark↦def   : ∀ {n Γ e' e ě' ě τ' τ} →
+                   n ； Γ ⊢ e' ↬ ě' ⇑ τ' →
+                   n ； (τ' ∷ Γ) ⊢ e ↬ ě ⇑ τ →
+                   n ； Γ ⊢ Exp.def e' ⊢ e ↬ M.def ě' ⊢ ě ⇑ τ
+
+    -- TODO: mark↦π₁, mark↦π₂, mark↦case (with error variants)
+
+  -- Analysis marking: n ； Γ ⊢ e ↬ ě ⇓ τ
+  infix 4 _；_⊢_↬_⇓_
+
+  data _；_⊢_↬_⇓_ : ℕ → Assms → Exp → MExp → Typ → Set where
+    mark↤sub   : ∀ {n Γ e ě τ τ'} →
+                   n ； Γ ⊢ e ↬ ě ⇑ τ' →
+                   τ ~ τ' →
+                   n ； Γ ⊢ e ↬ ě ⇓ τ
+
+    mark↤sub⇑  : ∀ {n Γ e ě τ τ'} →
+                   n ； Γ ⊢ e ↬ ě ⇑ τ' →
+                   ¬ (τ ~ τ') →
+                   n ； Γ ⊢ e ↬ ě ⦅≁ τ ⦆ ⇓ τ
+
+    mark↤λ     : ∀ {n Γ e ě τ τ₁ τ₂} →
+                   τ ⊔ □ ⇒ □ ≡ τ₁ ⇒ τ₂ →
+                   n ； (τ₁ ∷ Γ) ⊢ e ↬ ě ⇓ τ₂ →
+                   n ； Γ ⊢ Exp.λ⇒ e ↬ M.λ⇒ ě ⇓ τ
+
+    mark↤λ⇑    : ∀ {n Γ e ě τ} →
+                   (∀ {τ₁ τ₂} → τ ⊔ □ ⇒ □ ≢ τ₁ ⇒ τ₂) →
+                   n ； Γ ⊢ e ↬ ě ⇓ □ →
+                   n ； Γ ⊢ Exp.λ⇒ e ↬ (M.λ⇒ ě) ⦅~⇒⦆ ⇓ τ
+
+    mark↤λ:    : ∀ {n Γ e ě τ τ₁ τ₂} →
+                   τ ~ τ₁ ⇒ □ →
+                   τ ⊔ τ₁ ⇒ □ ≡ τ₁ ⇒ τ₂ →
+                   n ⊢wf τ₁ →
+                   n ； (τ₁ ∷ Γ) ⊢ e ↬ ě ⇓ τ₂ →
+                   n ； Γ ⊢ Exp.λ: τ₁ ⇒ e ↬ M.λ: τ₁ ⇒ ě ⇓ τ
+
+    mark↤ι₁    : ∀ {n Γ e ě τ τ₁ τ₂} →
+                   τ ⊔ □ + □ ≡ τ₁ + τ₂ →
+                   n ； Γ ⊢ e ↬ ě ⇓ τ₁ →
+                   n ； Γ ⊢ Exp.ι₁ e ↬ M.ι₁ ě ⇓ τ
+
+    mark↤ι₂    : ∀ {n Γ e ě τ τ₁ τ₂} →
+                   τ ⊔ □ + □ ≡ τ₁ + τ₂ →
+                   n ； Γ ⊢ e ↬ ě ⇓ τ₂ →
+                   n ； Γ ⊢ Exp.ι₂ e ↬ M.ι₂ ě ⇓ τ
+
+    mark↤&     : ∀ {n Γ e₁ e₂ ě₁ ě₂ τ τ₁ τ₂} →
+                   τ ⊔ □ × □ ≡ τ₁ × τ₂ →
+                   n ； Γ ⊢ e₁ ↬ ě₁ ⇓ τ₁ →
+                   n ； Γ ⊢ e₂ ↬ ě₂ ⇓ τ₂ →
+                   n ； Γ ⊢ e₁ Exp.& e₂ ↬ ě₁ M.& ě₂ ⇓ τ
+
+    mark↤def   : ∀ {n Γ e' e ě' ě τ' τ} →
+                   n ； Γ ⊢ e' ↬ ě' ⇑ τ' →
+                   n ； (τ' ∷ Γ) ⊢ e ↬ ě ⇓ τ →
+                   n ； Γ ⊢ Exp.def e' ⊢ e ↬ M.def ě' ⊢ ě ⇓ τ
+
+    -- TODO: mark↤case (with error variants)
