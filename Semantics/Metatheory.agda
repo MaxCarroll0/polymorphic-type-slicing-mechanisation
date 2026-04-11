@@ -9,16 +9,17 @@ open import Core.IntExp
 open import Semantics.Statics.Typing
 open import Semantics.Dynamics.Typing as IT
 open import Semantics.Dynamics.Values
+open import Semantics.Dynamics.EvalCtx
 open import Semantics.Dynamics.Step
 open import Semantics.Elaboration
 
 -- Type Safety
 postulate
   preservation : ∀ {n Γ d d' τ} →
-    n IT.； Γ ⊢ d ∶ τ → d ⟶ d' → n IT.； Γ ⊢ d' ∶ τ
+    n IT.； Γ ⊢ d ∶ τ → d ↦ d' → n IT.； Γ ⊢ d' ∶ τ
 
   progress : ∀ {d τ} →
-    zero IT.； [] ⊢ d ∶ τ → Final d ⊎ (∃ λ d' → d ⟶ d')
+    zero IT.； [] ⊢ d ∶ τ → Final d ⊎ (∃ λ d' → d ↦ d')
 
 -- Elaboration Soundness
 postulate
