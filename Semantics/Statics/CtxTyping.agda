@@ -22,7 +22,7 @@ FocusTyping n Γ' e ⇒mode       = ∃ λ τ' → n ； Γ' ⊢ e ↦ τ'
 FocusTyping n Γ' e (⇐mode τ')  = n ； Γ' ⊢ e ↤ τ'
 
 -- Context classification judgement
--- n ； Γ ⊢ C at p ▷ Γ' [ m ] means:
+-- n ； Γ ⊢ C at p ▷ Γ' [ m ] is in words:
 --   Under type depth n and outer assumptions Γ, context C in position p
 --   has its focus under assumptions Γ' in mode m
 data _；_⊢_at_▷_[_] : ℕ → Assms → Ctx → Position → Assms → CtxMode → Set where
