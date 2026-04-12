@@ -26,7 +26,7 @@ s₁ ×ₛ s₂ = (s₁ .↓ × s₂ .↓) isSlice ⊑× (s₁ .proof) (s₂ .pr
 unmatch⇒ : ∀ {τ τ₁ τ₂} → τ ⊔ □ ⇒ □ ≡ τ₁ ⇒ τ₂ → ⌊ τ₁ ⌋ → ⌊ τ₂ ⌋ → ⌊ τ ⌋
 unmatch⇒ {τ} eq s₁ s₂ with diag τ (□ ⇒ □)
 unmatch⇒      refl s₁ s₂ | kind⇒ =
-  subst ⌊_⌋ (⊔t-zeroᵣ _) s₁ ⇒ₛ subst ⌊_⌋ (⊔t-zeroᵣ) s₂
+  subst ⌊_⌋ ⊔t-zeroᵣ s₁ ⇒ₛ subst ⌊_⌋ ⊔t-zeroᵣ s₂
 unmatch⇒ {τ} eq   s₁ s₂ | diff with τ ≟ □
 ...                                | yes refl = ⊥ₛ
 unmatch⇒      ()   _  _  | diff    | no _
@@ -34,7 +34,7 @@ unmatch⇒      ()   _  _  | diff    | no _
 unmatch× : ∀ {τ τ₁ τ₂} → τ ⊔ □ × □ ≡ τ₁ × τ₂ → ⌊ τ₁ ⌋ → ⌊ τ₂ ⌋ → ⌊ τ ⌋
 unmatch× {τ} eq s₁ s₂ with diag τ (□ × □)
 unmatch×      refl s₁ s₂ | kind× =
-  subst ⌊_⌋ (⊔t-zeroᵣ _) s₁ ×ₛ subst ⌊_⌋ (⊔t-zeroᵣ) s₂
+  subst ⌊_⌋ ⊔t-zeroᵣ s₁ ×ₛ subst ⌊_⌋ ⊔t-zeroᵣ s₂
 unmatch× {τ} eq   s₁ s₂ | diff with τ ≟ □
 ...                                | yes refl = ⊥ₛ
 unmatch×      ()   _  _  | diff    | no _
@@ -42,7 +42,7 @@ unmatch×      ()   _  _  | diff    | no _
 unmatch+ : ∀ {τ τ₁ τ₂} → τ ⊔ □ + □ ≡ τ₁ + τ₂ → ⌊ τ₁ ⌋ → ⌊ τ₂ ⌋ → ⌊ τ ⌋
 unmatch+ {τ} eq s₁ s₂ with diag τ (□ + □)
 unmatch+      refl s₁ s₂ | kind+ =
-  ↑ (⊑+ (subst ⌊_⌋ (⊔t-zeroᵣ) s₁ .proof) (subst ⌊_⌋ (⊔t-zeroᵣ) s₂ .proof))
+  ↑ (⊑+ (subst ⌊_⌋ ⊔t-zeroᵣ s₁ .proof) (subst ⌊_⌋ ⊔t-zeroᵣ s₂ .proof))
 unmatch+ {τ} eq   s₁ s₂ | diff with τ ≟ □
 ...                                | yes refl = ⊥ₛ
 unmatch+      ()   _  _  | diff    | no _

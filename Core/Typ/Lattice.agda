@@ -104,18 +104,15 @@ private
 
   ⊔-identityₗ : ∀ τ → □ ⊔t τ ≡ τ
   ⊔-identityₗ τ with diag □ τ
-  ⊔-identityₗ □         | kind□ = refl
-  ⊔-identityₗ τ         | diff with □ ≟ □ | τ ≟ □
-  ...                          | yes _  | _      = refl
-  ...                          | no □≢□ | _      = ⊥-elim (□≢□ refl)
+  ⊔-identityₗ □ | kind□ = refl
+  ⊔-identityₗ τ | diff  = refl
 
   ⊔-identityᵣ : ∀ τ → τ ⊔t □ ≡ τ
   ⊔-identityᵣ τ with diag τ □
-  ⊔-identityᵣ □         | kind□ = refl
-  ⊔-identityᵣ τ         | diff with τ ≟ □ | □ ≟ □
-  ...                          | yes refl | _      = refl
-  ...                          | no  _    | yes _  = refl
-  ...                          | no  _    | no □≢□ = ⊥-elim (□≢□ refl)
+  ⊔-identityᵣ □ | kind□ = refl
+  ⊔-identityᵣ τ | diff with τ ≟ □
+  ...                  | yes refl = refl
+  ...                  | no  _    = refl
 
 -- Join upper bounds (requires consistency)
 module ~ where
