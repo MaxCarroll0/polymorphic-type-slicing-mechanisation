@@ -35,27 +35,39 @@ private
       s₁ .σ ≈ₛ s₂ .σ
     ∧ s₁ .γ ≈ₛ s₂ .γ
 
-  ≈syn? : ∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} {υ}
-           → (s₁ s₂ : SynSlice D υ) → Relation.Nullary.Dec (s₁ ≈syn s₂)
-  ≈syn? s₁ s₂ with s₁ .σ ≈ₛ? s₂ .σ | s₁ .γ ≈ₛ? s₂ .γ
+  _≈syn?_ : ∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} {υ}
+            → (s₁ s₂ : SynSlice D υ) → Relation.Nullary.Dec (s₁ ≈syn s₂)
+  s₁ ≈syn? s₂ with s₁ .σ ≈ₛ? s₂ .σ | s₁ .γ ≈ₛ? s₂ .γ
   ...            | yes p          | yes q = yes (p , q)
   ...            | no ¬p          | _     = no λ where (p , _) → ¬p p
   ...            | _              | no ¬q = no λ where (_ , q) → ¬q q
 
-  ⊑syn? : ∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} {υ}
-          → (s₁ s₂ : SynSlice D υ) → Relation.Nullary.Dec (s₁ ⊑syn s₂)
-  ⊑syn? s₁ s₂ with s₁ .σ ⊑ₛ? s₂ .σ | s₁ .γ ⊑ₛ? s₂ .γ
+  _⊑syn?_ : ∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} {υ}
+            → (s₁ s₂ : SynSlice D υ) → Relation.Nullary.Dec (s₁ ⊑syn s₂)
+  s₁ ⊑syn? s₂ with s₁ .σ ⊑ₛ? s₂ .σ | s₁ .γ ⊑ₛ? s₂ .γ
   ...            | yes p          | yes q = yes (p , q)
   ...            | no ¬p          | _     = no λ where (p , _) → ¬p p
   ...            | _              | no ¬q = no λ where (_ , q) → ¬q q
 
-  -- Componentwise from Exp and Assms slice dec-partial-orders.
-  -- Proof is mechanical but Agda struggles with implicit resolution
-  -- on product types, so we postulate and mark for future cleanup.
-  postulate
-    ⊑syn-isDecPartialOrder : ∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} {υ} →
-                                IsDecPartialOrder (_≈syn_ {D = D} {υ₁ = υ} {υ₂ = υ})
-                                                  _⊑syn_
+  ⊑syn-isDecPartialOrder : ∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} {υ} →
+                              IsDecPartialOrder (_≈syn_ {D = D} {υ₁ = υ} {υ₂ = υ}) _⊑syn_
+  ⊑syn-isDecPartialOrder {Γ = Γ} {e = e} = record
+                           { isPartialOrder = record
+                                              { isPreorder = isPreorder
+                                              ; antisym = λ (p₁ , q₁) (p₂ , q₂) → ⊑.antisym {Exp} p₁ p₂ , ⊑.antisym {Assms} q₁ q₂
+                                              }
+                           ; _≟_  = _≈syn?_
+                           ; _≤?_ = _⊑syn?_ 
+                           }
+    where isPreorder = record
+                       { isEquivalence = record
+                           { refl  = λ {_} → refl , refl
+                           ; sym   = λ where (refl , refl) → refl , refl
+                           ; trans = λ where (refl , refl) (refl , refl) → refl , refl
+                           }
+                       ; reflexive  = λ where (refl , refl) → ⊑.refl {Exp} , ⊑.refl {Assms}
+                       ; trans = λ (p₁ , q₁) (p₂ , q₂) → ⊑.trans {Exp} p₁ p₂ , ⊑.trans {Assms} q₁ q₂
+                       }
 
 ⊥-syn : ∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} → SynSlice D ⊥ₛ
 ⊥-syn = record { γ = ⊥ₛ ; σ = ⊥ₛ ; valid = ↦□ }
