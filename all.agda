@@ -12,3 +12,4 @@ module all where
   import Slicing.Synthesis
   import Slicing.SynSliceCalc
   import Slicing.Analysis
+  import Slicing.AnaSliceCalc
