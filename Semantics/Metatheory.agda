@@ -3,7 +3,7 @@ module Semantics.Metatheory where
 open import Data.Nat hiding (_+_; _⊔_)
 open import Data.List using ([])
 open import Data.Sum using (_⊎_)
-open import Data.Product using (∃; Σ; _,_)
+open import Data.Product using (∃; Σ; _,_) renaming (_×_ to _∧_)
 open import Core
 open import Core.IntExp
 open import Semantics.Statics.Typing
@@ -37,9 +37,10 @@ postulate
   elab-complete-ana : ∀ {n Γ e τ} →
     n ； Γ ⊢ e ↤ τ → ∃ λ d → n ； Γ ⊢ e ⇓ τ ↝ d
 
--- Gradual Guarantee
+-- Gradual Guarantee (synthesis)
+-- Given a more precise derivation, a less precise one exists with less precise type
 postulate
-  static-gradual-syn : ∀ {n Γ₁ Γ₂ e₁ e₂ τ₁} →
-    e₁ ⊑ e₂ → Γ₁ ⊑ Γ₂ →
-    n ； Γ₁ ⊢ e₁ ↦ τ₁ →
-    ∃ λ τ₂ → n ； Γ₂ ⊢ e₂ ↦ τ₂
+  static-gradual-syn : ∀ {n Γ₁ Γ₂ e₁ e₂ τ₂} →
+    Γ₁ ⊑ Γ₂ → e₁ ⊑ e₂ →
+    n ； Γ₂ ⊢ e₂ ↦ τ₂ →
+    Σ Typ (λ τ₁ → (n ； Γ₁ ⊢ e₁ ↦ τ₁) ∧ (τ₁ ⊑ τ₂))
