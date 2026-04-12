@@ -64,15 +64,6 @@ open import Core.Instances
 ...                       | yes refl = ~?₂
 ⊔-∀-~     ()    | diff    | no _
 
--- Corollaries
-⊔-⇒-~' : ∀ {τ τ₁ τ₂} → τ ⊔ (□ ⇒ □) ≡ τ₁ ⇒ τ₂ → τ ~ τ₁ ⇒ τ₂
-⊔-⇒-~' {τ} eq = subst (τ ~_) eq (⊑to~ (~.⊔-ub₁ (⊔-⇒-~ eq)))
-
-⊔-+-~' : ∀ {τ τ₁ τ₂} → τ ⊔ (□ + □) ≡ τ₁ + τ₂ → τ ~ τ₁ + τ₂
-⊔-+-~' {τ} eq = subst (τ ~_) eq (⊑to~ (~.⊔-ub₁ (⊔-+-~ eq)))
-
-⊔-×-~' : ∀ {τ τ₁ τ₂} → τ ⊔ (□ × □) ≡ τ₁ × τ₂ → τ ~ τ₁ × τ₂
-⊔-×-~' {τ} eq = subst (τ ~_) eq (⊑to~ (~.⊔-ub₁ (⊔-×-~ eq)))
-
-⊔-∀-~' : ∀ {τ τ'} → τ ⊔ (∀· □) ≡ ∀· τ' → τ ~ ∀· τ'
-⊔-∀-~' {τ} eq = subst (τ ~_) eq (⊑to~ (~.⊔-ub₁ (⊔-∀-~ eq)))
+-- Consistency with join result: if τ ~ σ and τ ⊔ σ ≡ ρ then τ ~ ρ
+⊔-~-result : ∀ {τ σ ρ} → τ ~ σ → τ ⊔ σ ≡ ρ → τ ~ ρ
+⊔-~-result c eq = subst (_ ~_) eq (⊑to~ (~.⊔-ub₁ c))

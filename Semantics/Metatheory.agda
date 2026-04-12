@@ -9,7 +9,7 @@ open import Core
 open import Core.IntExp as I
 open import Core.Typ.Consistency using (~-isCompatibility; IsCompatibility; _~_)
 open import Core.Typ.Precision using (⊑to~)
-open import Core.Typ.Properties using (⊔-⇒-~'; ⊔-+-~'; ⊔-×-~'; ⊔-∀-~'; ⊔-~-result)
+open import Core.Typ.Properties using (⊔-⇒-~; ⊔-+-~; ⊔-×-~; ⊔-∀-~; ⊔-~-result)
 open import Core.Typ.Lattice using (module ~)
 open import Semantics.Statics.Typing
 open import Semantics.Dynamics.Typing as IT
@@ -119,19 +119,19 @@ mutual
   elab-sound-int-syn (elab↦λ: wf ed)    = ∶λ wf (elab-sound-int-syn ed)
   elab-sound-int-syn (elab↦Λ ed)        = ∶Λ (elab-sound-int-syn ed)
   elab-sound-int-syn (elab↦∘ ed₁ m ed₂) =
-    ∶∘ (∶cast (elab-sound-int-syn ed₁) (⊔-⇒-~' m)) (elab-sound-int-ana ed₂)
+    ∶∘ (∶cast (elab-sound-int-syn ed₁) (⊔-~-result (⊔-⇒-~ m) m)) (elab-sound-int-ana ed₂)
   elab-sound-int-syn (elab↦<> ed m wf)  =
-    ∶<> (∶cast (elab-sound-int-syn ed) (⊔-∀-~' m)) wf
+    ∶<> (∶cast (elab-sound-int-syn ed) (⊔-~-result (⊔-∀-~ m) m)) wf
   elab-sound-int-syn (elab↦& ed₁ ed₂)   =
     ∶& (elab-sound-int-syn ed₁) (elab-sound-int-syn ed₂)
   elab-sound-int-syn (elab↦π₁ ed m)     =
-    ∶π₁ (∶cast (elab-sound-int-syn ed) (⊔-×-~' m))
+    ∶π₁ (∶cast (elab-sound-int-syn ed) (⊔-~-result (⊔-×-~ m) m))
   elab-sound-int-syn (elab↦π₂ ed m)     =
-    ∶π₂ (∶cast (elab-sound-int-syn ed) (⊔-×-~' m))
+    ∶π₂ (∶cast (elab-sound-int-syn ed) (⊔-~-result (⊔-×-~ m) m))
   elab-sound-int-syn (elab↦def ed₁ ed₂) =
     ∶def (elab-sound-int-syn ed₁) (elab-sound-int-syn ed₂)
   elab-sound-int-syn (elab↦case ed m ed₁ ed₂ c) =
-    ∶case (∶cast (elab-sound-int-syn ed) (⊔-+-~' m))
+    ∶case (∶cast (elab-sound-int-syn ed) (⊔-~-result (⊔-+-~ m) m))
           (∶cast (elab-sound-int-syn ed₁) (⊑to~ (~.⊔-ub₁ c)))
           (∶cast (elab-sound-int-syn ed₂) (⊑to~ (~.⊔-ub₂ c)))
 
@@ -140,17 +140,17 @@ mutual
   elab-sound-int-ana (elab↤sub ed c) =
     ∶cast (elab-sound-int-syn ed) (~.sym c)
   elab-sound-int-ana (elab↤λ {τ = τ} m ed) =
-    ∶cast (∶λ (⊔-⇒-wf₁ {τ = τ} m) (elab-sound-int-ana ed)) (~.sym (⊔-⇒-~' {τ = τ} m))
+    ∶cast (∶λ (⊔-⇒-wf₁ {τ = τ} m) (elab-sound-int-ana ed)) (~.sym (⊔-~-result (⊔-⇒-~ m) m))
   elab-sound-int-ana (elab↤λ: c m wf ed) =
     ∶cast (∶λ wf (elab-sound-int-ana ed)) (~.sym (⊔-~-result c m))
   elab-sound-int-ana (elab↤ι₁ {τ = τ} m ed) =
-    ∶cast (∶ι₁ (⊔-+-wf₂ {τ = τ} m) (elab-sound-int-ana ed)) (~.sym (⊔-+-~' {τ = τ} m))
+    ∶cast (∶ι₁ (⊔-+-wf₂ {τ = τ} m) (elab-sound-int-ana ed)) (~.sym (⊔-~-result (⊔-+-~ m) m))
   elab-sound-int-ana (elab↤ι₂ {τ = τ} m ed) =
-    ∶cast (∶ι₂ (⊔-+-wf₁ {τ = τ} m) (elab-sound-int-ana ed)) (~.sym (⊔-+-~' {τ = τ} m))
+    ∶cast (∶ι₂ (⊔-+-wf₁ {τ = τ} m) (elab-sound-int-ana ed)) (~.sym (⊔-~-result (⊔-+-~ m) m))
   elab-sound-int-ana (elab↤& m ed₁ ed₂) =
-    ∶cast (∶& (elab-sound-int-ana ed₁) (elab-sound-int-ana ed₂)) (~.sym (⊔-×-~' m))
+    ∶cast (∶& (elab-sound-int-ana ed₁) (elab-sound-int-ana ed₂)) (~.sym (⊔-~-result (⊔-×-~ m) m))
   elab-sound-int-ana (elab↤case ed m ed₁ ed₂) =
-    ∶case (∶cast (elab-sound-int-syn ed) (⊔-+-~' m))
+    ∶case (∶cast (elab-sound-int-syn ed) (⊔-~-result (⊔-+-~ m) m))
           (elab-sound-int-ana ed₁) (elab-sound-int-ana ed₂)
   elab-sound-int-ana (elab↤def ed₁ ed₂) =
     ∶def (elab-sound-int-syn ed₁) (elab-sound-int-ana ed₂)
