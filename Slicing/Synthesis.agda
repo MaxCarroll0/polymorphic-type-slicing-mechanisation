@@ -19,38 +19,35 @@ record SynSlice {n : ℕ} {Γ : Assms} {e : Exp} {τ : Typ}
     γ     : ⌊ Γ ⌋
     σ     : ⌊ e ⌋
     valid : n ； γ .↓ ⊢ σ .↓ ↦ υ .↓
+open SynSlice public
 
 private
 -- Precision polymorphic in υ
   _⊑syn_ : ∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} {υ₁ υ₂} →
              SynSlice D υ₁ → SynSlice D υ₂ → Set
-  _⊑syn_ {Γ = Γ} {e = e} s₁ s₂ =
-      _⊑ₛ_ {A = Exp}   {a = e} (SynSlice.σ s₁) (SynSlice.σ s₂)
-    ∧ _⊑ₛ_ {A = Assms} {a = Γ} (SynSlice.γ s₁) (SynSlice.γ s₂)
+  _⊑syn_ s₁ s₂ =
+      s₁ .σ ⊑ₛ s₂ .σ
+    ∧ s₁ .γ ⊑ₛ s₂ .γ
 
   _≈syn_ : ∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} {υ₁ υ₂} →
               SynSlice D υ₁ → SynSlice D υ₂ → Set
-  _≈syn_ {Γ = Γ} {e = e} s₁ s₂ =
-      _≈ₛ_ {A = Exp}   {a = e} (SynSlice.σ s₁) (SynSlice.σ s₂)
-    ∧ _≈ₛ_ {A = Assms} {a = Γ} (SynSlice.γ s₁) (SynSlice.γ s₂)
+  _≈syn_ s₁ s₂ =
+      s₁ .σ ≈ₛ s₂ .σ
+    ∧ s₁ .γ ≈ₛ s₂ .γ
 
   ≈syn? : ∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} {υ}
            → (s₁ s₂ : SynSlice D υ) → Relation.Nullary.Dec (s₁ ≈syn s₂)
-  ≈syn? s₁ s₂
-    with _≈ₛ?_ (SynSlice.σ s₁) (SynSlice.σ s₂)
-       | _≈ₛ?_ (SynSlice.γ s₁) (SynSlice.γ s₂)
-  ... | yes p | yes q = yes (p , q)
-  ... | no ¬p | _     = no λ where (p , _) → ¬p p
-  ... | _     | no ¬q = no λ where (_ , q) → ¬q q
+  ≈syn? s₁ s₂ with s₁ .σ ≈ₛ? s₂ .σ | s₁ .γ ≈ₛ? s₂ .γ
+  ...            | yes p          | yes q = yes (p , q)
+  ...            | no ¬p          | _     = no λ where (p , _) → ¬p p
+  ...            | _              | no ¬q = no λ where (_ , q) → ¬q q
 
   ⊑syn? : ∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} {υ}
-           → (s₁ s₂ : SynSlice D υ) → Relation.Nullary.Dec (s₁ ⊑syn s₂)
-  ⊑syn? s₁ s₂
-    with _⊑ₛ?_ (SynSlice.σ s₁) (SynSlice.σ s₂)
-       | _⊑ₛ?_ (SynSlice.γ s₁) (SynSlice.γ s₂)
-  ... | yes p | yes q = yes (p , q)
-  ... | no ¬p | _     = no λ where (p , _) → ¬p p
-  ... | _     | no ¬q = no λ where (_ , q) → ¬q q
+          → (s₁ s₂ : SynSlice D υ) → Relation.Nullary.Dec (s₁ ⊑syn s₂)
+  ⊑syn? s₁ s₂ with s₁ .σ ⊑ₛ? s₂ .σ | s₁ .γ ⊑ₛ? s₂ .γ
+  ...            | yes p          | yes q = yes (p , q)
+  ...            | no ¬p          | _     = no λ where (p , _) → ¬p p
+  ...            | _              | no ¬q = no λ where (_ , q) → ¬q q
 
   -- Componentwise from Exp and Assms slice dec-partial-orders.
   -- Proof is mechanical but Agda struggles with implicit resolution
