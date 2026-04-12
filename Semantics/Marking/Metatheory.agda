@@ -17,14 +17,6 @@ postulate
   mark-total-ana : ∀ (n : ℕ) (Γ : Assms) (e : Exp) (τ : Typ) →
     ∃ λ ě → n ； Γ ⊢ e ↬ ě ⇓ τ
 
--- Well-formedness: erasure recovers original expression
-postulate
-  mark-wf-syn : ∀ {n Γ e ě τ} →
-    n ； Γ ⊢ e ↬ ě ⇑ τ → erase ě ≡ e
-
-  mark-wf-ana : ∀ {n Γ e ě τ} →
-    n ； Γ ⊢ e ↬ ě ⇓ τ → erase ě ≡ e
-
 -- Unicity: marking is deterministic. Note: I'm not sure this will hold with my formalisation
 postulate
   mark-unique-syn : ∀ {n Γ e ě₁ ě₂ τ₁ τ₂} →
