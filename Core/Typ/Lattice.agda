@@ -5,7 +5,7 @@ open import Data.Empty using (⊥-elim)
 open import Data.Product using (_,_; proj₁; proj₂)
 open import Relation.Binary using (IsPartialOrder)
 open import Relation.Binary.Definitions using (Reflexive; Transitive; Antisymmetric; Maximum; Minimum)
-open import Relation.Binary.PropositionalEquality as Eq using (_≡_; _≢_; refl; sym; trans; cong; cong₂)
+open import Relation.Binary.PropositionalEquality as Eq using (_≡_; _≢_; refl; trans; cong; cong₂)
 open Eq.≡-Reasoning
 open import Relation.Binary.Lattice.Structures using (IsMeetSemilattice; IsJoinSemilattice; IsLattice; IsBoundedLattice; IsDistributiveLattice)
 open import Relation.Binary.Lattice.Definitions using (Infimum; Supremum)
@@ -116,6 +116,10 @@ private
 
 -- Join upper bounds (requires consistency)
 module ~ where
+  open Core.Typ.Consistency.IsCompatibility
+  sym = ~-isCompatibility .symmetric
+  refle = ~-isCompatibility .reflexive -- TODO: rename imported refl to avoid name clash
+
   ⊔-ub₁ : ∀ {τ₁ τ₂} → τ₁ ~ τ₂ → τ₁ ⊑ τ₁ ⊔t τ₂
   ⊔-ub₁ ~*               = ⊑*
   ⊔-ub₁ ~Var             = ⊑Var

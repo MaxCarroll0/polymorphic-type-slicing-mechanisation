@@ -1,6 +1,6 @@
 module Core.Typ.Properties where
 
-open import Relation.Binary.PropositionalEquality using (_≡_; refl)
+open import Relation.Binary.PropositionalEquality using (_≡_; refl; subst)
 open import Relation.Nullary using (yes; no)
 open import Data.Empty using (⊥-elim)
 
@@ -35,6 +35,7 @@ open import Core.Instances
 ...          | diff  = refl
 
 -- Non-trivial join implies consistency with least specific compound type
+-- i.e. such a join must be a valid LUB
 ⊔-⇒-~ : ∀ {τ τ₁ τ₂} → τ ⊔ (□ ⇒ □) ≡ τ₁ ⇒ τ₂ → τ ~ □ ⇒ □
 ⊔-⇒-~ {τ} eq with diag τ (□ ⇒ □)
 ...             | kind⇒ = ~⇒ ~?₁ ~?₁
@@ -62,3 +63,16 @@ open import Core.Instances
 ⊔-∀-~ {τ} eq    | diff with τ ≟ □
 ...                       | yes refl = ~?₂
 ⊔-∀-~     ()    | diff    | no _
+
+-- Corollaries
+⊔-⇒-~' : ∀ {τ τ₁ τ₂} → τ ⊔ (□ ⇒ □) ≡ τ₁ ⇒ τ₂ → τ ~ τ₁ ⇒ τ₂
+⊔-⇒-~' {τ} eq = subst (τ ~_) eq (⊑to~ (~.⊔-ub₁ (⊔-⇒-~ eq)))
+
+⊔-+-~' : ∀ {τ τ₁ τ₂} → τ ⊔ (□ + □) ≡ τ₁ + τ₂ → τ ~ τ₁ + τ₂
+⊔-+-~' {τ} eq = subst (τ ~_) eq (⊑to~ (~.⊔-ub₁ (⊔-+-~ eq)))
+
+⊔-×-~' : ∀ {τ τ₁ τ₂} → τ ⊔ (□ × □) ≡ τ₁ × τ₂ → τ ~ τ₁ × τ₂
+⊔-×-~' {τ} eq = subst (τ ~_) eq (⊑to~ (~.⊔-ub₁ (⊔-×-~ eq)))
+
+⊔-∀-~' : ∀ {τ τ'} → τ ⊔ (∀· □) ≡ ∀· τ' → τ ~ ∀· τ'
+⊔-∀-~' {τ} eq = subst (τ ~_) eq (⊑to~ (~.⊔-ub₁ (⊔-∀-~ eq)))
