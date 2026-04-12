@@ -44,3 +44,18 @@ postulate
     Γ₁ ⊑ Γ₂ → e₁ ⊑ e₂ →
     n ； Γ₂ ⊢ e₂ ↦ τ₂ →
     Σ Typ (λ τ₁ → (n ； Γ₁ ⊢ e₁ ↦ τ₁) ∧ (τ₁ ⊑ τ₂))
+
+-- Synthesis precision: less precise terms synthesize less precise types
+-- (follows from above via synthesis unicity)
+postulate
+  syn-precision : ∀ {n Γ₁ Γ₂ e₁ e₂ τ₁ τ₂} →
+    Γ₁ ⊑ Γ₂ → e₁ ⊑ e₂ →
+    n ； Γ₂ ⊢ e₂ ↦ τ₂ → n ； Γ₁ ⊢ e₁ ↦ τ₁ → τ₁ ⊑ τ₂
+
+-- Analysis gradual guarantee:
+-- all slices still analyse against any less (or equally) precise type
+postulate
+  static-gradual-ana : ∀ {n Γ₁ Γ₂ e₁ e₂ τ₁ τ₂} →
+    Γ₁ ⊑ Γ₂ → e₁ ⊑ e₂ → τ₁ ⊑ τ₂ →
+    n ； Γ₂ ⊢ e₂ ↤ τ₂ →
+    n ； Γ₁ ⊢ e₁ ↤ τ₁
