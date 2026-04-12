@@ -10,3 +10,4 @@ module all where
   import Semantics.Marking.Judgment
   import Semantics.Marking.Metatheory
   import Slicing.Synthesis
+  import Slicing.SynSliceCalc

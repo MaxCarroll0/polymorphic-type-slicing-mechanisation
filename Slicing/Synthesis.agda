@@ -3,6 +3,9 @@ open import Data.Product using (_,_; proj₁; proj₂; Σ-syntax; ∃-syntax) re
 open import Relation.Nullary using (yes; no)
 open import Relation.Binary using (IsPartialOrder; IsDecPartialOrder; IsEquivalence; IsDecEquivalence)
 open import Relation.Binary.Lattice using (IsJoinSemilattice)
+open import Relation.Binary.PropositionalEquality using (_≡_)
+open import Data.Maybe using (just)
+open import Data.List using (_∷_)
 open import Core
 open import Semantics.Statics
 
@@ -21,14 +24,37 @@ private
 -- Precision polymorphic in υ
   _⊑syn_ : ∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} {υ₁ υ₂} →
              SynSlice D υ₁ → SynSlice D υ₂ → Set
-  s₁ ⊑syn s₂ = (SynSlice.σ s₁ ⊑ₛ SynSlice.σ s₂)
-             ∧ (SynSlice.γ s₁ ⊑ₛ SynSlice.γ s₂)
+  _⊑syn_ {Γ = Γ} {e = e} s₁ s₂ =
+      _⊑ₛ_ {A = Exp}   {a = e} (SynSlice.σ s₁) (SynSlice.σ s₂)
+    ∧ _⊑ₛ_ {A = Assms} {a = Γ} (SynSlice.γ s₁) (SynSlice.γ s₂)
 
   _≈syn_ : ∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} {υ₁ υ₂} →
               SynSlice D υ₁ → SynSlice D υ₂ → Set
-  s₁ ≈syn s₂ = (SynSlice.σ s₁ ≈ₛ SynSlice.σ s₂)
-             ∧ (SynSlice.γ s₁ ≈ₛ SynSlice.γ s₂)
+  _≈syn_ {Γ = Γ} {e = e} s₁ s₂ =
+      _≈ₛ_ {A = Exp}   {a = e} (SynSlice.σ s₁) (SynSlice.σ s₂)
+    ∧ _≈ₛ_ {A = Assms} {a = Γ} (SynSlice.γ s₁) (SynSlice.γ s₂)
 
+  ≈syn? : ∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} {υ}
+           → (s₁ s₂ : SynSlice D υ) → Relation.Nullary.Dec (s₁ ≈syn s₂)
+  ≈syn? s₁ s₂
+    with _≈ₛ?_ (SynSlice.σ s₁) (SynSlice.σ s₂)
+       | _≈ₛ?_ (SynSlice.γ s₁) (SynSlice.γ s₂)
+  ... | yes p | yes q = yes (p , q)
+  ... | no ¬p | _     = no λ where (p , _) → ¬p p
+  ... | _     | no ¬q = no λ where (_ , q) → ¬q q
+
+  ⊑syn? : ∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} {υ}
+           → (s₁ s₂ : SynSlice D υ) → Relation.Nullary.Dec (s₁ ⊑syn s₂)
+  ⊑syn? s₁ s₂
+    with _⊑ₛ?_ (SynSlice.σ s₁) (SynSlice.σ s₂)
+       | _⊑ₛ?_ (SynSlice.γ s₁) (SynSlice.γ s₂)
+  ... | yes p | yes q = yes (p , q)
+  ... | no ¬p | _     = no λ where (p , _) → ¬p p
+  ... | _     | no ¬q = no λ where (_ , q) → ¬q q
+
+  -- Componentwise from Exp and Assms slice dec-partial-orders.
+  -- Proof is mechanical but Agda struggles with implicit resolution
+  -- on product types, so we postulate and mark for future cleanup.
   postulate
     ⊑syn-isDecPartialOrder : ∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} {υ} →
                                 IsDecPartialOrder (_≈syn_ {D = D} {υ₁ = υ} {υ₂ = υ})
@@ -113,6 +139,7 @@ IsMinimal : ∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} {υ} → SynSlice D υ �
 IsMinimal {D = D} {υ = υ} s = ∀ (s' : SynSlice D υ) → s' ⊑syn s → s ⊑syn s'
 
 -- Every derivation and type slice has a minimal SynSlice
+-- TODO: Prove via classical methods using the fact that a bottom element exists
 postulate
   minExists : ∀ {n Γ e τ} (D : n ； Γ ⊢ e ↦ τ) υ
              → ∃[ m ] IsMinimal {D = D} {υ = υ} m
