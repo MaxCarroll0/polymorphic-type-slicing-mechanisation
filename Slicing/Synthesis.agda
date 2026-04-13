@@ -2,7 +2,8 @@ open import Data.Nat hiding (_+_; _⊔_)
 open import Data.Product using (_,_; proj₁; proj₂; Σ-syntax; ∃-syntax) renaming (_×_ to _∧_)
 open import Relation.Nullary using (yes; no; ¬_)
 open import Relation.Binary using (IsPartialOrder; IsDecPartialOrder; IsEquivalence; IsDecEquivalence)
-open import Relation.Binary.PropositionalEquality using (_≡_; _≢_; refl; subst; cong; cong₂; sym; trans)
+open import Relation.Binary.PropositionalEquality as Eq using (_≡_; _≢_; refl; subst; cong; cong₂; sym; trans)
+open Eq.≡-Reasoning
 open import Data.Maybe using (just)
 open import Data.List using (_∷_; [])
 open import Core
@@ -238,13 +239,15 @@ postulate
   s₁⊑s⊔ = ⊑ₛLat.x⊑ₛx⊔ₛy (s₁ .σ) (s₂ .σ)
          , ⊑ₛLat.x⊑ₛx⊔ₛy (s₁ .γ) (s₂ .γ)
   s₁≉s⊔ : ¬ (s₁ ≈syn proj₂ (s₁ ⊔syn s₂))
-  s₁≉s⊔ (σ≈ , γ≈) =
-    neq (trans (sym (⊑.antisym {Typ}
-      (syn-precision (⊑.reflexive {Assms} γ≈) (⊑.reflexive {Exp} σ≈)
-        (proj₂ (s₁ ⊔syn s₂) .valid) (s₁ .valid))
-      (syn-precision (⊑.reflexive {Assms} (sym γ≈)) (⊑.reflexive {Exp} (sym σ≈))
-        (s₁ .valid) (proj₂ (s₁ ⊔syn s₂) .valid))))
-      (sym (⊔t-idem (υ .↓))))
+  s₁≉s⊔ (σ≈ , γ≈) = neq (begin
+    (proj₁ (s₁ ⊔syn s₂) .↓) ≡˘⟨ ⊑.antisym {Typ} υ⊑υ' υ'⊑υ ⟩
+    (υ .↓)                  ≡˘⟨ ⊔t-idem (υ .↓) ⟩
+    (υ .↓ ⊔ υ .↓)           ∎)
+    where
+    υ⊑υ' = syn-precision (⊑.reflexive {Assms} γ≈) (⊑.reflexive {Exp} σ≈)
+              (proj₂ (s₁ ⊔syn s₂) .valid) (s₁ .valid)
+    υ'⊑υ = syn-precision (⊑.reflexive {Assms} (sym γ≈)) (⊑.reflexive {Exp} (sym σ≈))
+              (s₁ .valid) (proj₂ (s₁ ⊔syn s₂) .valid)
 
 -- -- Postulate 4: Every derivation and type slice has a minimal SynSlice
 -- -- TODO: Prove via classical methods using the fact that a bottom element exists
