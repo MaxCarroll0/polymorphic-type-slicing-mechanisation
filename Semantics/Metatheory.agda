@@ -155,11 +155,33 @@ mutual
   elab-sound-int-ana (elab↤def ed₁ ed₂) =
     ∶def (elab-sound-int-syn ed₁) (elab-sound-int-ana ed₂)
 
-postulate
+mutual
   elab-sound-ext-syn : ∀ {n Γ e τ d} →
     n ； Γ ⊢ e ⇑ τ ↝ d → n ； Γ ⊢ e ↦ τ
+  elab-sound-ext-syn elab↦*                    = ↦*
+  elab-sound-ext-syn elab↦□                    = ↦□
+  elab-sound-ext-syn (elab↦Var p)              = ↦Var p
+  elab-sound-ext-syn (elab↦λ: wf ed)          = ↦λ: wf (elab-sound-ext-syn ed)
+  elab-sound-ext-syn (elab↦Λ ed)              = ↦Λ (elab-sound-ext-syn ed)
+  elab-sound-ext-syn (elab↦∘ ed₁ m ed₂)       = ↦∘ (elab-sound-ext-syn ed₁) m (elab-sound-ext-ana ed₂)
+  elab-sound-ext-syn (elab↦<> ed m wf)        = ↦<> (elab-sound-ext-syn ed) m wf
+  elab-sound-ext-syn (elab↦& ed₁ ed₂)         = ↦& (elab-sound-ext-syn ed₁) (elab-sound-ext-syn ed₂)
+  elab-sound-ext-syn (elab↦π₁ ed m)           = ↦π₁ (elab-sound-ext-syn ed) m
+  elab-sound-ext-syn (elab↦π₂ ed m)           = ↦π₂ (elab-sound-ext-syn ed) m
+  elab-sound-ext-syn (elab↦def ed₁ ed₂)       = ↦def (elab-sound-ext-syn ed₁) (elab-sound-ext-syn ed₂)
+  elab-sound-ext-syn (elab↦case ed m ed₁ ed₂ c) =
+    ↦case (elab-sound-ext-syn ed) m (elab-sound-ext-syn ed₁) (elab-sound-ext-syn ed₂) c
+
   elab-sound-ext-ana : ∀ {n Γ e τ d} →
     n ； Γ ⊢ e ⇓ τ ↝ d → n ； Γ ⊢ e ↤ τ
+  elab-sound-ext-ana (elab↤sub ed c)           = ↤Sub (elab-sound-ext-syn ed) c
+  elab-sound-ext-ana (elab↤λ m ed)             = ↤λ m (elab-sound-ext-ana ed)
+  elab-sound-ext-ana (elab↤λ: c m wf ed)      = ↤λ: c m wf (elab-sound-ext-ana ed)
+  elab-sound-ext-ana (elab↤ι₁ m ed)           = ↤ι₁ m (elab-sound-ext-ana ed)
+  elab-sound-ext-ana (elab↤ι₂ m ed)           = ↤ι₂ m (elab-sound-ext-ana ed)
+  elab-sound-ext-ana (elab↤& m ed₁ ed₂)       = ↤& m (elab-sound-ext-ana ed₁) (elab-sound-ext-ana ed₂)
+  elab-sound-ext-ana (elab↤case ed m ed₁ ed₂) = ↤case (elab-sound-ext-syn ed) m (elab-sound-ext-ana ed₁) (elab-sound-ext-ana ed₂)
+  elab-sound-ext-ana (elab↤def ed₁ ed₂)       = ↤def (elab-sound-ext-syn ed₁) (elab-sound-ext-ana ed₂)
 
 -- Type Safety
 -- TODO: Preservation needs substitution lemma for IntExp typing + plug decomposition.
