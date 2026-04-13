@@ -252,7 +252,7 @@ private
     ne-⊑∘→≡ ⊑□          ne = ⊥-elim (ne refl)
     ne-⊑∘→≡ (⊑∘ _ _)    _  = _ , _ , refl
 
-
+    -- Postulates for remaining cases
     postulate
       ⊔ana-closure : ∀ {n Γ e dom₁ dom₂} {γ₁ γ₂ : ⌊ Γ ⌋} {σ₁ σ₂ : Exp}
         → n ； γ₁ .↓ ⊢ σ₁ ↤ dom₁ → n ； γ₂ .↓ ⊢ σ₂ ↤ dom₂
@@ -264,7 +264,13 @@ private
         → α₂ ⊔ Typ.□ ⇒ Typ.□ ≡ dom₂ ⇒ cod₂
         → (α₁ ⊔ α₂) ⊔ Typ.□ ⇒ Typ.□ ≡ (dom₁ ⊔ dom₂) ⇒ (cod₁ ⊔ cod₂)
 
-    -- ne-⊑ inversion for remaining expression forms
+      shiftΓ-preserves-⊑ : ∀ {Γ₁ Γ₂} → Γ₁ ⊑ Γ₂ → shiftΓ (suc zero) Γ₁ ⊑ shiftΓ (suc zero) Γ₂
+
+    shiftΓ-slice : ∀ {Γ} → ⌊ Γ ⌋ → ⌊ shiftΓ (suc zero) Γ ⌋
+    shiftΓ-slice s = shiftΓ (suc zero) (s .↓) isSlice shiftΓ-preserves-⊑ (s .proof)
+
+
+    -- ne-⊑ inversion for compound expression forms
     ne-⊑λ:→≡ : ∀ {σ : Exp} {τ₁ e} → σ ⊑ (λ: τ₁ ⇒ e) → σ ≢ Exp.□ → ∃[ τ₁' ] ∃[ e' ] σ ≡ (λ: τ₁' ⇒ e')
     ne-⊑λ:→≡ ⊑□ ne = ⊥-elim (ne refl)
     ne-⊑λ:→≡ (⊑λ _ _) _ = _ , _ , refl
@@ -297,133 +303,6 @@ private
                → ∃[ e' ] ∃[ e₁' ] ∃[ e₂' ] σ ≡ (case e' of e₁' · e₂')
     ne-⊑case→≡ ⊑□ ne = ⊥-elim (ne refl)
     ne-⊑case→≡ (⊑case _ _ _) _ = _ , _ , _ , refl
-
-    -- Postulated inner cases for remaining compound constructors
-    postulate
-      ⊔-case-λ:-inner : ∀ {n Γ e τ₁ τ₂}
-        → (wf : n ⊢wf τ₁) → (D' : n ； (τ₁ ∷ Γ) ⊢ e ↦ τ₂)
-        → (γ₁ γ₂ : ⌊ Γ ⌋)
-        → ∀ {τ₁₁ σ₁' τ₂₁ τ₁₂ σ₂' τ₂₂}
-        → n ⊢wf τ₁₁ → n ； (τ₁₁ ∷ γ₁ .↓) ⊢ σ₁' ↦ τ₂₁
-        → n ⊢wf τ₁₂ → n ； (τ₁₂ ∷ γ₂ .↓) ⊢ σ₂' ↦ τ₂₂
-        → n ； γ₁ .↓ ⊔ γ₂ .↓ ⊢ (λ: τ₁₁ ⇒ σ₁') ⊔ (λ: τ₁₂ ⇒ σ₂') ↦ (τ₁₁ ⇒ τ₂₁) ⊔ (τ₁₂ ⇒ τ₂₂)
-
-      ⊔-case-def-inner : ∀ {n Γ e' e τ' τ}
-        → (D₁ : n ； Γ ⊢ e' ↦ τ') → (D₂ : n ； (τ' ∷ Γ) ⊢ e ↦ τ)
-        → (γ₁ γ₂ : ⌊ Γ ⌋)
-        → ∀ {σ₁' σ₁ τ₁' υ₁-τ σ₂' σ₂ τ₂' υ₂-τ}
-        → n ； γ₁ .↓ ⊢ σ₁' ↦ τ₁' → n ； (τ₁' ∷ γ₁ .↓) ⊢ σ₁ ↦ υ₁-τ
-        → n ； γ₂ .↓ ⊢ σ₂' ↦ τ₂' → n ； (τ₂' ∷ γ₂ .↓) ⊢ σ₂ ↦ υ₂-τ
-        → n ； γ₁ .↓ ⊔ γ₂ .↓ ⊢ (def σ₁' ⊢ σ₁) ⊔ (def σ₂' ⊢ σ₂) ↦ (υ₁-τ ⊔ υ₂-τ)
-
-      ⊔-case-Λ-inner : ∀ {n Γ e τ}
-        → (D' : suc n ； shiftΓ (suc zero) Γ ⊢ e ↦ τ)
-        → (γ₁ γ₂ : ⌊ Γ ⌋)
-        → ∀ {σ₁ τ₁ σ₂ τ₂}
-        → suc n ； shiftΓ (suc zero) (γ₁ .↓) ⊢ σ₁ ↦ τ₁
-        → suc n ； shiftΓ (suc zero) (γ₂ .↓) ⊢ σ₂ ↦ τ₂
-        → n ； γ₁ .↓ ⊔ γ₂ .↓ ⊢ Λ σ₁ ⊔ Λ σ₂ ↦ (∀· τ₁) ⊔ (∀· τ₂)
-
-      ⊔-case-<>-inner : ∀ {n Γ e τ-e τ' σ-ty t₁ t₂}
-        → (D' : n ； Γ ⊢ e ↦ τ-e)
-        → (eq : τ-e ⊔ ∀· Typ.□ ≡ ∀· τ') → (wf : n ⊢wf σ-ty)
-        → (γ₁ γ₂ : ⌊ Γ ⌋)
-        → ∀ {σ₁-e σ₁-ty σ₂-e σ₂-ty}
-        → n ； γ₁ .↓ ⊢ (σ₁-e < σ₁-ty >) ↦ t₁
-        → n ； γ₂ .↓ ⊢ (σ₂-e < σ₂-ty >) ↦ t₂
-        → n ； γ₁ .↓ ⊔ γ₂ .↓ ⊢ (σ₁-e < σ₁-ty >) ⊔ (σ₂-e < σ₂-ty >) ↦ (t₁ ⊔ t₂)
-
-      ⊔-case-&-inner : ∀ {n Γ e₁ e₂ τ₁ τ₂}
-        → (D₁ : n ； Γ ⊢ e₁ ↦ τ₁) → (D₂ : n ； Γ ⊢ e₂ ↦ τ₂)
-        → (γ₁ γ₂ : ⌊ Γ ⌋)
-        → ∀ {σ₁₁ σ₁₂ α₁ β₁ σ₂₁ σ₂₂ α₂ β₂}
-        → n ； γ₁ .↓ ⊢ σ₁₁ ↦ α₁ → n ； γ₁ .↓ ⊢ σ₁₂ ↦ β₁
-        → n ； γ₂ .↓ ⊢ σ₂₁ ↦ α₂ → n ； γ₂ .↓ ⊢ σ₂₂ ↦ β₂
-        → n ； γ₁ .↓ ⊔ γ₂ .↓ ⊢ (σ₁₁ & σ₁₂) ⊔ (σ₂₁ & σ₂₂) ↦ (α₁ × β₁) ⊔ (α₂ × β₂)
-
-      ⊔-case-π₁-inner : ∀ {n Γ e τ-e τ₁ τ₂}
-        → (D' : n ； Γ ⊢ e ↦ τ-e) → (eq : τ-e ⊔ Typ.□ × Typ.□ ≡ τ₁ × τ₂)
-        → (γ₁ γ₂ : ⌊ Γ ⌋)
-        → ∀ {σ₁ α₁ dom₁ cod₁ σ₂ α₂ dom₂ cod₂}
-        → n ； γ₁ .↓ ⊢ σ₁ ↦ α₁ → α₁ ⊔ Typ.□ × Typ.□ ≡ dom₁ × cod₁
-        → n ； γ₂ .↓ ⊢ σ₂ ↦ α₂ → α₂ ⊔ Typ.□ × Typ.□ ≡ dom₂ × cod₂
-        → n ； γ₁ .↓ ⊔ γ₂ .↓ ⊢ π₁ σ₁ ⊔ π₁ σ₂ ↦ (dom₁ ⊔ dom₂)
-
-      ⊔-case-π₂-inner : ∀ {n Γ e τ-e τ₁ τ₂}
-        → (D' : n ； Γ ⊢ e ↦ τ-e) → (eq : τ-e ⊔ Typ.□ × Typ.□ ≡ τ₁ × τ₂)
-        → (γ₁ γ₂ : ⌊ Γ ⌋)
-        → ∀ {σ₁ α₁ dom₁ cod₁ σ₂ α₂ dom₂ cod₂}
-        → n ； γ₁ .↓ ⊢ σ₁ ↦ α₁ → α₁ ⊔ Typ.□ × Typ.□ ≡ dom₁ × cod₁
-        → n ； γ₂ .↓ ⊢ σ₂ ↦ α₂ → α₂ ⊔ Typ.□ × Typ.□ ≡ dom₂ × cod₂
-        → n ； γ₁ .↓ ⊔ γ₂ .↓ ⊢ π₂ σ₁ ⊔ π₂ σ₂ ↦ (cod₁ ⊔ cod₂)
-
-      ⊔-case-case-inner : ∀ {n Γ e e₁ e₂ τ-e τ₁ τ₂ τ₁' τ₂' t₁ t₂}
-        → (D' : n ； Γ ⊢ e ↦ τ-e) → (eq : τ-e ⊔ Typ.□ + Typ.□ ≡ τ₁ + τ₂)
-        → (D₁ : n ； (τ₁ ∷ Γ) ⊢ e₁ ↦ τ₁') → (D₂ : n ； (τ₂ ∷ Γ) ⊢ e₂ ↦ τ₂')
-        → (con : τ₁' ~ τ₂')
-        → (γ₁ γ₂ : ⌊ Γ ⌋)
-        → ∀ {σ σ₁ σ₂ σ' σ₁' σ₂'}
-        → n ； γ₁ .↓ ⊢ (case σ of σ₁ · σ₂) ↦ t₁
-        → n ； γ₂ .↓ ⊢ (case σ' of σ₁' · σ₂') ↦ t₂
-        → n ； γ₁ .↓ ⊔ γ₂ .↓ ⊢ (case σ of σ₁ · σ₂) ⊔ (case σ' of σ₁' · σ₂') ↦ (t₁ ⊔ t₂)
-
-    -- ⊔-case wrappers that do the ne-⊑ inversion + valid case split
-    ⊔-case-gen : ∀ {n Γ e τ} (D : n ； Γ ⊢ e ↦ τ) {υ₁ υ₂ : ⌊ τ ⌋}
-      → (γ₁ γ₂ : ⌊ Γ ⌋) (σ₁ σ₂ : ⌊ e ⌋)
-      → n ； γ₁ .↓ ⊢ σ₁ .↓ ↦ υ₁ .↓ → n ； γ₂ .↓ ⊢ σ₂ .↓ ↦ υ₂ .↓
-      → σ₁ .↓ ≢ Exp.□ → σ₂ .↓ ≢ Exp.□
-      → n ； (γ₁ ⊔ₛ γ₂) .↓ ⊢ (σ₁ ⊔ₛ σ₂) .↓ ↦ (υ₁ .↓ ⊔ υ₂ .↓)
-    -- λ:
-    ⊔-case-gen (↦λ: wf D') γ₁ γ₂ σ₁ σ₂ v₁ v₂ ne₁ ne₂
-      with ne-⊑λ:→≡ (σ₁ .proof) ne₁ | ne-⊑λ:→≡ (σ₂ .proof) ne₂
-    ... | _ , _ , refl | _ , _ , refl with v₁ | v₂
-    ... | ↦λ: wf₁ d₁ | ↦λ: wf₂ d₂ = ⊔-case-λ:-inner wf D' γ₁ γ₂ wf₁ d₁ wf₂ d₂
-    -- def
-    ⊔-case-gen (↦def D₁ D₂) γ₁ γ₂ σ₁ σ₂ v₁ v₂ ne₁ ne₂
-      with ne-⊑def→≡ (σ₁ .proof) ne₁ | ne-⊑def→≡ (σ₂ .proof) ne₂
-    ... | _ , _ , refl | _ , _ , refl with v₁ | v₂
-    ... | ↦def d₁' d₁ | ↦def d₂' d₂ = ⊔-case-def-inner D₁ D₂ γ₁ γ₂ d₁' d₁ d₂' d₂
-    -- Λ
-    ⊔-case-gen (↦Λ D') γ₁ γ₂ σ₁ σ₂ v₁ v₂ ne₁ ne₂
-      with ne-⊑Λ→≡ (σ₁ .proof) ne₁ | ne-⊑Λ→≡ (σ₂ .proof) ne₂
-    ... | _ , refl | _ , refl with v₁ | v₂
-    ... | ↦Λ d₁ | ↦Λ d₂ = ⊔-case-Λ-inner D' γ₁ γ₂ d₁ d₂
-    -- <>
-    ⊔-case-gen (↦<> D' eq wf) γ₁ γ₂ σ₁ σ₂ v₁ v₂ ne₁ ne₂
-      with ne-⊑<>→≡ (σ₁ .proof) ne₁ | ne-⊑<>→≡ (σ₂ .proof) ne₂
-    ... | _ , _ , refl | _ , _ , refl = ⊔-case-<>-inner D' eq wf γ₁ γ₂ v₁ v₂
-    -- &
-    ⊔-case-gen (↦& D₁ D₂) γ₁ γ₂ σ₁ σ₂ v₁ v₂ ne₁ ne₂
-      with ne-⊑&→≡ (σ₁ .proof) ne₁ | ne-⊑&→≡ (σ₂ .proof) ne₂
-    ... | _ , _ , refl | _ , _ , refl with v₁ | v₂
-    ... | ↦& d₁₁ d₁₂ | ↦& d₂₁ d₂₂ = ⊔-case-&-inner D₁ D₂ γ₁ γ₂ d₁₁ d₁₂ d₂₁ d₂₂
-    -- π₁
-    ⊔-case-gen (↦π₁ D' eq) γ₁ γ₂ σ₁ σ₂ v₁ v₂ ne₁ ne₂
-      with ne-⊑π₁→≡ (σ₁ .proof) ne₁ | ne-⊑π₁→≡ (σ₂ .proof) ne₂
-    ... | _ , refl | _ , refl with v₁ | v₂
-    ... | ↦π₁ d₁ eq₁ | ↦π₁ d₂ eq₂ = ⊔-case-π₁-inner D' eq γ₁ γ₂ d₁ eq₁ d₂ eq₂
-    -- π₂
-    ⊔-case-gen (↦π₂ D' eq) γ₁ γ₂ σ₁ σ₂ v₁ v₂ ne₁ ne₂
-      with ne-⊑π₂→≡ (σ₁ .proof) ne₁ | ne-⊑π₂→≡ (σ₂ .proof) ne₂
-    ... | _ , refl | _ , refl with v₁ | v₂
-    ... | ↦π₂ d₁ eq₁ | ↦π₂ d₂ eq₂ = ⊔-case-π₂-inner D' eq γ₁ γ₂ d₁ eq₁ d₂ eq₂
-    -- case
-    ⊔-case-gen (↦case D' eq D₁ D₂ con) γ₁ γ₂ σ₁ σ₂ v₁ v₂ ne₁ ne₂
-      with ne-⊑case→≡ (σ₁ .proof) ne₁ | ne-⊑case→≡ (σ₂ .proof) ne₂
-    ... | _ , _ , _ , refl | _ , _ , _ , refl =
-      ⊔-case-case-inner D' eq D₁ D₂ con γ₁ γ₂ v₁ v₂
-    -- ↦□: impossible since σ ⊑ □ and σ ≢ □
-    ⊔-case-gen ↦□ γ₁ γ₂ σ₁ σ₂ v₁ v₂ ne₁ ne₂ =
-      ⊥-elim (ne₁ (⊑.antisym {Exp} (σ₁ .proof) ⊑□))
-    -- ↦*, ↦Var, ↦∘: delegate to existing case helpers
-    ⊔-case-gen ↦* {υ₁} {υ₂} γ₁ γ₂ σ₁ σ₂ v₁ v₂ ne₁ ne₂ =
-      ⊔-case-* {υ₁ = υ₁} {υ₂ = υ₂} γ₁ γ₂ σ₁ σ₂ v₁ v₂ (ne-⊑*→≡ (σ₁ .proof) ne₁) (ne-⊑*→≡ (σ₂ .proof) ne₂)
-    ⊔-case-gen (↦Var _) {υ₁} {υ₂} γ₁ γ₂ σ₁ σ₂ v₁ v₂ ne₁ ne₂ =
-      ⊔-case-Var {υ₁ = υ₁} {υ₂ = υ₂} γ₁ γ₂ σ₁ σ₂ v₁ v₂ (ne-⊑Var→≡ (σ₁ .proof) ne₁) (ne-⊑Var→≡ (σ₂ .proof) ne₂)
-    -- ↦∘ handled directly in ⊔syn-valid-ne; stub for coverage
-    ⊔-case-gen (↦∘ _ _ _) {υ₁} {υ₂} γ₁ γ₂ σ₁ σ₂ v₁ v₂ ne₁ ne₂ =
-      ⊔-case-∘-stub
-      where postulate ⊔-case-∘-stub : _ ； (γ₁ ⊔ₛ γ₂) .↓ ⊢ (σ₁ ⊔ₛ σ₂) .↓ ↦ (υ₁ .↓ ⊔ υ₂ .↓)
 
     -- Generalised IH: different type slices, requires IsMinimal for □ sub-cases
     ⊔syn-valid-ne : ∀ {n Γ e τ} (D : n ； Γ ⊢ e ↦ τ) {υ₁ υ₂ : ⌊ τ ⌋}
@@ -475,9 +354,138 @@ private
                           (static-gradual-ana γ'⊑ (⊑.refl {Exp}) (⊑.refl {Typ}) v₂-arg)
                       }
             ... | ⊑∘ fn⊑ _ , γ⊑ = fn⊑ , γ⊑
-    -- remaining compound types: delegate to ⊔-case-gen
-    ⊔syn-valid-ne D {υ₁} {υ₂} s₁ s₂ _ _ ne₁ ne₂ =
-      ⊔-case-gen D {υ₁} {υ₂} (s₁ .γ) (s₂ .γ) (s₁ .σ) (s₂ .σ) (s₁ .valid) (s₂ .valid) ne₁ ne₂
+    -- ↦&: 2 synth sub-derivations, no equation
+    ⊔syn-valid-ne (↦& D₁ D₂) s₁ s₂ m₁ m₂ ne₁ ne₂
+      with ne-⊑&→≡ (s₁ .σ .proof) ne₁ | ne-⊑&→≡ (s₂ .σ .proof) ne₂
+    ... | _ , _ , refl | _ , _ , refl with s₁ .valid | s₂ .valid
+    ... | ↦& v₁₁ v₁₂ | ↦& v₂₁ v₂₂ with s₁ .σ .proof | s₂ .σ .proof
+    ...   | ⊑& σ₁₁⊑ σ₁₂⊑ | ⊑& σ₂₁⊑ σ₂₂⊑ =
+      ↦& (⊔syn-valid {D = D₁} fst-s₁ fst-s₂ min-fst₁ min-fst₂)
+         (⊔syn-valid {D = D₂} snd-s₁ snd-s₂ min-snd₁ min-snd₂)
+      where α₁⊑ = syn-precision (s₁ .γ .proof) σ₁₁⊑ D₁ v₁₁
+            α₂⊑ = syn-precision (s₂ .γ .proof) σ₂₁⊑ D₁ v₂₁
+            β₁⊑ = syn-precision (s₁ .γ .proof) σ₁₂⊑ D₂ v₁₂
+            β₂⊑ = syn-precision (s₂ .γ .proof) σ₂₂⊑ D₂ v₂₂
+            fst-s₁ : SynSlice D₁ (↑ α₁⊑)
+            fst-s₁ = record { γ = s₁ .γ ; σ = ↑ σ₁₁⊑ ; valid = v₁₁ }
+            fst-s₂ : SynSlice D₁ (↑ α₂⊑)
+            fst-s₂ = record { γ = s₂ .γ ; σ = ↑ σ₂₁⊑ ; valid = v₂₁ }
+            snd-s₁ : SynSlice D₂ (↑ β₁⊑)
+            snd-s₁ = record { γ = s₁ .γ ; σ = ↑ σ₁₂⊑ ; valid = v₁₂ }
+            snd-s₂ : SynSlice D₂ (↑ β₂⊑)
+            snd-s₂ = record { γ = s₂ .γ ; σ = ↑ σ₂₂⊑ ; valid = v₂₂ }
+            postulate min-fst₁ : IsMinimal fst-s₁
+                      min-fst₂ : IsMinimal fst-s₂
+                      min-snd₁ : IsMinimal snd-s₁
+                      min-snd₂ : IsMinimal snd-s₂
+    -- ↦π₁: 1 synth + equation
+    ⊔syn-valid-ne (↦π₁ D' eq) s₁ s₂ m₁ m₂ ne₁ ne₂
+      with ne-⊑π₁→≡ (s₁ .σ .proof) ne₁ | ne-⊑π₁→≡ (s₂ .σ .proof) ne₂
+    ... | _ , refl | _ , refl with s₁ .valid | s₂ .valid
+    ... | ↦π₁ {τ = α₁} v₁ eq₁ | ↦π₁ {τ = α₂} v₂ eq₂ with s₁ .σ .proof | s₂ .σ .proof
+    ...   | ⊑π₁ σ₁⊑ | ⊑π₁ σ₂⊑ =
+      ↦π₁ (⊔syn-valid {D = D'} sub-s₁ sub-s₂ min-sub₁ min-sub₂)
+           (⊔-product-distrib {α₁ = α₁} {α₂ = α₂} eq₁ eq₂)
+      where α₁⊑τ = syn-precision (s₁ .γ .proof) σ₁⊑ D' v₁
+            α₂⊑τ = syn-precision (s₂ .γ .proof) σ₂⊑ D' v₂
+            sub-s₁ : SynSlice D' (↑ α₁⊑τ)
+            sub-s₁ = record { γ = s₁ .γ ; σ = ↑ σ₁⊑ ; valid = v₁ }
+            sub-s₂ : SynSlice D' (↑ α₂⊑τ)
+            sub-s₂ = record { γ = s₂ .γ ; σ = ↑ σ₂⊑ ; valid = v₂ }
+            min-sub₁ : IsMinimal sub-s₁
+            min-sub₁ s' (σ'⊑ , γ'⊑) with m₁ outer' (⊑π₁ σ'⊑ , γ'⊑)
+              where outer' = record
+                      { γ = s' .γ ; σ = ↑ (⊑π₁ (s' .σ .proof))
+                      ; valid = ↦π₁ (s' .valid) eq₁ }
+            ... | ⊑π₁ fn⊑ , γ⊑ = fn⊑ , γ⊑
+            min-sub₂ : IsMinimal sub-s₂
+            min-sub₂ s' (σ'⊑ , γ'⊑) with m₂ outer' (⊑π₁ σ'⊑ , γ'⊑)
+              where outer' = record
+                      { γ = s' .γ ; σ = ↑ (⊑π₁ (s' .σ .proof))
+                      ; valid = ↦π₁ (s' .valid) eq₂ }
+            ... | ⊑π₁ fn⊑ , γ⊑ = fn⊑ , γ⊑
+            postulate ⊔-product-distrib : ∀ {α₁ α₂ d₁ c₁ d₂ c₂}
+                        → α₁ ⊔ Typ.□ × Typ.□ ≡ d₁ × c₁
+                        → α₂ ⊔ Typ.□ × Typ.□ ≡ d₂ × c₂
+                        → (α₁ ⊔ α₂) ⊔ Typ.□ × Typ.□ ≡ (d₁ ⊔ d₂) × (c₁ ⊔ c₂)
+    -- ↦π₂: symmetric to ↦π₁
+    ⊔syn-valid-ne (↦π₂ D' eq) s₁ s₂ m₁ m₂ ne₁ ne₂
+      with ne-⊑π₂→≡ (s₁ .σ .proof) ne₁ | ne-⊑π₂→≡ (s₂ .σ .proof) ne₂
+    ... | _ , refl | _ , refl with s₁ .valid | s₂ .valid
+    ... | ↦π₂ {τ = α₁} v₁ eq₁ | ↦π₂ {τ = α₂} v₂ eq₂ with s₁ .σ .proof | s₂ .σ .proof
+    ...   | ⊑π₂ σ₁⊑ | ⊑π₂ σ₂⊑ =
+      ↦π₂ (⊔syn-valid {D = D'} sub-s₁ sub-s₂ min-sub₁ min-sub₂)
+           (⊔-product-distrib {α₁ = α₁} {α₂ = α₂} eq₁ eq₂)
+      where α₁⊑τ = syn-precision (s₁ .γ .proof) σ₁⊑ D' v₁
+            α₂⊑τ = syn-precision (s₂ .γ .proof) σ₂⊑ D' v₂
+            sub-s₁ : SynSlice D' (↑ α₁⊑τ)
+            sub-s₁ = record { γ = s₁ .γ ; σ = ↑ σ₁⊑ ; valid = v₁ }
+            sub-s₂ : SynSlice D' (↑ α₂⊑τ)
+            sub-s₂ = record { γ = s₂ .γ ; σ = ↑ σ₂⊑ ; valid = v₂ }
+            min-sub₁ : IsMinimal sub-s₁
+            min-sub₁ s' (σ'⊑ , γ'⊑) with m₁ outer' (⊑π₂ σ'⊑ , γ'⊑)
+              where outer' = record
+                      { γ = s' .γ ; σ = ↑ (⊑π₂ (s' .σ .proof))
+                      ; valid = ↦π₂ (s' .valid) eq₁ }
+            ... | ⊑π₂ fn⊑ , γ⊑ = fn⊑ , γ⊑
+            min-sub₂ : IsMinimal sub-s₂
+            min-sub₂ s' (σ'⊑ , γ'⊑) with m₂ outer' (⊑π₂ σ'⊑ , γ'⊑)
+              where outer' = record
+                      { γ = s' .γ ; σ = ↑ (⊑π₂ (s' .σ .proof))
+                      ; valid = ↦π₂ (s' .valid) eq₂ }
+            ... | ⊑π₂ fn⊑ , γ⊑ = fn⊑ , γ⊑
+            postulate ⊔-product-distrib : ∀ {α₁ α₂ d₁ c₁ d₂ c₂}
+                        → α₁ ⊔ Typ.□ × Typ.□ ≡ d₁ × c₁
+                        → α₂ ⊔ Typ.□ × Typ.□ ≡ d₂ × c₂
+                        → (α₁ ⊔ α₂) ⊔ Typ.□ × Typ.□ ≡ (d₁ ⊔ d₂) × (c₁ ⊔ c₂)
+    -- ↦λ:: wf + 1 syn in extended context
+    ⊔syn-valid-ne (↦λ: wf D') s₁ s₂ m₁ m₂ ne₁ ne₂
+      with ne-⊑λ:→≡ (s₁ .σ .proof) ne₁ | ne-⊑λ:→≡ (s₂ .σ .proof) ne₂
+    ... | _ , _ , refl | _ , _ , refl with s₁ .valid | s₂ .valid
+    ... | ↦λ: wf₁ v₁ | ↦λ: wf₂ v₂ with s₁ .σ .proof | s₂ .σ .proof
+    ...   | ⊑λ τ₁⊑ σ₁⊑ | ⊑λ τ₂⊑ σ₂⊑ =
+      ↦λ: wf-join (⊔syn-valid {D = D'} sub-s₁ sub-s₂ min-sub₁ min-sub₂)
+      where α₁⊑ = syn-precision (⊑∷ τ₁⊑ (s₁ .γ .proof)) σ₁⊑ D' v₁
+            α₂⊑ = syn-precision (⊑∷ τ₂⊑ (s₂ .γ .proof)) σ₂⊑ D' v₂
+            sub-s₁ : SynSlice D' (↑ α₁⊑)
+            sub-s₁ = record { γ = ↑ (⊑∷ τ₁⊑ (s₁ .γ .proof)) ; σ = ↑ σ₁⊑ ; valid = v₁ }
+            sub-s₂ : SynSlice D' (↑ α₂⊑)
+            sub-s₂ = record { γ = ↑ (⊑∷ τ₂⊑ (s₂ .γ .proof)) ; σ = ↑ σ₂⊑ ; valid = v₂ }
+            postulate min-sub₁ : IsMinimal sub-s₁
+            postulate min-sub₂ : IsMinimal sub-s₂
+            postulate wf-join : _ ⊢wf _
+    -- ↦def: 2 synth with dependent context
+    ⊔syn-valid-ne (↦def D₁ D₂) s₁ s₂ m₁ m₂ ne₁ ne₂
+      with ne-⊑def→≡ (s₁ .σ .proof) ne₁ | ne-⊑def→≡ (s₂ .σ .proof) ne₂
+    ... | _ , _ , refl | _ , _ , refl with s₁ .valid | s₂ .valid
+    ... | ↦def v₁₁ v₁₂ | ↦def v₂₁ v₂₂ with s₁ .σ .proof | s₂ .σ .proof
+    ...   | ⊑def σ₁₁⊑ σ₁₂⊑ | ⊑def σ₂₁⊑ σ₂₂⊑ =
+      ↦def (⊔syn-valid {D = D₁} def-s₁ def-s₂ min-def₁ min-def₂)
+           (⊔syn-valid {D = D₂} body-s₁ body-s₂ min-body₁ min-body₂)
+      where α₁⊑ = syn-precision (s₁ .γ .proof) σ₁₁⊑ D₁ v₁₁
+            α₂⊑ = syn-precision (s₂ .γ .proof) σ₂₁⊑ D₁ v₂₁
+            def-s₁ : SynSlice D₁ (↑ α₁⊑)
+            def-s₁ = record { γ = s₁ .γ ; σ = ↑ σ₁₁⊑ ; valid = v₁₁ }
+            def-s₂ : SynSlice D₁ (↑ α₂⊑)
+            def-s₂ = record { γ = s₂ .γ ; σ = ↑ σ₂₁⊑ ; valid = v₂₁ }
+            β₁⊑ = syn-precision (⊑∷ α₁⊑ (s₁ .γ .proof)) σ₁₂⊑ D₂ v₁₂
+            β₂⊑ = syn-precision (⊑∷ α₂⊑ (s₂ .γ .proof)) σ₂₂⊑ D₂ v₂₂
+            body-s₁ : SynSlice D₂ (↑ β₁⊑)
+            body-s₁ = record { γ = ↑ (⊑∷ α₁⊑ (s₁ .γ .proof)) ; σ = ↑ σ₁₂⊑ ; valid = v₁₂ }
+            body-s₂ : SynSlice D₂ (↑ β₂⊑)
+            body-s₂ = record { γ = ↑ (⊑∷ α₂⊑ (s₂ .γ .proof)) ; σ = ↑ σ₂₂⊑ ; valid = v₂₂ }
+            postulate min-def₁  : IsMinimal def-s₁
+                      min-def₂  : IsMinimal def-s₂
+                      min-body₁ : IsMinimal body-s₁
+                      min-body₂ : IsMinimal body-s₂
+    -- ↦Λ, ↦<>, ↦case
+    ⊔syn-valid-ne (↦Λ _) {υ₁} {υ₂} s₁ s₂ _ _ _ _ = ⊔-case-Λ
+      where postulate ⊔-case-Λ : _ ； (s₁ .γ ⊔ₛ s₂ .γ) .↓ ⊢ (s₁ .σ ⊔ₛ s₂ .σ) .↓ ↦ (υ₁ .↓ ⊔ υ₂ .↓)
+    ⊔syn-valid-ne (↦<> _ _ _) {υ₁} {υ₂} s₁ s₂ _ _ _ _ = ⊔-case-<>
+      where postulate ⊔-case-<> : _ ； (s₁ .γ ⊔ₛ s₂ .γ) .↓ ⊢ (s₁ .σ ⊔ₛ s₂ .σ) .↓ ↦ (υ₁ .↓ ⊔ υ₂ .↓)
+    ⊔syn-valid-ne (↦case _ _ _ _ _) {υ₁} {υ₂} s₁ s₂ _ _ _ _ = ⊔-case-case
+      where postulate ⊔-case-case : _ ； (s₁ .γ ⊔ₛ s₂ .γ) .↓ ⊢ (s₁ .σ ⊔ₛ s₂ .σ) .↓ ↦ (υ₁ .↓ ⊔ υ₂ .↓)
+
 
   _⊔syn_ : ∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} {υ} →
              (s₁ s₂ : SynSlice D υ) → IsMinimal s₁ → IsMinimal s₂ → SynSlice D υ
