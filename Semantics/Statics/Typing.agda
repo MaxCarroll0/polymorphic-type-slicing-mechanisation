@@ -7,6 +7,7 @@ open import Agda.Builtin.FromNat using (Number; fromNat)
 
 module Semantics.Statics.Typing where
 
+-- TODO: ⇑ and ⇓ syntax and change full width semicolon to a less confusing
 infix  4 _；_⊢_↦_
 infix  4 _；_⊢_↤_
 
