@@ -124,10 +124,11 @@ mutual
               n ； Γ ⊢ e₁ & e₂ ↤ τ
 
     ↤λ:  : ∀ {n : ℕ} {Γ : Assms} {e : Exp} {τ τ₁ τ₁' τ₂ : Typ} →
+              τ ~ τ₁ ⇒ □                  → -- Note: enforces τ₁ ~ τ₁'
               τ ⊔ τ₁ ⇒ □ ≡ τ₁' ⇒ τ₂       →
               n ⊢wf τ₁                    →
-              n ； (τ₁ ∷ Γ) ⊢ e ↤ τ₂      →
-              ---------------------
+              n ； (τ₁ ∷ Γ) ⊢ e ↤ τ₂      → -- Still check under τ₁, i.e. prioritise innermost annotations, allowing it to more dynamically type argument within body
+              -----------------------
               n ； Γ ⊢ λ: τ₁ ⇒ e ↤ τ
 
     ↤def : ∀ {n : ℕ} {Γ : Assms} {e' e : Exp} {τ' τ : Typ} →

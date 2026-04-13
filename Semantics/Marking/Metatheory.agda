@@ -52,7 +52,7 @@ mutual
   mark-wf-ana (mark↤sub⇑ d _)   = mark-wf-syn d
   mark-wf-ana (mark↤λ _ d)      = cong λ⇒_ (mark-wf-ana d)
   mark-wf-ana (mark↤λ⇑ _ d)     = cong λ⇒_ (mark-wf-ana d)
-  mark-wf-ana (mark↤λ: _ _ d)   = cong (λ: _ ⇒_) (mark-wf-ana d)
+  mark-wf-ana (mark↤λ: _ _ _ d)  = cong (λ: _ ⇒_) (mark-wf-ana d)
   mark-wf-ana (mark↤ι₁ _ d)     = cong ι₁ (mark-wf-ana d)
   mark-wf-ana (mark↤ι₂ _ d)     = cong ι₂ (mark-wf-ana d)
   mark-wf-ana (mark↤& _ d₁ d₂)  = cong₂ _&_ (mark-wf-ana d₁) (mark-wf-ana d₂)

@@ -15,6 +15,7 @@ open import Core.Typ.Consistency
 open import Core.Typ.Precision
 open import Core.Typ.Lattice
 open import Core.Typ.Substitution
+open import Core.Typ.WellFormedness
 open import Core.Instances
 
 -- □ is a zero object
@@ -49,12 +50,6 @@ open import Core.Instances
 ...                       | yes refl = ~?₂
 ⊔-⇒-~     ()    | diff    | no  _
 
--- Generalized: non-trivial join with annotated arrow implies consistency
--- Note: only holds when annotation is consistent with analysis type's domain
--- (which is guaranteed by the typing rules' well-formedness conditions)
-postulate
-  ⊔-ann-⇒-~  : ∀ {τ σ τ₁ τ₂} → τ ⊔ (σ ⇒ □) ≡ τ₁ ⇒ τ₂ → τ ~ σ ⇒ □
-  ⊔-ann-⇒-~λ : ∀ {τ σ τ₁ τ₂} → τ ⊔ (σ ⇒ □) ≡ τ₁ ⇒ τ₂ → σ ⇒ τ₂ ~ τ₁ ⇒ τ₂
 
 ⊔-+-~ : ∀ {τ τ₁ τ₂} → τ ⊔ (□ + □) ≡ τ₁ + τ₂ → τ ~ □ + □
 ⊔-+-~ {τ} eq with diag τ (□ + □)
@@ -165,3 +160,69 @@ sub-⊑ k σ⊑ (⊑∀ p)      = ⊑∀ (sub-⊑ (suc k) σ⊑ p)
   let p' = ⊑.trans p (~.⊔-ub₁ c)
       q' = ⊑.trans q (~.⊔-ub₂ c)
   in ~.⊔-lub (⊑-consistent p' q') p' q'
+
+-- Well-formedness of inner type components
+⊔-⇒-wf₁ : ∀ {n τ τ₁ τ₂} → n ⊢wf τ → τ ⊔ □ ⇒ □ ≡ τ₁ ⇒ τ₂ → n ⊢wf τ₁
+⊔-⇒-wf₁ wf□ refl = wf□
+⊔-⇒-wf₁ (wf⇒ {τ₁ = a} {τ₂ = b} p q) eq
+  rewrite ⊔t-zeroᵣ {a} | ⊔t-zeroᵣ {b}
+  with refl ← eq = p
+
+⊔-+-wf₁ : ∀ {n τ τ₁ τ₂} → n ⊢wf τ → τ ⊔ □ + □ ≡ τ₁ + τ₂ → n ⊢wf τ₁
+⊔-+-wf₁ wf□ refl = wf□
+⊔-+-wf₁ (wf+ {τ₁ = a} {τ₂ = b} p q) eq
+  rewrite ⊔t-zeroᵣ {a} | ⊔t-zeroᵣ {b}
+  with refl ← eq = p
+
+⊔-+-wf₂ : ∀ {n τ τ₁ τ₂} → n ⊢wf τ → τ ⊔ □ + □ ≡ τ₁ + τ₂ → n ⊢wf τ₂
+⊔-+-wf₂ wf□ refl = wf□
+⊔-+-wf₂ (wf+ {τ₁ = a} {τ₂ = b} p q) eq
+  rewrite ⊔t-zeroᵣ {a} | ⊔t-zeroᵣ {b}
+  with refl ← eq = q
+
+⊔-⇒-wf₂ : ∀ {n τ τ₁ τ₂} → n ⊢wf τ → τ ⊔ □ ⇒ □ ≡ τ₁ ⇒ τ₂ → n ⊢wf τ₂
+⊔-⇒-wf₂ wf□ refl = wf□
+⊔-⇒-wf₂ (wf⇒ {τ₁ = a} {τ₂ = b} p q) eq
+  rewrite ⊔t-zeroᵣ {a} | ⊔t-zeroᵣ {b}
+  with refl ← eq = q
+
+⊔-×-wf₁ : ∀ {n τ τ₁ τ₂} → n ⊢wf τ → τ ⊔ □ × □ ≡ τ₁ × τ₂ → n ⊢wf τ₁
+⊔-×-wf₁ wf□ refl = wf□
+⊔-×-wf₁ (wf× {τ₁ = a} {τ₂ = b} p q) eq
+  rewrite ⊔t-zeroᵣ {a} | ⊔t-zeroᵣ {b}
+  with refl ← eq = p
+
+⊔-×-wf₂ : ∀ {n τ τ₁ τ₂} → n ⊢wf τ → τ ⊔ □ × □ ≡ τ₁ × τ₂ → n ⊢wf τ₂
+⊔-×-wf₂ wf□ refl = wf□
+⊔-×-wf₂ (wf× {τ₁ = a} {τ₂ = b} p q) eq
+  rewrite ⊔t-zeroᵣ {a} | ⊔t-zeroᵣ {b}
+  with refl ← eq = q
+
+⊔-∀-wf : ∀ {n τ τ'} → n ⊢wf τ → τ ⊔ ∀· □ ≡ ∀· τ' → suc n ⊢wf τ'
+⊔-∀-wf wf□ refl = wf□
+⊔-∀-wf (wf∀ {τ = a} p) eq
+  rewrite ⊔t-zeroᵣ {a}
+  with refl ← eq = p
+
+⊔-ann-⇒-~λ : ∀ {τ σ τ₁ τ₂} → τ ~ σ ⇒ □ → τ ⊔ σ ⇒ □ ≡ τ₁ ⇒ τ₂ → σ ⇒ τ₂ ~ τ₁ ⇒ τ₂
+⊔-ann-⇒-~λ ~?₂ refl = ⊑to~ ⊑.refl
+⊔-ann-⇒-~λ (~⇒ {τ₂ = b} ca _) eq
+  rewrite ⊔t-zeroᵣ {b}
+  with refl ← eq = ~⇒ (⊑to~ (~.⊔-ub₂ ca)) (⊑to~ ⊑.refl)
+
+⊔-ann-⇒-wf₂ : ∀ {n τ σ τ₁ τ₂} → n ⊢wf τ → n ⊢wf σ → τ ⊔ σ ⇒ □ ≡ τ₁ ⇒ τ₂ → n ⊢wf τ₂
+⊔-ann-⇒-wf₂ wf□ _ refl = wf□
+⊔-ann-⇒-wf₂ (wf⇒ {τ₂ = b} _ q) _ eq
+  rewrite ⊔t-zeroᵣ {b}
+  with refl ← eq = q
+
+-- Join preserves well-formedness (under consistency)
+⊔-wf : ∀ {n τ₁ τ₂} → n ⊢wf τ₁ → n ⊢wf τ₂ → τ₁ ~ τ₂ → n ⊢wf (τ₁ ⊔ τ₂)
+⊔-wf wf₁ wf₂ ~*                     = wf*
+⊔-wf wf₁ wf₂ ~Var                   = wf₁
+⊔-wf {τ₁ = τ₁} wf₁ _ ~?₁           rewrite ⊔t-zeroᵣ {τ₁} = wf₁
+⊔-wf {τ₂ = τ₂} _ wf₂ ~?₂           rewrite ⊔t-zeroₗ {τ₂} = wf₂
+⊔-wf (wf+ p₁ p₂) (wf+ q₁ q₂) (~+ c₁ c₂) = wf+ (⊔-wf p₁ q₁ c₁) (⊔-wf p₂ q₂ c₂)
+⊔-wf (wf× p₁ p₂) (wf× q₁ q₂) (~× c₁ c₂) = wf× (⊔-wf p₁ q₁ c₁) (⊔-wf p₂ q₂ c₂)
+⊔-wf (wf⇒ p₁ p₂) (wf⇒ q₁ q₂) (~⇒ c₁ c₂) = wf⇒ (⊔-wf p₁ q₁ c₁) (⊔-wf p₂ q₂ c₂)
+⊔-wf (wf∀ p) (wf∀ q) (~∀ c)         = wf∀ (⊔-wf p q c)

@@ -2,7 +2,7 @@ module Core.Typ.WellFormedness where
 
 open import Data.Nat using (ℕ; zero; suc; _<_; _≤_; s≤s; z≤n; _<ᵇ_; _∸_)
   renaming (_+_ to _ℕ+_; _≟_ to _≟ℕ_)
-open import Data.Nat.Properties using (m≤n⇒m≤1+n; +-monoˡ-<; m≤m+n; ≤-trans; <-≤-trans; <ᵇ⇒<; ≤-pred)
+open import Data.Nat.Properties using (m≤n⇒m≤1+n; +-monoˡ-<; m≤m+n; ≤-trans; <-≤-trans; <ᵇ⇒<; ≤-pred; +-comm)
 open import Data.Bool using (true; false; T)
 open import Data.Empty using (⊥-elim)
 open import Data.List using (List; []; _∷_; map)
@@ -62,6 +62,10 @@ shiftΓ-preserves-wf : ∀ {n a Γ} → n ⊢wfΓ Γ → (n ℕ+ a) ⊢wfΓ map 
 shiftΓ-preserves-wf wfΓ[]      = wfΓ[]
 shiftΓ-preserves-wf (wfΓ∷ p q) = wfΓ∷ (shift-preserves-wf p) (shiftΓ-preserves-wf q)
 
+-- Specialised version of the above for use in Λ fun
+shiftΓ₁-preserves-wf : ∀ {n Γ} → n ⊢wfΓ Γ → suc n ⊢wfΓ map (shift 0 (suc zero)) Γ
+shiftΓ₁-preserves-wf {n} wfΓ rewrite +-comm 1 n = shiftΓ-preserves-wf wfΓ
+
 -- Substitution preserves well-formedness
 private
   -- Extract m < k from m <ᵇ k ≡ true
@@ -72,19 +76,16 @@ private
           → k ≤ n → n ⊢wf σ → suc n ⊢wf τ → n ⊢wf [ k ↦ σ ] τ
   sub-wf k k≤n wfσ wf*         = wf*
   sub-wf k k≤n wfσ wf□         = wf□
-  -- m = zero case
   sub-wf k k≤n wfσ (wfVar {k = zero} m<sn) with zero ≟ℕ k
   ... | yes _ = wfσ
   ... | no 0≠k with k
   ...   | zero   = ⊥-elim (0≠k refl)
   ...   | suc k' = wfVar (<-≤-trans (s≤s z≤n) k≤n)
-  -- m = suc m' case
   sub-wf k k≤n wfσ (wfVar {k = suc m} m<sn) with suc m ≟ℕ k
   ... | yes _ = wfσ
   ... | no _ with suc m <ᵇ k in eq
   ...   | true  = wfVar (<-≤-trans (<ᵇ-true (suc m) k eq) k≤n)
   ...   | false = wfVar (≤-pred m<sn)
-  -- Structural cases
   sub-wf k k≤n wfσ (wf+ p q)   = wf+ (sub-wf k k≤n wfσ p) (sub-wf k k≤n wfσ q)
   sub-wf k k≤n wfσ (wf× p q)   = wf× (sub-wf k k≤n wfσ p) (sub-wf k k≤n wfσ q)
   sub-wf k k≤n wfσ (wf⇒ p q)   = wf⇒ (sub-wf k k≤n wfσ p) (sub-wf k k≤n wfσ q)

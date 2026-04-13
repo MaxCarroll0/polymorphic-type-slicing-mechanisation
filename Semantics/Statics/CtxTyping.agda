@@ -41,6 +41,7 @@ data _；_⊢_at_▷_[_] : ℕ → Assms → Ctx → Position → Assms → CtxM
             n ； Γ ⊢ λ: τ ⇒ C at synPos ▷ Γ' [ m ]
 
   aλ:     : ∀ {n Γ Γ' C τ τ₁ τ₁' τ₂ m}
+            → τ ~ τ₁ ⇒ □
             → τ ⊔ τ₁ ⇒ □ ≡ τ₁' ⇒ τ₂
             → n ⊢wf τ₁
             → n ； (τ₁ ∷ Γ) ⊢ C at anaPos τ₂ ▷ Γ' [ m ]                                            →
@@ -179,8 +180,8 @@ mutual
     _ , _ , ⇐mode _ , a○ , d
   plug-ana (λ: τ ⇒ C) (↤Sub d _) with plug-syn (λ: τ ⇒ C) d
   ... | n' , Γ' , m , cls , ft = n' , Γ' , m , aSub cls , ft
-  plug-ana (λ: τ₁ ⇒ C) (↤λ: eq wf d) with plug-ana C d
-  ... | n' , Γ' , m , cls , ft = n' , Γ' , m , aλ: eq wf cls , ft
+  plug-ana (λ: τ₁ ⇒ C) (↤λ: c eq wf d) with plug-ana C d
+  ... | n' , Γ' , m , cls , ft = n' , Γ' , m , aλ: c eq wf cls , ft
   plug-ana (λ⇒ C) (↤Sub () _)
   plug-ana (λ⇒ C) (↤λ eq d) with plug-ana C d
   ... | n' , Γ' , m , cls , ft = n' , Γ' , m , aλ⇒ eq cls , ft
