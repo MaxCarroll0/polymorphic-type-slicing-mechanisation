@@ -28,133 +28,130 @@ postulate
 
 -- Elaboration Completeness
 mutual
-  elab-complete-syn : ∀ {n Γ e τ} →
-    n ； Γ ⊢ e ↦ τ → ∃ λ d → n ； Γ ⊢ e ⇑ τ ↝ d
-  elab-complete-syn ↦* =
-    * , elab↦*
-  elab-complete-syn ↦□ =
-    □ , elab↦□
-  elab-complete-syn (↦Var p) =
-    ⟨ _ ⟩ , elab↦Var p
+  elab-complete-syn : ∀ {n Γ e τ}
+                      → n ； Γ ⊢ e ↦ τ →
+                      ∃[ d ] n ； Γ ⊢ e ⇑ τ ↝ d
+  elab-complete-syn ↦* = * , elab↦*
+  elab-complete-syn ↦□ = □ , elab↦□
+  elab-complete-syn (↦Var p) = ⟨ _ ⟩ , elab↦Var p
   elab-complete-syn (↦λ: wf D)
     with elab-complete-syn D
-  ... | d , ed =
-    λ: _ ⇒ d , elab↦λ: wf ed
+  ...  | d , ed = λ: _ ⇒ d , elab↦λ: wf ed
   elab-complete-syn (↦def D₁ D₂)
     with elab-complete-syn D₁ | elab-complete-syn D₂
-  ... | d₁ , ed₁ | d₂ , ed₂ =
-    def d₁ ⊢ d₂ , elab↦def ed₁ ed₂
+  ...  | d₁ , ed₁             | d₂ , ed₂
+       = def d₁ ⊢ d₂ , elab↦def ed₁ ed₂
   elab-complete-syn (↦Λ D)
     with elab-complete-syn D
-  ... | d , ed =
-    Λ d , elab↦Λ ed
+  ...  | d , ed = Λ d , elab↦Λ ed
   elab-complete-syn (↦∘ D₁ m D₂)
     with elab-complete-syn D₁ | elab-complete-ana D₂
-  ... | d₁ , ed₁ | d₂ , ed₂ =
-    (d₁ ⟪ _ ⇛ _ ⟫) ∘ d₂ , elab↦∘ ed₁ m ed₂
+  ...  | d₁ , ed₁             | d₂ , ed₂
+       = (d₁ ⟪ _ ⇛ _ ⟫) ∘ d₂ , elab↦∘ ed₁ m ed₂
   elab-complete-syn (↦<> D m wf)
     with elab-complete-syn D
-  ... | d , ed =
-    (d ⟪ _ ⇛ _ ⟫) < _ > , elab↦<> ed m wf
+  ...  | d , ed = (d ⟪ _ ⇛ _ ⟫) < _ > , elab↦<> ed m wf
   elab-complete-syn (↦& D₁ D₂)
     with elab-complete-syn D₁ | elab-complete-syn D₂
-  ... | d₁ , ed₁ | d₂ , ed₂ =
-    d₁ & d₂ , elab↦& ed₁ ed₂
+  ...  | d₁ , ed₁ | d₂ , ed₂ = d₁ & d₂ , elab↦& ed₁ ed₂
   elab-complete-syn (↦π₁ D m)
     with elab-complete-syn D
-  ... | d , ed =
-    π₁ (d ⟪ _ ⇛ _ ⟫) , elab↦π₁ ed m
+  ...  | d , ed = π₁ (d ⟪ _ ⇛ _ ⟫) , elab↦π₁ ed m
   elab-complete-syn (↦π₂ D m)
     with elab-complete-syn D
-  ... | d , ed =
-    π₂ (d ⟪ _ ⇛ _ ⟫) , elab↦π₂ ed m
+  ...  | d , ed = π₂ (d ⟪ _ ⇛ _ ⟫) , elab↦π₂ ed m
   elab-complete-syn (↦case D m D₁ D₂ c)
     with elab-complete-syn D | elab-complete-syn D₁ | elab-complete-syn D₂
-  ... | d , ed | d₁ , ed₁ | d₂ , ed₂ =
-    case (d ⟪ _ ⇛ _ ⟫) of (d₁ ⟪ _ ⇛ _ ⟫) · (d₂ ⟪ _ ⇛ _ ⟫)
-    , elab↦case ed m ed₁ ed₂ c
+  ...  | d , ed              | d₁ , ed₁             | d₂ , ed₂
+       = case (d ⟪ _ ⇛ _ ⟫) of (d₁ ⟪ _ ⇛ _ ⟫) · (d₂ ⟪ _ ⇛ _ ⟫)
+         , elab↦case ed m ed₁ ed₂ c
 
-  elab-complete-ana : ∀ {n Γ e τ} →
-    n ； Γ ⊢ e ↤ τ → ∃ λ d → n ； Γ ⊢ e ⇓ τ ↝ d
+  elab-complete-ana : ∀ {n Γ e τ}
+                      → n ； Γ ⊢ e ↤ τ →
+                      ∃[ d ] n ； Γ ⊢ e ⇓ τ ↝ d
   elab-complete-ana (↤Sub D c)
     with elab-complete-syn D
-  ... | d , ed =
-    d ⟪ _ ⇛ _ ⟫ , elab↤sub ed c
+  ...  | d , ed = d ⟪ _ ⇛ _ ⟫ , elab↤sub ed c
   elab-complete-ana (↤λ m D)
     with elab-complete-ana D
-  ... | d , ed =
-    (λ: _ ⇒ d) ⟪ _ ⇛ _ ⟫ , elab↤λ m ed
+  ...  | d , ed = (λ: _ ⇒ d) ⟪ _ ⇛ _ ⟫ , elab↤λ m ed
   elab-complete-ana (↤case D m D₁ D₂)
     with elab-complete-syn D | elab-complete-ana D₁ | elab-complete-ana D₂
-  ... | d , ed | d₁ , ed₁ | d₂ , ed₂ =
-    case (d ⟪ _ ⇛ _ ⟫) of d₁ · d₂ , elab↤case ed m ed₁ ed₂
+  ...  | d , ed              | d₁ , ed₁             | d₂ , ed₂
+       = case (d ⟪ _ ⇛ _ ⟫) of d₁ · d₂ , elab↤case ed m ed₁ ed₂
   elab-complete-ana (↤ι₁ m D)
     with elab-complete-ana D
-  ... | d , ed =
-    (ι₁ d) ⟪ _ ⇛ _ ⟫ , elab↤ι₁ m ed
+  ...  | d , ed = (ι₁ d) ⟪ _ ⇛ _ ⟫ , elab↤ι₁ m ed
   elab-complete-ana (↤ι₂ m D)
     with elab-complete-ana D
-  ... | d , ed =
-    (ι₂ d) ⟪ _ ⇛ _ ⟫ , elab↤ι₂ m ed
+  ...  | d , ed = (ι₂ d) ⟪ _ ⇛ _ ⟫ , elab↤ι₂ m ed
   elab-complete-ana (↤& m D₁ D₂)
     with elab-complete-ana D₁ | elab-complete-ana D₂
-  ... | d₁ , ed₁ | d₂ , ed₂ =
-    (d₁ & d₂) ⟪ _ ⇛ _ ⟫ , elab↤& m ed₁ ed₂
+  ...  | d₁ , ed₁ | d₂ , ed₂ = (d₁ & d₂) ⟪ _ ⇛ _ ⟫ , elab↤& m ed₁ ed₂
   elab-complete-ana (↤λ: m wf D)
     with elab-complete-ana D
-  ... | d , ed =
-    (λ: _ ⇒ d) ⟪ _ ⇛ _ ⟫ ⟪ _ ⇛ _ ⟫ , elab↤λ: m wf ed
+  ...  | d , ed = (λ: _ ⇒ d) ⟪ _ ⇛ _ ⟫ ⟪ _ ⇛ _ ⟫ , elab↤λ: m wf ed
   elab-complete-ana (↤def D₁ D₂)
     with elab-complete-syn D₁ | elab-complete-ana D₂
-  ... | d₁ , ed₁ | d₂ , ed₂ =
-    def d₁ ⊢ d₂ , elab↤def ed₁ ed₂
+  ...  | d₁ , ed₁             | d₂ , ed₂
+       = def d₁ ⊢ d₂ , elab↤def ed₁ ed₂
 
 -- Elaboration Soundness
 mutual
-  elab-sound-int-syn : ∀ {n Γ e τ d} →
-    n ； Γ ⊢ e ⇑ τ ↝ d → n ； Γ ⊢ d ∶ τ
+  elab-sound-int-syn : ∀ {n Γ e τ d} 
+                       → n ； Γ ⊢ e ⇑ τ ↝ d
+                       → n ； Γ ⊢ d ∶ τ
   elab-sound-int-syn elab↦*             = ∶*
   elab-sound-int-syn elab↦□             = ∶□
   elab-sound-int-syn (elab↦Var p)       = ∶Var p
-  elab-sound-int-syn (elab↦λ: wf ed)    = ∶λ wf (elab-sound-int-syn ed)
-  elab-sound-int-syn (elab↦Λ ed)        = ∶Λ (elab-sound-int-syn ed)
-  elab-sound-int-syn (elab↦∘ ed₁ m ed₂) =
-    ∶∘ (∶cast (elab-sound-int-syn ed₁) (⊔-~-result (⊔-⇒-~ m) m)) (elab-sound-int-ana ed₂)
-  elab-sound-int-syn (elab↦<> ed m wf)  =
-    ∶<> (∶cast (elab-sound-int-syn ed) (⊔-~-result (⊔-∀-~ m) m)) wf
-  elab-sound-int-syn (elab↦& ed₁ ed₂)   =
-    ∶& (elab-sound-int-syn ed₁) (elab-sound-int-syn ed₂)
-  elab-sound-int-syn (elab↦π₁ ed m)     =
-    ∶π₁ (∶cast (elab-sound-int-syn ed) (⊔-~-result (⊔-×-~ m) m))
-  elab-sound-int-syn (elab↦π₂ ed m)     =
-    ∶π₂ (∶cast (elab-sound-int-syn ed) (⊔-~-result (⊔-×-~ m) m))
-  elab-sound-int-syn (elab↦def ed₁ ed₂) =
-    ∶def (elab-sound-int-syn ed₁) (elab-sound-int-syn ed₂)
+  elab-sound-int-syn (elab↦λ: wf ed)    = ∶λ   wf (elab-sound-int-syn ed)
+  elab-sound-int-syn (elab↦Λ ed)        = ∶Λ   (elab-sound-int-syn ed)
+  elab-sound-int-syn (elab↦∘ ed₁ m ed₂) = ∶∘   (∶cast (elab-sound-int-syn ed₁)
+                                                      (⊔-~-result (⊔-⇒-~ m) m))
+                                               (elab-sound-int-ana ed₂)
+  elab-sound-int-syn (elab↦<> ed m wf)  = ∶<>  (∶cast (elab-sound-int-syn ed)
+                                                      (⊔-~-result (⊔-∀-~ m) m))
+                                               wf
+  elab-sound-int-syn (elab↦& ed₁ ed₂)   = ∶&   (elab-sound-int-syn ed₁)
+                                               (elab-sound-int-syn ed₂)
+  elab-sound-int-syn (elab↦π₁ ed m)     = ∶π₁  (∶cast (elab-sound-int-syn ed)
+                                                      (⊔-~-result (⊔-×-~ m) m))
+  elab-sound-int-syn (elab↦π₂ ed m)     = ∶π₂  (∶cast (elab-sound-int-syn ed)
+                                                      (⊔-~-result (⊔-×-~ m) m))
+  elab-sound-int-syn (elab↦def ed₁ ed₂) = ∶def (elab-sound-int-syn ed₁)
+                                               (elab-sound-int-syn ed₂)
   elab-sound-int-syn (elab↦case ed m ed₁ ed₂ c) =
-    ∶case (∶cast (elab-sound-int-syn ed) (⊔-~-result (⊔-+-~ m) m))
+    ∶case (∶cast (elab-sound-int-syn ed)  (⊔-~-result (⊔-+-~ m) m))
           (∶cast (elab-sound-int-syn ed₁) (⊑to~ (~.⊔-ub₁ c)))
           (∶cast (elab-sound-int-syn ed₂) (⊑to~ (~.⊔-ub₂ c)))
 
-  elab-sound-int-ana : ∀ {n Γ e τ d} →
-    n ； Γ ⊢ e ⇓ τ ↝ d → n IT.； Γ ⊢ d ∶ τ
-  elab-sound-int-ana (elab↤sub ed c) =
-    ∶cast (elab-sound-int-syn ed) (~.sym c)
-  elab-sound-int-ana (elab↤λ {τ = τ} m ed) =
-    ∶cast (∶λ (⊔-⇒-wf₁ {τ = τ} m) (elab-sound-int-ana ed)) (~.sym (⊔-~-result (⊔-⇒-~ m) m))
-  elab-sound-int-ana (elab↤λ: {τ = τ} m wf ed) =
-    ∶cast (∶cast (∶λ wf (elab-sound-int-ana ed)) (⊔-ann-⇒-~λ {τ = τ} m))
-          (~.sym (⊔-~-result (⊔-ann-⇒-~ {τ = τ} m) m))
-  elab-sound-int-ana (elab↤ι₁ {τ = τ} m ed) =
-    ∶cast (∶ι₁ (⊔-+-wf₂ {τ = τ} m) (elab-sound-int-ana ed)) (~.sym (⊔-~-result (⊔-+-~ m) m))
-  elab-sound-int-ana (elab↤ι₂ {τ = τ} m ed) =
-    ∶cast (∶ι₂ (⊔-+-wf₁ {τ = τ} m) (elab-sound-int-ana ed)) (~.sym (⊔-~-result (⊔-+-~ m) m))
-  elab-sound-int-ana (elab↤& m ed₁ ed₂) =
-    ∶cast (∶& (elab-sound-int-ana ed₁) (elab-sound-int-ana ed₂)) (~.sym (⊔-~-result (⊔-×-~ m) m))
-  elab-sound-int-ana (elab↤case ed m ed₁ ed₂) =
-    ∶case (∶cast (elab-sound-int-syn ed) (⊔-~-result (⊔-+-~ m) m))
-          (elab-sound-int-ana ed₁) (elab-sound-int-ana ed₂)
-  elab-sound-int-ana (elab↤def ed₁ ed₂) =
-    ∶def (elab-sound-int-syn ed₁) (elab-sound-int-ana ed₂)
+  elab-sound-int-ana : ∀ {n Γ e τ d}
+                       → n ； Γ ⊢ e ⇓ τ ↝ d
+                       → n ； Γ ⊢ d ∶ τ
+  elab-sound-int-ana (elab↤sub ed c)          = ∶cast (elab-sound-int-syn ed)
+                                                      (~.sym c)
+  elab-sound-int-ana (elab↤λ {τ = τ} m ed)    = ∶cast (∶λ (⊔-⇒-wf₁ {τ = τ} m)
+                                                          (elab-sound-int-ana ed))
+                                                      (~.sym (⊔-~-result (⊔-⇒-~ m) m))
+  elab-sound-int-ana (elab↤λ: {τ = τ} m wf ed)
+    = ∶cast (∶cast (∶λ wf (elab-sound-int-ana ed))
+                   (⊔-ann-⇒-~λ {τ = τ} m))
+            (~.sym (⊔-~-result (⊔-ann-⇒-~ {τ = τ} m) m))
+  elab-sound-int-ana (elab↤ι₁ {τ = τ} m ed)   = ∶cast (∶ι₁ (⊔-+-wf₂ {τ = τ} m)
+                                                           (elab-sound-int-ana ed))
+                                                      (~.sym (⊔-~-result (⊔-+-~ m) m))
+  elab-sound-int-ana (elab↤ι₂ {τ = τ} m ed)   = ∶cast (∶ι₂ (⊔-+-wf₁ {τ = τ} m)
+                                                           (elab-sound-int-ana ed))
+                                                      (~.sym (⊔-~-result (⊔-+-~ m) m))
+  elab-sound-int-ana (elab↤& m ed₁ ed₂)       = ∶cast (∶& (elab-sound-int-ana ed₁)
+                                                          (elab-sound-int-ana ed₂))
+                                                      (~.sym (⊔-~-result (⊔-×-~ m) m))
+  elab-sound-int-ana (elab↤case ed m ed₁ ed₂) = ∶case (∶cast (elab-sound-int-syn ed)
+                                                             (⊔-~-result (⊔-+-~ m) m))
+                                                      (elab-sound-int-ana ed₁)
+                                                      (elab-sound-int-ana ed₂)
+  elab-sound-int-ana (elab↤def ed₁ ed₂)       = ∶def  (elab-sound-int-syn ed₁)
+                                                      (elab-sound-int-ana ed₂)
 
 mutual
   elab-sound-ext-syn : ∀ {n Γ e τ d} → n ； Γ ⊢ e ⇑ τ ↝ d → n ； Γ ⊢ e ↦ τ
@@ -177,18 +174,18 @@ mutual
 
   elab-sound-ext-ana : ∀ {n Γ e τ d} →
     n ； Γ ⊢ e ⇓ τ ↝ d → n ； Γ ⊢ e ↤ τ
-  elab-sound-ext-ana (elab↤sub ed c)          = ↤Sub (elab-sound-ext-syn ed) c
-  elab-sound-ext-ana (elab↤λ m ed)            = ↤λ   m (elab-sound-ext-ana ed)
-  elab-sound-ext-ana (elab↤λ: m wf ed)        = ↤λ:  m wf (elab-sound-ext-ana ed)
-  elab-sound-ext-ana (elab↤ι₁ m ed)           = ↤ι₁  m (elab-sound-ext-ana ed)
-  elab-sound-ext-ana (elab↤ι₂ m ed)           = ↤ι₂  m (elab-sound-ext-ana ed)
-  elab-sound-ext-ana (elab↤& m ed₁ ed₂)       = ↤&   m (elab-sound-ext-ana ed₁)
-                                                     (elab-sound-ext-ana ed₂)
+  elab-sound-ext-ana (elab↤sub ed c)          = ↤Sub  (elab-sound-ext-syn ed) c
+  elab-sound-ext-ana (elab↤λ m ed)            = ↤λ    m (elab-sound-ext-ana ed)
+  elab-sound-ext-ana (elab↤λ: m wf ed)        = ↤λ:   m wf (elab-sound-ext-ana ed)
+  elab-sound-ext-ana (elab↤ι₁ m ed)           = ↤ι₁   m (elab-sound-ext-ana ed)
+  elab-sound-ext-ana (elab↤ι₂ m ed)           = ↤ι₂   m (elab-sound-ext-ana ed)
+  elab-sound-ext-ana (elab↤& m ed₁ ed₂)       = ↤&    m (elab-sound-ext-ana ed₁)
+                                                      (elab-sound-ext-ana ed₂)
   elab-sound-ext-ana (elab↤case ed m ed₁ ed₂) = ↤case (elab-sound-ext-syn ed) m
                                                       (elab-sound-ext-ana ed₁)
                                                       (elab-sound-ext-ana ed₂)
-  elab-sound-ext-ana (elab↤def ed₁ ed₂)       = ↤def (elab-sound-ext-syn ed₁)
-                                                     (elab-sound-ext-ana ed₂)
+  elab-sound-ext-ana (elab↤def ed₁ ed₂)       = ↤def  (elab-sound-ext-syn ed₁)
+                                                      (elab-sound-ext-ana ed₂)
 
 -- Type Safety
 -- TODO: Preservation needs substitution lemma for IntExp typing + plug decomposition.
