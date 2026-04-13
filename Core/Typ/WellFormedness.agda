@@ -92,3 +92,14 @@ private
 
 sub-preserves-wf : ∀ {n σ τ} → n ⊢wf σ → suc n ⊢wf τ → n ⊢wf [ zero ↦ σ ] τ
 sub-preserves-wf = sub-wf zero z≤n
+
+-- Well-formedness is closed under precision
+open import Core.Typ.Precision using (_⊑t_; ⊑□; ⊑*; ⊑Var; ⊑+; ⊑×; ⊑⇒; ⊑∀)
+wf-⊑ : ∀ {n τ₁ τ₂} → n ⊢wf τ₂ → τ₁ ⊑t τ₂ → n ⊢wf τ₁
+wf-⊑ _           ⊑□         = wf□
+wf-⊑ wf*         ⊑*         = wf*
+wf-⊑ (wfVar k<n) ⊑Var       = wfVar k<n
+wf-⊑ (wf+ p q)   (⊑+ r s)   = wf+ (wf-⊑ p r) (wf-⊑ q s)
+wf-⊑ (wf× p q)   (⊑× r s)   = wf× (wf-⊑ p r) (wf-⊑ q s)
+wf-⊑ (wf⇒ p q)   (⊑⇒ r s)   = wf⇒ (wf-⊑ p r) (wf-⊑ q s)
+wf-⊑ (wf∀ p)     (⊑∀ r)     = wf∀ (wf-⊑ p r)

@@ -3,7 +3,7 @@ module Semantics.Metatheory where
 open import Data.Nat hiding (_+_; _⊔_)
 open import Data.List using ([]; _∷_)
 open import Data.Sum using (_⊎_)
-open import Data.Product using (∃; Σ; _,_)
+open import Data.Product using (∃; Σ; _,_; ∃-syntax)
 open import Relation.Binary.PropositionalEquality using (_≡_)
 open import Core
 open import Core.IntExp as I
@@ -100,10 +100,10 @@ mutual
     with elab-complete-ana D₁ | elab-complete-ana D₂
   ... | d₁ , ed₁ | d₂ , ed₂ =
     (d₁ & d₂) ⟪ _ ⇛ _ ⟫ , elab↤& m ed₁ ed₂
-  elab-complete-ana (↤λ: c m wf D)
+  elab-complete-ana (↤λ: m wf D)
     with elab-complete-ana D
   ... | d , ed =
-    (λ: _ ⇒ d) ⟪ _ ⇛ _ ⟫ , elab↤λ: c m wf ed
+    (λ: _ ⇒ d) ⟪ _ ⇛ _ ⟫ ⟪ _ ⇛ _ ⟫ , elab↤λ: m wf ed
   elab-complete-ana (↤def D₁ D₂)
     with elab-complete-syn D₁ | elab-complete-ana D₂
   ... | d₁ , ed₁ | d₂ , ed₂ =
@@ -141,8 +141,9 @@ mutual
     ∶cast (elab-sound-int-syn ed) (~.sym c)
   elab-sound-int-ana (elab↤λ {τ = τ} m ed) =
     ∶cast (∶λ (⊔-⇒-wf₁ {τ = τ} m) (elab-sound-int-ana ed)) (~.sym (⊔-~-result (⊔-⇒-~ m) m))
-  elab-sound-int-ana (elab↤λ: c m wf ed) =
-    ∶cast (∶λ wf (elab-sound-int-ana ed)) (~.sym (⊔-~-result c m))
+  elab-sound-int-ana (elab↤λ: {τ = τ} m wf ed) =
+    ∶cast (∶cast (∶λ wf (elab-sound-int-ana ed)) (⊔-ann-⇒-~λ {τ = τ} m))
+          (~.sym (⊔-~-result (⊔-ann-⇒-~ {τ = τ} m) m))
   elab-sound-int-ana (elab↤ι₁ {τ = τ} m ed) =
     ∶cast (∶ι₁ (⊔-+-wf₂ {τ = τ} m) (elab-sound-int-ana ed)) (~.sym (⊔-~-result (⊔-+-~ m) m))
   elab-sound-int-ana (elab↤ι₂ {τ = τ} m ed) =
@@ -156,32 +157,38 @@ mutual
     ∶def (elab-sound-int-syn ed₁) (elab-sound-int-ana ed₂)
 
 mutual
-  elab-sound-ext-syn : ∀ {n Γ e τ d} →
-    n ； Γ ⊢ e ⇑ τ ↝ d → n ； Γ ⊢ e ↦ τ
-  elab-sound-ext-syn elab↦*                    = ↦*
-  elab-sound-ext-syn elab↦□                    = ↦□
-  elab-sound-ext-syn (elab↦Var p)              = ↦Var p
-  elab-sound-ext-syn (elab↦λ: wf ed)          = ↦λ: wf (elab-sound-ext-syn ed)
-  elab-sound-ext-syn (elab↦Λ ed)              = ↦Λ (elab-sound-ext-syn ed)
-  elab-sound-ext-syn (elab↦∘ ed₁ m ed₂)       = ↦∘ (elab-sound-ext-syn ed₁) m (elab-sound-ext-ana ed₂)
-  elab-sound-ext-syn (elab↦<> ed m wf)        = ↦<> (elab-sound-ext-syn ed) m wf
-  elab-sound-ext-syn (elab↦& ed₁ ed₂)         = ↦& (elab-sound-ext-syn ed₁) (elab-sound-ext-syn ed₂)
-  elab-sound-ext-syn (elab↦π₁ ed m)           = ↦π₁ (elab-sound-ext-syn ed) m
-  elab-sound-ext-syn (elab↦π₂ ed m)           = ↦π₂ (elab-sound-ext-syn ed) m
-  elab-sound-ext-syn (elab↦def ed₁ ed₂)       = ↦def (elab-sound-ext-syn ed₁) (elab-sound-ext-syn ed₂)
+  elab-sound-ext-syn : ∀ {n Γ e τ d} → n ； Γ ⊢ e ⇑ τ ↝ d → n ； Γ ⊢ e ↦ τ
+  elab-sound-ext-syn elab↦*                   = ↦*
+  elab-sound-ext-syn elab↦□                   = ↦□
+  elab-sound-ext-syn (elab↦Var p)             = ↦Var p
+  elab-sound-ext-syn (elab↦λ: wf ed)          = ↦λ:  wf (elab-sound-ext-syn ed)
+  elab-sound-ext-syn (elab↦Λ ed)              = ↦Λ   (elab-sound-ext-syn ed)
+  elab-sound-ext-syn (elab↦∘ ed₁ m ed₂)       = ↦∘   (elab-sound-ext-syn ed₁) m
+                                                     (elab-sound-ext-ana ed₂)
+  elab-sound-ext-syn (elab↦<> ed m wf)        = ↦<>  (elab-sound-ext-syn ed) m wf
+  elab-sound-ext-syn (elab↦& ed₁ ed₂)         = ↦&   (elab-sound-ext-syn ed₁)
+                                                     (elab-sound-ext-syn ed₂)
+  elab-sound-ext-syn (elab↦π₁ ed m)           = ↦π₁  (elab-sound-ext-syn ed) m
+  elab-sound-ext-syn (elab↦π₂ ed m)           = ↦π₂  (elab-sound-ext-syn ed) m
+  elab-sound-ext-syn (elab↦def ed₁ ed₂)       = ↦def (elab-sound-ext-syn ed₁)
+                                                     (elab-sound-ext-syn ed₂)
   elab-sound-ext-syn (elab↦case ed m ed₁ ed₂ c) =
     ↦case (elab-sound-ext-syn ed) m (elab-sound-ext-syn ed₁) (elab-sound-ext-syn ed₂) c
 
   elab-sound-ext-ana : ∀ {n Γ e τ d} →
     n ； Γ ⊢ e ⇓ τ ↝ d → n ； Γ ⊢ e ↤ τ
-  elab-sound-ext-ana (elab↤sub ed c)           = ↤Sub (elab-sound-ext-syn ed) c
-  elab-sound-ext-ana (elab↤λ m ed)             = ↤λ m (elab-sound-ext-ana ed)
-  elab-sound-ext-ana (elab↤λ: c m wf ed)      = ↤λ: c m wf (elab-sound-ext-ana ed)
-  elab-sound-ext-ana (elab↤ι₁ m ed)           = ↤ι₁ m (elab-sound-ext-ana ed)
-  elab-sound-ext-ana (elab↤ι₂ m ed)           = ↤ι₂ m (elab-sound-ext-ana ed)
-  elab-sound-ext-ana (elab↤& m ed₁ ed₂)       = ↤& m (elab-sound-ext-ana ed₁) (elab-sound-ext-ana ed₂)
-  elab-sound-ext-ana (elab↤case ed m ed₁ ed₂) = ↤case (elab-sound-ext-syn ed) m (elab-sound-ext-ana ed₁) (elab-sound-ext-ana ed₂)
-  elab-sound-ext-ana (elab↤def ed₁ ed₂)       = ↤def (elab-sound-ext-syn ed₁) (elab-sound-ext-ana ed₂)
+  elab-sound-ext-ana (elab↤sub ed c)          = ↤Sub (elab-sound-ext-syn ed) c
+  elab-sound-ext-ana (elab↤λ m ed)            = ↤λ   m (elab-sound-ext-ana ed)
+  elab-sound-ext-ana (elab↤λ: m wf ed)        = ↤λ:  m wf (elab-sound-ext-ana ed)
+  elab-sound-ext-ana (elab↤ι₁ m ed)           = ↤ι₁  m (elab-sound-ext-ana ed)
+  elab-sound-ext-ana (elab↤ι₂ m ed)           = ↤ι₂  m (elab-sound-ext-ana ed)
+  elab-sound-ext-ana (elab↤& m ed₁ ed₂)       = ↤&   m (elab-sound-ext-ana ed₁)
+                                                     (elab-sound-ext-ana ed₂)
+  elab-sound-ext-ana (elab↤case ed m ed₁ ed₂) = ↤case (elab-sound-ext-syn ed) m
+                                                      (elab-sound-ext-ana ed₁)
+                                                      (elab-sound-ext-ana ed₂)
+  elab-sound-ext-ana (elab↤def ed₁ ed₂)       = ↤def (elab-sound-ext-syn ed₁)
+                                                     (elab-sound-ext-ana ed₂)
 
 -- Type Safety
 -- TODO: Preservation needs substitution lemma for IntExp typing + plug decomposition.
@@ -191,12 +198,8 @@ postulate
     n ； Γ ⊢ d ∶ τ → d ↦ d' → n ； Γ ⊢ d' ∶ τ
 
   progress : ∀ {d τ} →
-    zero IT.； [] ⊢ d ∶ τ → Final d ⊎ (∃ λ d' → d ↦ d')
+    zero ； [] ⊢ d ∶ τ → Final d ⊎ (∃[ d' ] d ↦ d')
 
 -- Gradual Guarantee
--- TODO: Needs precision/typing monotonicity
-postulate
-  static-gradual-syn : ∀ {n Γ₁ Γ₂ e₁ e₂ τ₁} →
-    e₁ ⊑ e₂ → Γ₁ ⊑ Γ₂ →
-    n ； Γ₁ ⊢ e₁ ↦ τ₁ →
-    ∃ λ τ₂ → n ； Γ₂ ⊢ e₂ ↦ τ₂
+open import Semantics.GradualGuarantee public
+  using (static-gradual-syn; static-gradual-ana)
