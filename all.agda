@@ -11,3 +11,5 @@ module all where
   import Semantics.Marking.Metatheory
   import Slicing.Synthesis
   import Slicing.SynSliceCalc
+  import Slicing.Analysis
+  import Slicing.AnaSliceCalc

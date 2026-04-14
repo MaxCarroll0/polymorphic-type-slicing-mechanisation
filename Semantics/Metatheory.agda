@@ -4,7 +4,7 @@ open import Data.Nat hiding (_+_; _⊔_)
 open import Data.List using ([]; _∷_)
 open import Data.Maybe using (just)
 open import Data.Sum using (_⊎_)
-open import Data.Product using (∃; Σ; _,_; ∃-syntax)
+open import Data.Product using (∃; Σ; _,_; ∃-syntax) renaming (_×_ to _∧_)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl)
 open import Core
 open import Core.IntExp as I
