@@ -10,6 +10,11 @@ import Relation.Binary.Properties.StrictPartialOrder as StrictPosetProps
 import Relation.Binary.Properties.Setoid as SetoidProps
 import Relation.Binary.Properties.DecSetoid as DecSetoidProps
 import Relation.Binary.Construct.NonStrictToStrict
+import Relation.Binary.Lattice.Properties.MeetSemilattice as MeetSLProps
+import Relation.Binary.Lattice.Properties.JoinSemilattice as JoinSLProps
+import Relation.Binary.Lattice.Properties.Lattice as LatProps
+import Relation.Binary.Lattice.Properties.BoundedLattice as BLatProps
+import Relation.Binary.Lattice.Properties.DistributiveLattice as DLatProps
 open import Relation.Binary.Definitions using (Minimum)
 open import Relation.Binary.Lattice
   using ( IsMeetSemilattice; IsJoinSemilattice; IsBoundedLattice; IsDistributiveLattice
@@ -170,16 +175,13 @@ record HasMeetSemilattice (A : Set) ⦃ hp : HasPrecision A ⦄ ⦃ _ : HasMeet 
 open HasMeetSemilattice ⦃...⦄ public hiding (isMeetSemilattice)
 
 module ⊑Lat {A : Set} ⦃ hp : HasPrecision A ⦄ ⦃ hm : HasMeet A ⦄ ⦃ hms : HasMeetSemilattice A ⦄ where
-  open IsMeetSemilattice (HasMeetSemilattice.isMeetSemilattice hms) public
+  isMeetSemilattice = HasMeetSemilattice.isMeetSemilattice hms
+  private meetSL : MeetSemilattice _ _ _
+          meetSL = record { isMeetSemilattice = isMeetSemilattice }
+  open MeetSemilattice meetSL public
     using (infimum)
     renaming (∧-greatest to greatest; x∧y≤x to x⊓y⊑x; x∧y≤y to x⊓y⊑y)
-  isMeetSemilattice = HasMeetSemilattice.isMeetSemilattice hms
-
-  private
-    meetSL : MeetSemilattice _ _ _
-    meetSL = record { isMeetSemilattice = isMeetSemilattice }
-
-  open import Relation.Binary.Lattice.Properties.MeetSemilattice meetSL public
+  open MeetSLProps meetSL public
     renaming ( ∧-comm       to comm
              ; ∧-assoc      to assoc
              ; ∧-idempotent to idempotent
@@ -193,16 +195,13 @@ record HasJoinSemilattice (A : Set) ⦃ hp : HasPrecision A ⦄ ⦃ _ : HasJoin 
 open HasJoinSemilattice ⦃...⦄ public hiding (isJoinSemilattice)
 
 module ⊔Lat {A : Set} ⦃ hp : HasPrecision A ⦄ ⦃ hj : HasJoin A ⦄ ⦃ hjs : HasJoinSemilattice A ⦄ where
-  open IsJoinSemilattice (HasJoinSemilattice.isJoinSemilattice hjs) public
+  isJoinSemilattice = HasJoinSemilattice.isJoinSemilattice hjs
+  private joinSL : JoinSemilattice _ _ _
+          joinSL = record { isJoinSemilattice = isJoinSemilattice }
+  open JoinSemilattice joinSL public
     using (supremum)
     renaming (∨-least to least; x≤x∨y to x⊑x⊔y; y≤x∨y to y⊑x⊔y)
-  isJoinSemilattice = HasJoinSemilattice.isJoinSemilattice hjs
-
-  private
-    joinSL : JoinSemilattice _ _ _
-    joinSL = record { isJoinSemilattice = isJoinSemilattice }
-  
-  open import Relation.Binary.Lattice.Properties.JoinSemilattice joinSL public
+  open JoinSLProps joinSL public
     renaming ( ∨-comm       to comm
              ; ∨-assoc      to assoc
              ; ∨-idempotent to idempotent
@@ -490,45 +489,42 @@ module ⊑ₛLat {A : Set} ⦃ hp : HasPrecision A ⦄ ⦃ hm : HasMeet A ⦄ �
     ; minimum   = SliceLattice.⊥ₛ-min sl
     }
 
-  open IsBoundedLattice isBoundedLattice public
-    using (infimum; supremum;
-           isBoundedJoinSemilattice; isBoundedMeetSemilattice; isJoinSemilattice; isMeetSemilattice; isLattice)
-    renaming (x∧y≤x to x⊓ₛy⊑ₛx; x∧y≤y to x⊓ₛy⊑ₛy; x≤x∨y to x⊑ₛx⊔ₛy; y≤x∨y to y⊑ₛx⊔ₛy;
-              ∧-greatest to ⊓ₛ-greatest; ∨-least to ⊔ₛ-least;
-              maximum to ⊤ₛ-max; minimum to ⊥ₛ-min)
-
   isDistributiveLattice : IsDistributiveLattice (_≈ₛ_) (_⊑ₛ_ {A} ⦃ hp ⦄ {a} {a}) _⊔ₛ_ _⊓ₛ_
   isDistributiveLattice = record
     { isLattice    = IsBoundedLattice.isLattice isBoundedLattice
     ; ∧-distribˡ-∨ = SliceLattice.⊓ₛ-distribˡ-⊔ₛ sl
     }
 
-  open IsDistributiveLattice isDistributiveLattice public
-    using () renaming (∧-distribˡ-∨ to ⊓ₛ-distribˡ-⊔ₛ)
-
   private
-    latBundle : LatBundle _ _ _
-    latBundle = record { isLattice = isLattice }
-
     blatBundle : BLatBundle _ _ _
     blatBundle = record { isBoundedLattice = isBoundedLattice }
-
     dlatBundle : DLatBundle _ _ _
     dlatBundle = record { isDistributiveLattice = isDistributiveLattice }
 
-  open import Relation.Binary.Lattice.Properties.Lattice latBundle public
+  open BLatBundle blatBundle public
+    using (infimum; supremum;
+           isBoundedJoinSemilattice; isBoundedMeetSemilattice; isJoinSemilattice; isMeetSemilattice; isLattice;
+           lattice; joinSemilattice; meetSemilattice; boundedJoinSemilattice; boundedMeetSemilattice)
+    renaming (x∧y≤x to x⊓ₛy⊑ₛx; x∧y≤y to x⊓ₛy⊑ₛy; x≤x∨y to x⊑ₛx⊔ₛy; y≤x∨y to y⊑ₛx⊔ₛy;
+              ∧-greatest to ⊓ₛ-greatest; ∨-least to ⊔ₛ-least;
+              maximum to ⊤ₛ-max; minimum to ⊥ₛ-min; ⊤ to ⊤ₛ; ⊥ to ⊥ₛ
+              ; Carrier to A)
+
+  open DLatBundle dlatBundle public
+    using () renaming (∧-distribˡ-∨ to ⊓ₛ-distribˡ-⊔ₛ)
+
+  open LatProps lattice public
     renaming ( ∨-absorbs-∧ to ⊔ₛ-absorbs-⊓ₛ
              ; ∧-absorbs-∨ to ⊓ₛ-absorbs-⊔ₛ
              ; ∧≤∨         to ⊓ₛ⊑ₛ⊔ₛ)
-  open import Relation.Binary.Lattice.Properties.BoundedLattice blatBundle public
+  open BLatProps blatBundle public
     renaming ( ∧-zeroˡ to ⊓ₛ-zeroˡ
              ; ∧-zeroʳ to ⊓ₛ-zeroʳ
              ; ∧-zero  to ⊓ₛ-zero
              ; ∨-zeroˡ to ⊔ₛ-zeroˡ
              ; ∨-zeroʳ to ⊔ₛ-zeroʳ
              ; ∨-zero  to ⊔ₛ-zero)
-
-  open import Relation.Binary.Lattice.Properties.DistributiveLattice dlatBundle public
+  open DLatProps dlatBundle public
     using ()
     renaming ( ∧-distribʳ-∨  to ⊓ₛ-distribʳ-⊔ₛ
              ; ∧-distrib-∨   to ⊓ₛ-distrib-⊔ₛ
