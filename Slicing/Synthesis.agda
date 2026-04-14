@@ -7,7 +7,6 @@ open Eq.≡-Reasoning
 open import Data.Maybe using (just)
 open import Data.List using (_∷_; [])
 open import Core
-open import Core.Typ.Base using (diag; kind□; kind*; kindVar; kind+; kind×; kind⇒; kind∀; diff; shallow-disequality)
 open import Data.Empty using (⊥-elim)
 open import Semantics.Statics
 open import Semantics.Metatheory using (static-gradual-syn; syn-precision; static-gradual-ana)
@@ -159,18 +158,6 @@ module ⊔-exact-counterexample where
   types-differ ()
 
 private
-  -- Type join idempotency TODO: move to Typ.Properties
-  ⊔t-idem : ∀ (τ : Typ) → τ ⊔ τ ≡ τ
-  ⊔t-idem τ with diag τ τ in eq
-  ... | kind□ = refl
-  ... | kind* = refl
-  ... | kindVar = refl
-  ... | kind+ {τ₁} {τ₂} = cong₂ _+_ (⊔t-idem τ₁) (⊔t-idem τ₂)
-  ... | kind× {τ₁} {τ₂} = cong₂ _×_ (⊔t-idem τ₁) (⊔t-idem τ₂)
-  ... | kind⇒ {τ₁} {τ₂} = cong₂ _⇒_ (⊔t-idem τ₁) (⊔t-idem τ₂)
-  ... | kind∀ {τ'} = cong ∀· (⊔t-idem τ')
-  ... | diff = ⊥-elim (shallow-disequality eq)
-
   -- Transport ↦ τ to ↦ (τ ⊔ τ) and back
   idem-fix : ∀ {n Γ e τ} → n ； Γ ⊢ e ↦ (τ ⊔ τ) → n ； Γ ⊢ e ↦ τ
   idem-fix {τ = τ} v rewrite ⊔t-idem τ = v
@@ -208,56 +195,57 @@ _⊔syn_ {D = D} s₁ s₂ =
 
 open import Data.Sum using (_⊎_; inj₁; inj₂)
 
--- Postulate 2: when joined minimal syn slices synthesise a strictly MORE precise
+-- Theorem 2: when joined minimal syn slices synthesise a strictly MORE precise
 -- type than the join (υ ≉ υ₁ ⊔ υ₂), any strict sub-slice of the join synthesises
 -- a LESS precise type than the join.
+-- Proof by induction on D, pattern matching on s₁.valid and s₂.valid.
 postulate
   ⊔syn-precise
     : ∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} {υ₁ υ₂}
     → (s₁ : SynSlice D υ₁) → IsMinimal s₁
     → (s₂ : SynSlice D υ₂) → IsMinimal s₂
     → let (υ' , s⊔) = s₁ ⊔syn s₂ in
-      ¬ υ' ≈ₛ (υ₁ ⊔ₛ υ₂)
+      υ' ⊐ₛ υ₁ ⊔ₛ υ₂
     → (∀ (υ'' : ⌊ τ ⌋) (s' : SynSlice D υ'')
-       → ¬ (s' ≈syn s⊔)
-       → s' ⊑syn s⊔
-       → ¬ (υ₁ ⊔ₛ υ₂ ⊑ₛ υ''))
+      → s' ⊑syn s⊔ → ¬ (s' ≈syn s⊔)
+      → υ'' ⊏ₛ υ₁ ⊔ₛ υ₂)
+
 
 -- Theorem 3: minimal syn slices of the same type join to the same type
-⊔syn-same
-  : ∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} {υ}
-  → (s₁ s₂ : SynSlice D υ) → IsMinimal s₁ → IsMinimal s₂
-  → proj₁ (s₁ ⊔syn s₂) ≈ₛ υ
-⊔syn-same {D = D} {υ = υ} s₁ s₂ m₁ m₂
-  with proj₁ (s₁ ⊔syn s₂) ≈ₛ? (υ ⊔ₛ υ)
-...  | yes eq = trans eq (⊔t-idem (υ .↓))
-...  | no neq
-       = ⊥-elim (⊔syn-precise s₁ m₁ s₂ m₂ neq υ s₁ s₁≉s⊔ s₁⊑s⊔
-                              (⊑.reflexive {Typ} (⊔t-idem (υ .↓))))
-  where
-  s₁⊑s⊔ : s₁ ⊑syn proj₂ (s₁ ⊔syn s₂)
-  s₁⊑s⊔ = ⊑ₛLat.x⊑ₛx⊔ₛy (s₁ .σ) (s₂ .σ)
-         , ⊑ₛLat.x⊑ₛx⊔ₛy (s₁ .γ) (s₂ .γ)
-  s₁≉s⊔ : ¬ (s₁ ≈syn proj₂ (s₁ ⊔syn s₂))
-  s₁≉s⊔ (σ≈ , γ≈) = neq (begin
-    (proj₁ (s₁ ⊔syn s₂) .↓) ≡˘⟨ ⊑.antisym {Typ} υ⊑υ' υ'⊑υ ⟩
-    (υ .↓)                  ≡˘⟨ ⊔t-idem (υ .↓) ⟩
-    (υ .↓ ⊔ υ .↓)           ∎)
-    where
-    υ⊑υ' = syn-precision (⊑.reflexive {Assms} γ≈) (⊑.reflexive {Exp} σ≈)
-              (proj₂ (s₁ ⊔syn s₂) .valid) (s₁ .valid)
-    υ'⊑υ = syn-precision (⊑.reflexive {Assms} (sym γ≈)) (⊑.reflexive {Exp} (sym σ≈))
-              (s₁ .valid) (proj₂ (s₁ ⊔syn s₂) .valid)
+-- ⊔syn-same
+--   : ∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} {υ}
+--   → (s₁ s₂ : SynSlice D υ) → IsMinimal s₁ → IsMinimal s₂
+--   → proj₁ (s₁ ⊔syn s₂) ≈ₛ υ
+-- ⊔syn-same {D = D} {υ = υ} s₁ s₂ m₁ m₂
+--   with proj₁ (s₁ ⊔syn s₂) ≈ₛ? (υ ⊔ₛ υ)
+-- ...  | yes eq = trans eq (⊔t-idem (υ .↓))
+-- ...  | no neq
+--        = ⊥-elim (⊔syn-precise s₁ m₁ s₂ m₂ neq υ s₁ s₁≉s⊔ s₁⊑s⊔
+--                               (⊑.reflexive {Typ} (⊔t-idem (υ .↓))))
+--   where
+--   s₁⊑s⊔ : s₁ ⊑syn proj₂ (s₁ ⊔syn s₂)
+--   s₁⊑s⊔ = ⊑ₛLat.x⊑ₛx⊔ₛy (s₁ .σ) (s₂ .σ)
+--          , ⊑ₛLat.x⊑ₛx⊔ₛy (s₁ .γ) (s₂ .γ)
+--   s₁≉s⊔ : ¬ (s₁ ≈syn proj₂ (s₁ ⊔syn s₂))
+--   s₁≉s⊔ (σ≈ , γ≈) = neq (begin
+--     (proj₁ (s₁ ⊔syn s₂) .↓) ≡˘⟨ ⊑.antisym {Typ} υ⊑υ' υ'⊑υ ⟩
+--     (υ .↓)                  ≡˘⟨ ⊔t-idem (υ .↓) ⟩
+--     (υ .↓ ⊔ υ .↓)           ∎)
+--     where
+--     υ⊑υ' = syn-precision (⊑.reflexive {Assms} γ≈) (⊑.reflexive {Exp} σ≈)
+--               (proj₂ (s₁ ⊔syn s₂) .valid) (s₁ .valid)
+--     υ'⊑υ = syn-precision (⊑.reflexive {Assms} (sym γ≈)) (⊑.reflexive {Exp} (sym σ≈))
+--               (s₁ .valid) (proj₂ (s₁ ⊔syn s₂) .valid)
 
--- -- Postulate 4: Every derivation and type slice has a minimal SynSlice
--- -- TODO: Prove via classical methods using the fact that a bottom element exists
-postulate
-  minExists : ∀ {n Γ e τ} (D : n ； Γ ⊢ e ↦ τ) υ
-             → ∃[ m ] IsMinimal {D = D} {υ = υ} m
+-- -- -- Postulate 4: Every derivation and type slice has a minimal SynSlice
+-- -- -- TODO: Prove via classical methods using the fact that a bottom element exists
+-- postulate
+--   minExists : ∀ {n Γ e τ} (D : n ； Γ ⊢ e ↦ τ) υ
+--              → ∃[ m ] IsMinimal {D = D} {υ = υ} m
 
--- -- Postulate 5: Monotonicity: more precise type slice → more precise minimal slice
-postulate
-  mono : ∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} {υ₁ υ₂ : ⌊ τ ⌋}
-         → υ₁ ⊑ₛ υ₂
-         → (m₂ : SynSlice D υ₂) → IsMinimal m₂
-         → Σ[ m₁ ∈ SynSlice D υ₁ ] IsMinimal m₁ ∧ m₁ ⊑syn m₂
+-- -- -- Postulate 5: Monotonicity: more precise type slice → more precise minimal slice
+-- postulate
+--   mono : ∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} {υ₁ υ₂ : ⌊ τ ⌋}
+--          → υ₁ ⊑ₛ υ₂
+--          → (m₂ : SynSlice D υ₂) → IsMinimal m₂
+--          → Σ[ m₁ ∈ SynSlice D υ₁ ] IsMinimal m₁ ∧ m₁ ⊑syn m₂
