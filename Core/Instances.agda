@@ -1,9 +1,15 @@
 module Core.Instances where
 
 open import Data.Product using (_,_)
-open import Relation.Nullary using (Dec)
+open import Relation.Nullary using (Dec; ¬_; ¬?)
+open import Relation.Nullary.Decidable using () renaming (map′ to dec-map)
 open import Relation.Binary using (IsPartialOrder; IsDecPartialOrder; IsEquivalence; IsDecEquivalence; Maximum)
-open import Relation.Binary.Bundles using (Poset)
+open import Relation.Binary.Bundles using (Poset; DecPoset; DecStrictPartialOrder; Setoid; DecSetoid)
+import Relation.Binary.Properties.Poset as PosetProps
+import Relation.Binary.Properties.StrictPartialOrder as StrictPosetProps
+import Relation.Binary.Properties.Setoid as SetoidProps
+import Relation.Binary.Properties.DecSetoid as DecSetoidProps
+import Relation.Binary.Construct.NonStrictToStrict
 open import Relation.Binary.Definitions using (Minimum)
 open import Relation.Binary.Lattice
   using ( IsMeetSemilattice; IsJoinSemilattice; IsBoundedLattice; IsDistributiveLattice
@@ -15,7 +21,6 @@ open import Relation.Binary.PropositionalEquality as Eq using (_≡_; refl)
 open import Function using (_on_)
 
 -- For overloading of ⊓, ⊑, ⌊_⌋ etc. operators and types.
-
 record HasDecEq (A : Set) : Set where
   field _≟_ : (x y : A) → Dec (x ≡ y)
 open HasDecEq ⦃...⦄ public
@@ -32,29 +37,113 @@ open HasPrecision ⦃...⦄ public hiding (isDecPartialOrder)
 
 -- Overloaded ⊑ properties module
 module ⊑ {A : Set} ⦃ hp : HasPrecision A ⦄ where
-  open IsDecPartialOrder (HasPrecision.isDecPartialOrder hp) public
-    using (antisym; isPartialOrder; isPreorder; refl; reflexive; trans)
-
-  private
-    poset : Poset _ _ _
-    poset = record { isPartialOrder = isPartialOrder }
-
-  open import Relation.Binary.Properties.Poset poset public
-    using ( <-isStrictPartialOrder
-          ; <-irrefl; <-asym; <-trans
-          ; <-resp-≈; <-respˡ-≈; <-respʳ-≈
-          ; mono⇒cong; antimono⇒cong
-          )
-    renaming ( _<_   to _⊏_
+  decPoset : DecPoset _ _ _
+  decPoset = record {isDecPartialOrder = HasPrecision.isDecPartialOrder hp}
+  open DecPoset decPoset public
+    hiding (module Eq; _∼_; _≈_; _≉_; _≟_; isEquivalence; ∼-resp-≈; ∼-respˡ-≈; ∼-respʳ-≈)
+    renaming ( _≤_  to _⊑_
+             ; _≤?_ to _⊑?_
+             ; _≥_  to _⊒_
+             ; _≰_  to _⋢_
+             ; _≱_  to _⋣_
+             ; Carrier  to A
+             ; ≤-resp-≈ to ⊑-resp-≈
+             ; ≤-respʳ-≈ to ⊑-resp⃗≈
+             ; ≤-respˡ-≈ to ⊑-respˡ-≈)
+  open PosetProps poset public
+    hiding (≤-dec⇒isDecPartialOrder; ≤-dec⇒≈-dec)
+    renaming ( _<_ to _⊏_
+             ; _≮_ to _⊏̸_
+             ; <-asym   to ⊏-asym
+             ; <-irrefl to ⊏-irrefl
+             ; <-trans  to ⊏-trans
+             ; <-isStrictPartialOrder to ⊏-isStrictPartialOrder
+             ; <-strictPartialOrder   to ⊏-strictPartialOrder
+             ; <-resp-≈ to ⊏-resp-≈
+             ; <-respˡ-≈ to ⊏-respˡ-≈
+             ; <-respʳ-≈ to ⊏-respʳ-≈
              ; <⇒≉   to ⊏⇒≉
+             ; ≤⇒≯   to ⊑⇒⊐̸
+             ; <⇒≱   to ⊏⇒⋣
              ; ≤∧≉⇒< to ⊑∧≉⇒⊏
-             ; <⇒≱   to ⊏⇒⋢
-             ; ≤⇒≯   to ⊑⇒⋣
+             ; ≥-isPartialOrder to ⊒-isPartialOrder
+             ; ≥-isPreorder     to ⊒-isPreorder
+             ; ≥-poset          to ⊒-poset
+             ; ≥-preorder       to ⊒-preorder
+             ; ≥-refl      to ⊒-refl
+             ; ≥-reflexive to ⊒-reflexive
+             ; ≥-antisym   to ⊒-antisym
+             ; ≥-trans     to ⊒-trans
+             ; ≰-respʳ-≈ to ⋢-respʳ-≈
+             ; ≰-respˡ-≈ to ⋢-respˡ-≈
+             )
+  open PosetProps ⊒-poset public
+    hiding ( ≤-dec⇒isDecPartialOrder; ≤-dec⇒≈-dec
+           ; ≥-isPartialOrder; ≥-isPreorder; ≥-poset; ≥-preorder
+           ; ≥-refl; ≥-reflexive; ≥-antisym; ≥-trans
+           ; mono⇒cong; antimono⇒cong)
+    renaming ( _<_ to _⊐_
+             ; _≮_ to _⊐̸_
+             ; <-asym   to ⊐-asym
+             ; <-irrefl to ⊐-irrefl
+             ; <-trans  to ⊐-trans
+             ; <-isStrictPartialOrder to ⊐-isStrictPartialOrder
+             ; <-strictPartialOrder   to ⊐-strictPartialOrder
+             ; <-resp-≈ to ⊐-resp-≈
+             ; <-respˡ-≈ to ⊐-respˡ-≈
+             ; <-respʳ-≈ to ⊐-respʳ-≈
+             ; <⇒≉   to ⊐⇒≉
+             ; ≤⇒≯   to ⊒⇒⊏̸
+             ; <⇒≱   to ⊐⇒⋢
+             ; ≤∧≉⇒< to ⊒∧≉⇒⊐
+             ; ≰-respʳ-≈ to ⋣-respʳ-≈
+             ; ≰-respˡ-≈ to ⋣-respˡ-≈
              )
 
-_⊏_ : ∀ {A : Set} ⦃ _ : HasPrecision A ⦄ → A → A → Set
-_⊏_ = ⊑._⊏_
-infix 4 _⊏_
+  ⊒-decPartialOrder : DecPoset _ _ _
+  ⊒-decPartialOrder =
+    record { isDecPartialOrder = ⊒Props.≤-dec⇒isDecPartialOrder (λ x y → HasPrecision._⊑?_ hp y x) }
+      where module ⊒Props = PosetProps ⊒-poset
+  open DecPoset ⊒-decPartialOrder public
+    using ()
+    renaming ( _≤?_ to _⊒?_ 
+             ; decPreorder       to ⊒-decPreorder
+             ; isDecPartialOrder to ⊒-isDecPartialOrder
+             ; isDecPreorder     to ⊒-isDecPreorder
+             ; ≤-resp-≈ to ⊒-resp-≈
+             ; ≤-respʳ-≈ to ⊒-respʳ-≈
+             ; ≤-respˡ-≈ to ⊒-respˡ-≈)
+    
+  ⊏-decStrictPartialOrder = record { isDecStrictPartialOrder = TS.<-isDecStrictPartialOrder isDecPartialOrder }
+    where module TS  = Relation.Binary.Construct.NonStrictToStrict (HasPrecision._≈_ hp) (HasPrecision._⊑_ hp)
+  open DecStrictPartialOrder ⊏-decStrictPartialOrder public
+    using ()
+    renaming ( _<?_ to _⊏?_
+             ; isDecStrictPartialOrder to ⊏-isDecStrictPartialOrder) 
+  ⊐-decStrictPartialOrder = record { isDecStrictPartialOrder = TS⊒.<-isDecStrictPartialOrder ⊒-isDecPartialOrder }
+    where module TS⊒ = Relation.Binary.Construct.NonStrictToStrict (HasPrecision._≈_ hp) _⊒_
+  open DecStrictPartialOrder ⊐-decStrictPartialOrder public
+    using ()
+    renaming ( _<?_ to _⊐?_
+             ; isDecStrictPartialOrder to ⊐-isDecStrictPartialOrder)
+
+  _⋢?_ : ∀ x y → Dec (x ⋢ y)
+  x ⋢? y = ¬? (HasPrecision._⊑?_ hp x y)
+  _⋣?_ : ∀ x y → Dec (x ⋣ y)
+  x ⋣? y = ¬? (x ⊒? y)
+  _⊏̸?_ : ∀ x y → Dec (x ⊏̸ y)
+  x ⊏̸? y = ¬? (x ⊏? y)
+  _⊐̸?_ : ∀ x y → Dec (x ⊐̸ y)
+  x ⊐̸? y = ¬? (x ⊐? y)
+
+
+module ≈ {A : Set} ⦃ hp : HasPrecision A ⦄ where
+  private module E = IsDecPartialOrder (HasPrecision.isDecPartialOrder hp)
+  open E.Eq public
+  open SetoidProps record { isEquivalence = isEquivalence } public
+  open DecSetoidProps record { isDecEquivalence = isDecEquivalence } public
+
+_≈?_ = ≈._≟_
 
 record HasMeet (A : Set) ⦃ _ : HasPrecision A ⦄ : Set where
   field
@@ -83,7 +172,7 @@ open HasMeetSemilattice ⦃...⦄ public hiding (isMeetSemilattice)
 module ⊑Lat {A : Set} ⦃ hp : HasPrecision A ⦄ ⦃ hm : HasMeet A ⦄ ⦃ hms : HasMeetSemilattice A ⦄ where
   open IsMeetSemilattice (HasMeetSemilattice.isMeetSemilattice hms) public
     using (infimum)
-    renaming (∧-greatest to ⊓-greatest; x∧y≤x to x⊓y⊑x; x∧y≤y to x⊓y⊑y)
+    renaming (∧-greatest to greatest; x∧y≤x to x⊓y⊑x; x∧y≤y to x⊓y⊑y)
   isMeetSemilattice = HasMeetSemilattice.isMeetSemilattice hms
 
   private
@@ -91,13 +180,12 @@ module ⊑Lat {A : Set} ⦃ hp : HasPrecision A ⦄ ⦃ hm : HasMeet A ⦄ ⦃ h
     meetSL = record { isMeetSemilattice = isMeetSemilattice }
 
   open import Relation.Binary.Lattice.Properties.MeetSemilattice meetSL public
-    using ()
-    renaming ( ∧-comm       to ⊓-comm
-             ; ∧-assoc      to ⊓-assoc
-             ; ∧-idempotent to ⊓-idempotent
-             ; ∧-monotonic  to ⊓-monotonic
-             ; ∧-cong       to ⊓-cong
-             ; y≤x⇒x∧y≈y   to y⊑x⇒x⊓y≈y
+    renaming ( ∧-comm       to comm
+             ; ∧-assoc      to assoc
+             ; ∧-idempotent to idempotent
+             ; ∧-monotonic  to monotonic
+             ; ∧-cong       to cong
+             ; y≤x⇒x∧y≈y    to y⊑x⇒x⊓y≈y
              )
 
 record HasJoinSemilattice (A : Set) ⦃ hp : HasPrecision A ⦄ ⦃ _ : HasJoin A ⦄ : Set₁ where
@@ -107,21 +195,20 @@ open HasJoinSemilattice ⦃...⦄ public hiding (isJoinSemilattice)
 module ⊔Lat {A : Set} ⦃ hp : HasPrecision A ⦄ ⦃ hj : HasJoin A ⦄ ⦃ hjs : HasJoinSemilattice A ⦄ where
   open IsJoinSemilattice (HasJoinSemilattice.isJoinSemilattice hjs) public
     using (supremum)
-    renaming (∨-least to ⊔-least; x≤x∨y to x⊑x⊔y; y≤x∨y to y⊑x⊔y)
+    renaming (∨-least to least; x≤x∨y to x⊑x⊔y; y≤x∨y to y⊑x⊔y)
   isJoinSemilattice = HasJoinSemilattice.isJoinSemilattice hjs
 
   private
     joinSL : JoinSemilattice _ _ _
     joinSL = record { isJoinSemilattice = isJoinSemilattice }
-
+  
   open import Relation.Binary.Lattice.Properties.JoinSemilattice joinSL public
-    using ()
-    renaming ( ∨-comm       to ⊔-comm
-             ; ∨-assoc      to ⊔-assoc
-             ; ∨-idempotent to ⊔-idempotent
-             ; ∨-monotonic  to ⊔-monotonic
-             ; ∨-cong       to ⊔-cong
-             ; x≤y⇒x∨y≈y   to x⊑y⇒x⊔y≈y
+    renaming ( ∨-comm       to comm
+             ; ∨-assoc      to assoc
+             ; ∨-idempotent to idempotent
+             ; ∨-monotonic  to monotonic
+             ; ∨-cong       to cong
+             ; x≤y⇒x∨y≈y    to x⊑y⇒x⊔y≈y
              )
 
 
@@ -202,34 +289,143 @@ private
     ; _≤?_           = _⊑ₛ?_
     }
 
-module ≈ₛ {A : Set} ⦃ hp : HasPrecision A ⦄ {a : A} =
-  IsDecEquivalence (≈ₛ-isDecEquivalence {A} ⦃ hp ⦄ {a})
+module ≈ₛ {A : Set} ⦃ hp : HasPrecision A ⦄ {a : A} where
+  open IsDecEquivalence (≈ₛ-isDecEquivalence {A} ⦃ hp ⦄ {a}) public
+  open SetoidProps record { isEquivalence = ≈ₛ-isEquivalence {A} ⦃ hp ⦄ {a} } public
+  open DecSetoidProps record { isDecEquivalence = ≈ₛ-isDecEquivalence {A} ⦃ hp ⦄ {a} } public
 
+-- TODO remove code duplication with ⊑
 module ⊑ₛ {A : Set} ⦃ hp : HasPrecision A ⦄ {a : A} where
-  open IsDecPartialOrder (⊑ₛ-isDecPartialOrder {A} ⦃ hp ⦄ {a}) public
-    hiding (module Eq; isEquivalence; ≲-resp-≈; ≲-respˡ-≈; ≲-respʳ-≈; _≟_; _≤?_)
-    renaming (≤-resp-≈ to ⊑ₛ-resp-≈ₛ; ≤-respˡ-≈ to ⊑ₛ-respˡ-≈ₛ; ≤-respʳ-≈ to ⊑ₛ-respʳ-≈ₛ)
+  open DecPoset record {isDecPartialOrder = ⊑ₛ-isDecPartialOrder {a = a}} public
+    hiding (module Eq; _∼_; _≈_; _≉_; _≟_; isEquivalence; ∼-resp-≈; ∼-respˡ-≈; ∼-respʳ-≈)
+    renaming ( _≤_  to _⊑_
+             ; _≤?_ to _⊑?_
+             ; _≥_  to _⊒_
+             ; _≰_  to _⋢_
+             ; _≱_  to _⋣_
+             ; Carrier  to A
+             ; ≤-resp-≈ to ⊑-resp-≈
+             ; ≤-respʳ-≈ to ⊑-resp⃗≈
+             ; ≤-respˡ-≈ to ⊑-respˡ-≈)
 
-  private
-    posetₛ : Poset _ _ _
-    posetₛ = record { isPartialOrder = isPartialOrder }
-
-  open import Relation.Binary.Properties.Poset posetₛ public
-    using ( <-isStrictPartialOrder
-          ; <-irrefl; <-asym; <-trans
-          ; <-resp-≈; <-respˡ-≈; <-respʳ-≈
-          ; mono⇒cong; antimono⇒cong
-          )
-    renaming ( _<_   to _⊏ₛ_
-             ; <⇒≉   to ⊏ₛ⇒≉ₛ
-             ; ≤∧≉⇒< to ⊑ₛ∧≉ₛ⇒⊏ₛ
-             ; <⇒≱   to ⊏ₛ⇒⋢ₛ
-             ; ≤⇒≯   to ⊑ₛ⇒⋣ₛ
+  open PosetProps poset public
+    hiding (≤-dec⇒isDecPartialOrder; ≤-dec⇒≈-dec)
+    renaming ( _<_ to _⊏_
+             ; _≮_ to _⊏̸_
+             ; <-asym   to ⊏-asym
+             ; <-irrefl to ⊏-irrefl
+             ; <-trans  to ⊏-trans
+             ; <-isStrictPartialOrder to ⊏-isStrictPartialOrder
+             ; <-strictPartialOrder   to ⊏-strictPartialOrder
+             ; <-resp-≈ to ⊏ₛ-resp-≈
+             ; <-respˡ-≈ to ⊏ₛ-respˡ-≈
+             ; <-respʳ-≈ to ⊏ₛ-respʳ-≈
+             ; <⇒≉   to ⊏⇒≉
+             ; ≤⇒≯   to ⊑⇒⊐̸
+             ; <⇒≱   to ⊏⇒⋣
+             ; ≤∧≉⇒< to ⊑∧≉⇒⊏
+             ; ≥-isPartialOrder to ⊒-isPartialOrder
+             ; ≥-isPreorder     to ⊒-isPreorder
+             ; ≥-poset          to ⊒-poset
+             ; ≥-preorder       to ⊒-preorder
+             ; ≥-refl      to ⊒-refl
+             ; ≥-reflexive to ⊒-reflexive
+             ; ≥-antisym   to ⊒-antisym
+             ; ≥-trans     to ⊒-trans
+             ; ≰-respʳ-≈ to ⋢-respʳ-≈
+             ; ≰-respˡ-≈ to ⋢-respˡ-≈
+             )
+  open PosetProps ⊒-poset public
+    hiding ( ≤-dec⇒isDecPartialOrder; ≤-dec⇒≈-dec
+           ; ≥-isPartialOrder; ≥-isPreorder; ≥-poset; ≥-preorder
+           ; ≥-refl; ≥-reflexive; ≥-antisym; ≥-trans
+           ; mono⇒cong; antimono⇒cong)
+    renaming ( _<_ to _⊐_
+             ; _≮_ to _⊐̸_
+             ; <-asym   to ⊐-asym
+             ; <-irrefl to ⊐-irrefl
+             ; <-trans  to ⊐-trans
+             ; <-isStrictPartialOrder to ⊐-isStrictPartialOrder
+             ; <-strictPartialOrder   to ⊐-strictPartialOrder
+             ; <-resp-≈ to ⊐-resp-≈
+             ; <-respˡ-≈ to ⊐-respˡ-≈
+             ; <-respʳ-≈ to ⊐-respʳ-≈
+             ; <⇒≉   to ⊐⇒≉
+             ; ≤⇒≯   to ⊒⇒⊏̸
+             ; <⇒≱   to ⊐⇒⋣
+             ; ≤∧≉⇒< to ⊒∧≉⇒⊐
+             ; ≰-respʳ-≈ to ⋣-respʳ-≈
+             ; ≰-respˡ-≈ to ⋣-respˡ-≈
              )
 
-_⊏ₛ_ : ∀ {A : Set} ⦃ _ : HasPrecision A ⦄ {a : A} → ⌊ a ⌋ → ⌊ a ⌋ → Set
-_⊏ₛ_ = ⊑ₛ._⊏ₛ_
-infix 4 _⊏ₛ_
+  ⊒-decPartialOrder : DecPoset _ _ _
+  ⊒-decPartialOrder =
+    record { isDecPartialOrder = ⊒Props.≤-dec⇒isDecPartialOrder (λ x y → _⊑ₛ?_ y x) }
+      where module ⊒Props = PosetProps ⊒-poset
+  open DecPoset ⊒-decPartialOrder public
+    using ()
+    renaming ( _≤?_ to _⊒?_
+             ; decPreorder       to ⊒-decPreorder
+             ; isDecPartialOrder to ⊒-isDecPartialOrder
+             ; isDecPreorder     to ⊒-isDecPreorder
+             ; ≤-resp-≈ to ⊒-resp-≈
+             ; ≤-respʳ-≈ to ⊒-respʳ-≈
+             ; ≤-respˡ-≈ to ⊒-respˡ-≈)
+
+  ⊏-decStrictPartialOrder = record { isDecStrictPartialOrder = TS.<-isDecStrictPartialOrder isDecPartialOrder }
+    where module TS = Relation.Binary.Construct.NonStrictToStrict (_≈ₛ_ {a = a} {a' = a}) (_⊑ₛ_ {a = a} {a' = a})
+  open DecStrictPartialOrder ⊏-decStrictPartialOrder public
+    using ()
+    renaming ( _<?_ to _⊏?_
+             ; isDecStrictPartialOrder to ⊏ₛ-isDecStrictPartialOrder)
+  ⊐-decStrictPartialOrder = record { isDecStrictPartialOrder = TS⊒.<-isDecStrictPartialOrder ⊒-isDecPartialOrder }
+    where module TS⊒ = Relation.Binary.Construct.NonStrictToStrict (_≈ₛ_ {a = a} {a' = a}) (λ x y → _⊑ₛ_ {a = a} {a' = a} y x)
+  open DecStrictPartialOrder ⊐-decStrictPartialOrder public
+    using ()
+    renaming ( _<?_ to _⊐?_
+             ; isDecStrictPartialOrder to ⊐ₛ-isDecStrictPartialOrder)
+
+  _⋢?_ : ∀ (s₁ s₂ : ⌊ a ⌋) → Dec (s₁ ⋢ s₂)
+  s₁ ⋢? s₂ = ¬? (s₁ ⊑ₛ? s₂)
+  _⋣?_ : ∀ (s₁ s₂ : ⌊ a ⌋) → Dec (s₁ ⋣ s₂)
+  s₁ ⋣? s₂ = ¬? (s₁ ⊒? s₂)
+  _⊏̸?_ : ∀ (s₁ s₂ : ⌊ a ⌋) → Dec (s₁ ⊏̸ s₂)
+  s₁ ⊏̸? s₂ = ¬? (s₁ ⊏? s₂)
+  _⊐̸?_ : ∀ (s₁ s₂ : ⌊ a ⌋) → Dec (s₁ ⊐̸ s₂)
+  s₁ ⊐̸? s₂ = ¬? (s₁ ⊐? s₂)
+
+
+_⊒_ = ⊑._⊒_
+_⊏_ = ⊑._⊏_
+_⊐_ = ⊑._⊐_
+_⋣_ = ⊑._⋣_
+_⊏̸_ = ⊑._⊏̸_
+_⊐̸_ = ⊑._⊐̸_
+
+_⊒?_ = ⊑._⊒?_
+_⊏?_ = ⊑._⊏?_
+_⊐?_ = ⊑._⊐?_
+_⋣?_ = ⊑._⋣?_
+_⊏̸?_ = ⊑._⊏̸?_
+_⊐̸?_ = ⊑._⊐̸?_
+
+infix 4 _⊒_ _⊏_ _⊐_ _⋣_ _⊏̸_ _⊐̸_
+
+_⊒ₛ_ = ⊑ₛ._⊒_
+_⊏ₛ_ = ⊑ₛ._⊏_
+_⊐ₛ_ = ⊑ₛ._⊐_
+_⋣ₛ_ = ⊑ₛ._⋣_
+_⊏̸ₛ_ = ⊑ₛ._⊏̸_
+_⊐̸ₛ_ = ⊑ₛ._⊐̸_
+
+_⊒ₛ?_ = ⊑ₛ._⊒?_
+_⊏ₛ?_ = ⊑ₛ._⊏?_
+_⊐ₛ?_ = ⊑ₛ._⊐?_
+_⋣ₛ?_ = ⊑ₛ._⋣?_
+_⊏̸ₛ?_ = ⊑ₛ._⊏̸?_
+_⊐̸ₛ?_ = ⊑ₛ._⊐̸?_
+
+infix 4 _⊒ₛ_ _⊏ₛ_ _⊐ₛ_ _⋣ₛ_ _⊏̸ₛ_ _⊐̸ₛ_
 
 
 -- Lift meets/join
@@ -271,11 +467,11 @@ module ⊓ₛ
 -- Full bounded distributive lattice on slices
 record SliceLattice (A : Set) ⦃ hp : HasPrecision A ⦄ ⦃ hm : HasMeet A ⦄ ⦃ hj : HasJoin A ⦄ : Set₁ where
   field
-    ⊥ₛ              : ∀ {a} → ⌊ a ⌋
-    ⊥ₛ-min          : ∀ {a} → Minimum (_⊑ₛ_ {A} ⦃ hp ⦄ {a} {a}) ⊥ₛ
+    ⊥ₛ             : ∀ {a} → ⌊ a ⌋
+    ⊥ₛ-min         : ∀ {a} → Minimum (_⊑ₛ_ {A} ⦃ hp ⦄ {a} {a}) ⊥ₛ
     x⊓ₛy⊑ₛx        : ∀ {a} (s₁ s₂ : ⌊ a ⌋) → _⊓ₛ_ {A} {a} s₁ s₂ ⊑ₛ s₁
     x⊓ₛy⊑ₛy        : ∀ {a} (s₁ s₂ : ⌊ a ⌋) → _⊓ₛ_ {A} {a} s₁ s₂ ⊑ₛ s₂
-    ⊓ₛ-greatest     : ∀ {a} {s s₁ s₂ : ⌊ a ⌋} → s ⊑ₛ s₁ → s ⊑ₛ s₂ → s ⊑ₛ _⊓ₛ_ {A} {a} s₁ s₂
+    ⊓ₛ-greatest    : ∀ {a} {s s₁ s₂ : ⌊ a ⌋} → s ⊑ₛ s₁ → s ⊑ₛ s₂ → s ⊑ₛ _⊓ₛ_ {A} {a} s₁ s₂
     x⊑ₛx⊔ₛy        : ∀ {a} (s₁ s₂ : ⌊ a ⌋) → s₁ ⊑ₛ _⊔ₛ_ {A} {a} s₁ s₂
     y⊑ₛx⊔ₛy        : ∀ {a} (s₁ s₂ : ⌊ a ⌋) → s₂ ⊑ₛ _⊔ₛ_ {A} {a} s₁ s₂
     ⊓ₛ-distribˡ-⊔ₛ  : ∀ {a} (s₁ s₂ s₃ : ⌊ a ⌋) → _⊓ₛ_ {A} {a} s₁ (_⊔ₛ_ {A} {a} s₂ s₃) ≈ₛ _⊔ₛ_ {A} {a} (_⊓ₛ_ {A} {a} s₁ s₂) (_⊓ₛ_ {A} {a} s₁ s₃)
@@ -310,7 +506,6 @@ module ⊑ₛLat {A : Set} ⦃ hp : HasPrecision A ⦄ ⦃ hm : HasMeet A ⦄ �
   open IsDistributiveLattice isDistributiveLattice public
     using () renaming (∧-distribˡ-∨ to ⊓ₛ-distribˡ-⊔ₛ)
 
-  -- Derived lattice properties from stdlib Properties modules
   private
     latBundle : LatBundle _ _ _
     latBundle = record { isLattice = isLattice }
@@ -322,21 +517,16 @@ module ⊑ₛLat {A : Set} ⦃ hp : HasPrecision A ⦄ ⦃ hm : HasMeet A ⦄ �
     dlatBundle = record { isDistributiveLattice = isDistributiveLattice }
 
   open import Relation.Binary.Lattice.Properties.Lattice latBundle public
-    using ()
     renaming ( ∨-absorbs-∧ to ⊔ₛ-absorbs-⊓ₛ
              ; ∧-absorbs-∨ to ⊓ₛ-absorbs-⊔ₛ
-             ; ∧≤∨         to ⊓ₛ⊑ₛ⊔ₛ
-             )
-
+             ; ∧≤∨         to ⊓ₛ⊑ₛ⊔ₛ)
   open import Relation.Binary.Lattice.Properties.BoundedLattice blatBundle public
-    using ()
     renaming ( ∧-zeroˡ to ⊓ₛ-zeroˡ
              ; ∧-zeroʳ to ⊓ₛ-zeroʳ
              ; ∧-zero  to ⊓ₛ-zero
              ; ∨-zeroˡ to ⊔ₛ-zeroˡ
              ; ∨-zeroʳ to ⊔ₛ-zeroʳ
-             ; ∨-zero  to ⊔ₛ-zero
-             )
+             ; ∨-zero  to ⊔ₛ-zero)
 
   open import Relation.Binary.Lattice.Properties.DistributiveLattice dlatBundle public
     using ()
@@ -344,5 +534,4 @@ module ⊑ₛLat {A : Set} ⦃ hp : HasPrecision A ⦄ ⦃ hm : HasMeet A ⦄ �
              ; ∧-distrib-∨   to ⊓ₛ-distrib-⊔ₛ
              ; ∨-distribˡ-∧  to ⊔ₛ-distribˡ-⊓ₛ
              ; ∨-distribʳ-∧  to ⊔ₛ-distribʳ-⊓ₛ
-             ; ∨-distrib-∧   to ⊔ₛ-distrib-⊓ₛ
-             )
+             ; ∨-distrib-∧   to ⊔ₛ-distrib-⊓ₛ)
