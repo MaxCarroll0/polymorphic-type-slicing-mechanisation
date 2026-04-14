@@ -513,7 +513,24 @@ module ⊑ₛLat {A : Set} ⦃ hp : HasPrecision A ⦄ ⦃ hm : HasMeet A ⦄ �
 
   open DLatBundle dlatBundle public
     using () renaming (∧-distribˡ-∨ to ⊓ₛ-distribˡ-⊔ₛ)
-
+  open MeetSLProps meetSemilattice public
+    using ()
+    renaming ( ∧-comm       to ⊓-comm
+             ; ∧-assoc      to ⊓-assoc
+             ; ∧-idempotent to ⊓-idempotent
+             ; ∧-monotonic  to ⊓-monotonic
+             ; ∧-cong       to ⊓-cong
+             ; y≤x⇒x∧y≈y    to y⊑x⇒x⊓y≈y
+             )
+  open JoinSLProps joinSemilattice public
+    using ()
+    renaming ( ∨-comm       to ⊔-comm
+             ; ∨-assoc      to ⊔-assoc
+             ; ∨-idempotent to ⊔-idempotent
+             ; ∨-monotonic  to ⊔-monotonic
+             ; ∨-cong       to ⊔-cong
+             ; x≤y⇒x∨y≈y    to x⊑y⇒x⊔y≈y
+             )
   open LatProps lattice public
     renaming ( ∨-absorbs-∧ to ⊔ₛ-absorbs-⊓ₛ
              ; ∧-absorbs-∨ to ⊓ₛ-absorbs-⊔ₛ
