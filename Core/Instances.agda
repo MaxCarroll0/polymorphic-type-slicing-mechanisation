@@ -3,8 +3,14 @@ module Core.Instances where
 open import Data.Product using (_,_)
 open import Relation.Nullary using (Dec)
 open import Relation.Binary using (IsPartialOrder; IsDecPartialOrder; IsEquivalence; IsDecEquivalence; Maximum)
+open import Relation.Binary.Bundles using (Poset)
 open import Relation.Binary.Definitions using (Minimum)
-open import Relation.Binary.Lattice using (IsMeetSemilattice; IsJoinSemilattice; IsBoundedLattice; IsDistributiveLattice; IsBoundedMeetSemilattice; IsLattice; Infimum; Supremum)
+open import Relation.Binary.Lattice
+  using ( IsMeetSemilattice; IsJoinSemilattice; IsBoundedLattice; IsDistributiveLattice
+        ; IsBoundedMeetSemilattice; IsLattice; Infimum; Supremum)
+open import Relation.Binary.Lattice.Bundles as LatBundles
+  using (MeetSemilattice; JoinSemilattice)
+  renaming (Lattice to LatBundle; BoundedLattice to BLatBundle; DistributiveLattice to DLatBundle)
 open import Relation.Binary.PropositionalEquality as Eq using (_≡_; refl)
 open import Function using (_on_)
 
@@ -24,10 +30,31 @@ record HasPrecision (A : Set) : Set₁ where
   _⊑?_ = IsDecPartialOrder._≤?_ isDecPartialOrder
 open HasPrecision ⦃...⦄ public hiding (isDecPartialOrder)
 
--- Overloaded ⊑ module
-module ⊑ {A : Set} ⦃ hp : HasPrecision A ⦄ =
-  IsDecPartialOrder (HasPrecision.isDecPartialOrder hp)
+-- Overloaded ⊑ properties module
+module ⊑ {A : Set} ⦃ hp : HasPrecision A ⦄ where
+  open IsDecPartialOrder (HasPrecision.isDecPartialOrder hp) public
     using (antisym; isPartialOrder; isPreorder; refl; reflexive; trans)
+
+  private
+    poset : Poset _ _ _
+    poset = record { isPartialOrder = isPartialOrder }
+
+  open import Relation.Binary.Properties.Poset poset public
+    using ( <-isStrictPartialOrder
+          ; <-irrefl; <-asym; <-trans
+          ; <-resp-≈; <-respˡ-≈; <-respʳ-≈
+          ; mono⇒cong; antimono⇒cong
+          )
+    renaming ( _<_   to _⊏_
+             ; <⇒≉   to ⊏⇒≉
+             ; ≤∧≉⇒< to ⊑∧≉⇒⊏
+             ; <⇒≱   to ⊏⇒⋢
+             ; ≤⇒≯   to ⊑⇒⋣
+             )
+
+_⊏_ : ∀ {A : Set} ⦃ _ : HasPrecision A ⦄ → A → A → Set
+_⊏_ = ⊑._⊏_
+infix 4 _⊏_
 
 record HasMeet (A : Set) ⦃ _ : HasPrecision A ⦄ : Set where
   field
@@ -59,6 +86,20 @@ module ⊑Lat {A : Set} ⦃ hp : HasPrecision A ⦄ ⦃ hm : HasMeet A ⦄ ⦃ h
     renaming (∧-greatest to ⊓-greatest; x∧y≤x to x⊓y⊑x; x∧y≤y to x⊓y⊑y)
   isMeetSemilattice = HasMeetSemilattice.isMeetSemilattice hms
 
+  private
+    meetSL : MeetSemilattice _ _ _
+    meetSL = record { isMeetSemilattice = isMeetSemilattice }
+
+  open import Relation.Binary.Lattice.Properties.MeetSemilattice meetSL public
+    using ()
+    renaming ( ∧-comm       to ⊓-comm
+             ; ∧-assoc      to ⊓-assoc
+             ; ∧-idempotent to ⊓-idempotent
+             ; ∧-monotonic  to ⊓-monotonic
+             ; ∧-cong       to ⊓-cong
+             ; y≤x⇒x∧y≈y   to y⊑x⇒x⊓y≈y
+             )
+
 record HasJoinSemilattice (A : Set) ⦃ hp : HasPrecision A ⦄ ⦃ _ : HasJoin A ⦄ : Set₁ where
   field isJoinSemilattice : IsJoinSemilattice (HasPrecision._≈_ hp) _⊑_ _⊔_
 open HasJoinSemilattice ⦃...⦄ public hiding (isJoinSemilattice)
@@ -68,6 +109,20 @@ module ⊔Lat {A : Set} ⦃ hp : HasPrecision A ⦄ ⦃ hj : HasJoin A ⦄ ⦃ h
     using (supremum)
     renaming (∨-least to ⊔-least; x≤x∨y to x⊑x⊔y; y≤x∨y to y⊑x⊔y)
   isJoinSemilattice = HasJoinSemilattice.isJoinSemilattice hjs
+
+  private
+    joinSL : JoinSemilattice _ _ _
+    joinSL = record { isJoinSemilattice = isJoinSemilattice }
+
+  open import Relation.Binary.Lattice.Properties.JoinSemilattice joinSL public
+    using ()
+    renaming ( ∨-comm       to ⊔-comm
+             ; ∨-assoc      to ⊔-assoc
+             ; ∨-idempotent to ⊔-idempotent
+             ; ∨-monotonic  to ⊔-monotonic
+             ; ∨-cong       to ⊔-cong
+             ; x≤y⇒x∨y≈y   to x⊑y⇒x⊔y≈y
+             )
 
 
 -- Lifting Precision to Precision on slices OF a fixed term a
@@ -155,6 +210,27 @@ module ⊑ₛ {A : Set} ⦃ hp : HasPrecision A ⦄ {a : A} where
     hiding (module Eq; isEquivalence; ≲-resp-≈; ≲-respˡ-≈; ≲-respʳ-≈; _≟_; _≤?_)
     renaming (≤-resp-≈ to ⊑ₛ-resp-≈ₛ; ≤-respˡ-≈ to ⊑ₛ-respˡ-≈ₛ; ≤-respʳ-≈ to ⊑ₛ-respʳ-≈ₛ)
 
+  private
+    posetₛ : Poset _ _ _
+    posetₛ = record { isPartialOrder = isPartialOrder }
+
+  open import Relation.Binary.Properties.Poset posetₛ public
+    using ( <-isStrictPartialOrder
+          ; <-irrefl; <-asym; <-trans
+          ; <-resp-≈; <-respˡ-≈; <-respʳ-≈
+          ; mono⇒cong; antimono⇒cong
+          )
+    renaming ( _<_   to _⊏ₛ_
+             ; <⇒≉   to ⊏ₛ⇒≉ₛ
+             ; ≤∧≉⇒< to ⊑ₛ∧≉ₛ⇒⊏ₛ
+             ; <⇒≱   to ⊏ₛ⇒⋢ₛ
+             ; ≤⇒≯   to ⊑ₛ⇒⋣ₛ
+             )
+
+_⊏ₛ_ : ∀ {A : Set} ⦃ _ : HasPrecision A ⦄ {a : A} → ⌊ a ⌋ → ⌊ a ⌋ → Set
+_⊏ₛ_ = ⊑ₛ._⊏ₛ_
+infix 4 _⊏ₛ_
+
 
 -- Lift meets/join
 _⊓ₛ_ : ∀ {A} {a : A} ⦃ _ : HasPrecision A ⦄ ⦃ hm : HasMeet A ⦄ → ⌊ a ⌋ → ⌊ a ⌋ → ⌊ a ⌋
@@ -233,3 +309,40 @@ module ⊑ₛLat {A : Set} ⦃ hp : HasPrecision A ⦄ ⦃ hm : HasMeet A ⦄ �
 
   open IsDistributiveLattice isDistributiveLattice public
     using () renaming (∧-distribˡ-∨ to ⊓ₛ-distribˡ-⊔ₛ)
+
+  -- Derived lattice properties from stdlib Properties modules
+  private
+    latBundle : LatBundle _ _ _
+    latBundle = record { isLattice = isLattice }
+
+    blatBundle : BLatBundle _ _ _
+    blatBundle = record { isBoundedLattice = isBoundedLattice }
+
+    dlatBundle : DLatBundle _ _ _
+    dlatBundle = record { isDistributiveLattice = isDistributiveLattice }
+
+  open import Relation.Binary.Lattice.Properties.Lattice latBundle public
+    using ()
+    renaming ( ∨-absorbs-∧ to ⊔ₛ-absorbs-⊓ₛ
+             ; ∧-absorbs-∨ to ⊓ₛ-absorbs-⊔ₛ
+             ; ∧≤∨         to ⊓ₛ⊑ₛ⊔ₛ
+             )
+
+  open import Relation.Binary.Lattice.Properties.BoundedLattice blatBundle public
+    using ()
+    renaming ( ∧-zeroˡ to ⊓ₛ-zeroˡ
+             ; ∧-zeroʳ to ⊓ₛ-zeroʳ
+             ; ∧-zero  to ⊓ₛ-zero
+             ; ∨-zeroˡ to ⊔ₛ-zeroˡ
+             ; ∨-zeroʳ to ⊔ₛ-zeroʳ
+             ; ∨-zero  to ⊔ₛ-zero
+             )
+
+  open import Relation.Binary.Lattice.Properties.DistributiveLattice dlatBundle public
+    using ()
+    renaming ( ∧-distribʳ-∨  to ⊓ₛ-distribʳ-⊔ₛ
+             ; ∧-distrib-∨   to ⊓ₛ-distrib-⊔ₛ
+             ; ∨-distribˡ-∧  to ⊔ₛ-distribˡ-⊓ₛ
+             ; ∨-distribʳ-∧  to ⊔ₛ-distribʳ-⊓ₛ
+             ; ∨-distrib-∧   to ⊔ₛ-distrib-⊓ₛ
+             )
