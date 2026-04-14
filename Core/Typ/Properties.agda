@@ -1,6 +1,6 @@
 module Core.Typ.Properties where
 
-open import Relation.Binary.PropositionalEquality using (_≡_; refl)
+open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong₂)
 open import Relation.Nullary using (yes; no)
 open import Data.Empty using (⊥-elim)
 
@@ -33,6 +33,18 @@ open import Core.Instances
 ⊓t-zeroᵣ {τ} with diag τ □
 ...          | kind□ = refl
 ...          | diff  = refl
+
+-- Join idempotency
+⊔t-idem : ∀ (τ : Typ) → τ ⊔ τ ≡ τ
+⊔t-idem τ with diag τ τ in eq
+... | kind□ = refl
+... | kind* = refl
+... | kindVar = refl
+... | kind+ {τ₁} {τ₂} = cong₂ _+_ (⊔t-idem τ₁) (⊔t-idem τ₂)
+... | kind× {τ₁} {τ₂} = cong₂ _×_ (⊔t-idem τ₁) (⊔t-idem τ₂)
+... | kind⇒ {τ₁} {τ₂} = cong₂ _⇒_ (⊔t-idem τ₁) (⊔t-idem τ₂)
+... | kind∀ {τ'} = cong ∀· (⊔t-idem τ')
+... | diff = ⊥-elim (shallow-disequality eq)
 
 -- Non-trivial join implies consistency with least specific compound type
 ⊔-⇒-~ : ∀ {τ τ₁ τ₂} → τ ⊔ (□ ⇒ □) ≡ τ₁ ⇒ τ₂ → τ ~ □ ⇒ □
