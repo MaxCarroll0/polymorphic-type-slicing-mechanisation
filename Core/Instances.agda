@@ -313,7 +313,12 @@ module ≈ₛ {A : Set} ⦃ hp : HasPrecision A ⦄ {a : A} where
   open ApartnessRelation (≉-apartnessRelation) public
     using (_#_; _#ᵒ_; _¬#_; _¬#ᵒ_)
   open ApartnessProps public
-  --open ApartnessReasoning {_#_ = _≉_} isEquivalence ≉-sym {!!} public
+
+  -- TODO: implicit args getting a bit out of hand...
+  open ApartnessReasoning isEquivalence
+    (λ {x} {y} x≉y y≈x → x≉y (sym {y} {x} y≈x))
+    (λ {x} {y} {z} x≉y y≈z → ≉-respʳ {x} {y} {z} y≈z x≉y)
+    (λ {x} {y} {z} x≈y y≉z → ≉-respˡ {z} {y} {x} (sym {x} {y} x≈y) y≉z) public
 
 
 
