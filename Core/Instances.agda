@@ -4,13 +4,17 @@ open import Data.Product using (_×_; _,_; proj₁; proj₂)
 open import Relation.Nullary using (Dec; yes; no; ¬_; ¬?)
 open import Relation.Nullary.Decidable using (_×-dec_)
 open import Relation.Nullary.Decidable using () renaming (map′ to dec-map)
-open import Relation.Binary using (IsPartialOrder; IsDecPartialOrder; IsEquivalence; IsDecEquivalence; Maximum)
-open import Relation.Binary.Bundles using (Poset; DecPoset; DecStrictPartialOrder; Setoid; DecSetoid)
+open import Relation.Binary using (IsPartialOrder; IsDecPartialOrder; IsDecPreorder; IsEquivalence; IsDecEquivalence; Maximum)
+open import Relation.Binary.Bundles using (Poset; DecPoset; DecStrictPartialOrder; Setoid; DecSetoid; ApartnessRelation)
 import Relation.Binary.Properties.Poset as PosetProps
 import Relation.Binary.Reasoning.PartialOrder as PosetReasoning
+import Relation.Binary.Reasoning.Base.Apartness as ApartnessReasoning
+import Relation.Binary.Reasoning.Setoid as SetoidReasoning
+open import Relation.Binary.Reasoning.Syntax
 import Relation.Binary.Properties.StrictPartialOrder as StrictPosetProps
 import Relation.Binary.Properties.Setoid as SetoidProps
 import Relation.Binary.Properties.DecSetoid as DecSetoidProps
+import Relation.Binary.Properties.ApartnessRelation as ApartnessProps
 import Relation.Binary.Construct.NonStrictToStrict
 import Relation.Binary.Lattice.Properties.MeetSemilattice as MeetSLProps
 import Relation.Binary.Lattice.Properties.JoinSemilattice as JoinSLProps
@@ -144,12 +148,19 @@ module ⊑ {A : Set} ⦃ hp : HasPrecision A ⦄ where
   x ⊐̸? y = ¬? (x ⊐? y)
 
   open PosetReasoning poset public
+    hiding (step-<; step-≤)
+  open ⊑-syntax _IsRelatedTo_ _IsRelatedTo_ ≤-go public
+  open ⊏-syntax _IsRelatedTo_ _IsRelatedTo_ <-go public
 
 module ≈ {A : Set} ⦃ hp : HasPrecision A ⦄ where
   private module E = IsDecPartialOrder (HasPrecision.isDecPartialOrder hp)
-  open E.Eq public
-  open SetoidProps record { isEquivalence = isEquivalence } public
-  open DecSetoidProps record { isDecEquivalence = isDecEquivalence } public
+  open DecSetoid record { isDecEquivalence = record {isEquivalence = E.isEquivalence; _≟_ = E._≟_}} public
+  open SetoidProps setoid public
+  open DecSetoidProps (record {isDecEquivalence = isDecEquivalence}) public
+  open ApartnessRelation (≉-apartnessRelation) public
+    using (_#_; _#ᵒ_; _¬#_; _¬#ᵒ_)
+  open ApartnessProps public
+  open ApartnessReasoning {_#_ = _≉_} isEquivalence public
 
 _≈?_ = ≈._≟_
 
@@ -292,9 +303,16 @@ private
     }
 
 module ≈ₛ {A : Set} ⦃ hp : HasPrecision A ⦄ {a : A} where
-  open IsDecEquivalence (≈ₛ-isDecEquivalence {A} ⦃ hp ⦄ {a}) public
+  open DecSetoid record {isDecEquivalence = ≈ₛ-isDecEquivalence {A} ⦃ hp ⦄ {a}} public
   open SetoidProps record { isEquivalence = ≈ₛ-isEquivalence {A} ⦃ hp ⦄ {a} } public
   open DecSetoidProps record { isDecEquivalence = ≈ₛ-isDecEquivalence {A} ⦃ hp ⦄ {a} } public
+
+  open ApartnessRelation (≉-apartnessRelation) public
+    using (_#_; _#ᵒ_; _¬#_; _¬#ᵒ_)
+  open ApartnessProps public
+  open ApartnessReasoning {_#_ = _≉_} isEquivalence public
+
+
 
 -- TODO remove code duplication with ⊑
 module ⊑ₛ {A : Set} {a : A} ⦃ hp : HasPrecision A ⦄ where
@@ -354,7 +372,7 @@ module ⊑ₛ {A : Set} {a : A} ⦃ hp : HasPrecision A ⦄ where
              ; <-respʳ-≈ to ⊐-respʳ-≈
              ; <⇒≉   to ⊐⇒≉
              ; ≤⇒≯   to ⊒⇒⊏̸
-             ; <⇒≱   to ⊐⇒⋣
+             ; <⇒≱   to ⊐⇒⋢
              ; ≤∧≉⇒< to ⊒∧≉⇒⊐
              ; ≰-respʳ-≈ to ⋣-respʳ-≈
              ; ≰-respˡ-≈ to ⋣-respˡ-≈
@@ -398,10 +416,14 @@ module ⊑ₛ {A : Set} {a : A} ⦃ hp : HasPrecision A ⦄ where
 
 
   open PosetReasoning poset public
+    hiding (step-<; step-≤)
+  open ⊑-syntax _IsRelatedTo_ _IsRelatedTo_ ≤-go public
+  open ⊏-syntax _IsRelatedTo_ _IsRelatedTo_ <-go public
 
 _⊒_ = ⊑._⊒_
 _⊏_ = ⊑._⊏_
 _⊐_ = ⊑._⊐_
+_⋢_ = ⊑._⋢_
 _⋣_ = ⊑._⋣_
 _⊏̸_ = ⊑._⊏̸_
 _⊐̸_ = ⊑._⊐̸_
@@ -409,6 +431,7 @@ _⊐̸_ = ⊑._⊐̸_
 _⊒?_ = ⊑._⊒?_
 _⊏?_ = ⊑._⊏?_
 _⊐?_ = ⊑._⊐?_
+_⋢?_ = ⊑._⋢?_
 _⋣?_ = ⊑._⋣?_
 _⊏̸?_ = ⊑._⊏̸?_
 _⊐̸?_ = ⊑._⊐̸?_
@@ -418,6 +441,7 @@ infix 4 _⊒_ _⊏_ _⊐_ _⋣_ _⊏̸_ _⊐̸_
 _⊒ₛ_ = ⊑ₛ._⊒_
 _⊏ₛ_ = ⊑ₛ._⊏_
 _⊐ₛ_ = ⊑ₛ._⊐_
+_⋢ₛ_ = ⊑ₛ._⋢_
 _⋣ₛ_ = ⊑ₛ._⋣_
 _⊏̸ₛ_ = ⊑ₛ._⊏̸_
 _⊐̸ₛ_ = ⊑ₛ._⊐̸_
@@ -425,6 +449,7 @@ _⊐̸ₛ_ = ⊑ₛ._⊐̸_
 _⊒ₛ?_ = ⊑ₛ._⊒?_
 _⊏ₛ?_ = ⊑ₛ._⊏?_
 _⊐ₛ?_ = ⊑ₛ._⊐?_
+_⋢ₛ?_ = ⊑ₛ._⋢?_
 _⋣ₛ?_ = ⊑ₛ._⋣?_
 _⊏̸ₛ?_ = ⊑ₛ._⊏̸?_
 _⊐̸ₛ?_ = ⊑ₛ._⊐̸?_
