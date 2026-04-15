@@ -53,7 +53,7 @@ module ⊑ {A : Set} ⦃ hp : HasPrecision A ⦄ where
              ; _≥_  to _⊒_
              ; _≰_  to _⋢_
              ; _≱_  to _⋣_
-             ; Carrier  to A
+             ; Carrier  to C
              ; ≤-resp-≈ to ⊑-resp-≈
              ; ≤-respʳ-≈ to ⊑-resp⃗≈
              ; ≤-respˡ-≈ to ⊑-respˡ-≈)
@@ -144,7 +144,6 @@ module ⊑ {A : Set} ⦃ hp : HasPrecision A ⦄ where
   x ⊐̸? y = ¬? (x ⊐? y)
 
   open PosetReasoning poset public
-
 
 module ≈ {A : Set} ⦃ hp : HasPrecision A ⦄ where
   private module E = IsDecPartialOrder (HasPrecision.isDecPartialOrder hp)
@@ -285,7 +284,7 @@ private
     ; antisym = ⊑.antisym
     }
 
-  ⊑ₛ-isDecPartialOrder : ∀ {A : Set} ⦃ hp : HasPrecision A ⦄ {a : A} → IsDecPartialOrder (_≈ₛ_ {a = a} {a' = a}) _⊑ₛ_
+  ⊑ₛ-isDecPartialOrder : ∀ {A : Set} {a : A} ⦃ hp : HasPrecision A ⦄ → IsDecPartialOrder (_≈ₛ_ {a = a} {a' = a}) _⊑ₛ_
   ⊑ₛ-isDecPartialOrder = record
     { isPartialOrder = ⊑ₛ-isPartialOrder
     ; _≟_            = _≈ₛ?_
@@ -298,7 +297,7 @@ module ≈ₛ {A : Set} ⦃ hp : HasPrecision A ⦄ {a : A} where
   open DecSetoidProps record { isDecEquivalence = ≈ₛ-isDecEquivalence {A} ⦃ hp ⦄ {a} } public
 
 -- TODO remove code duplication with ⊑
-module ⊑ₛ {A : Set} ⦃ hp : HasPrecision A ⦄ {a : A} where
+module ⊑ₛ {A : Set} {a : A} ⦃ hp : HasPrecision A ⦄ where
   open DecPoset record {isDecPartialOrder = ⊑ₛ-isDecPartialOrder {a = a}} public
     hiding (module Eq; _∼_; _≈_; _≉_; _≟_; isEquivalence; ∼-resp-≈; ∼-respˡ-≈; ∼-respʳ-≈)
     renaming ( _≤_  to _⊑_
