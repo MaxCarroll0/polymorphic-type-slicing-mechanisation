@@ -160,7 +160,10 @@ module ≈ {A : Set} ⦃ hp : HasPrecision A ⦄ where
   open ApartnessRelation (≉-apartnessRelation) public
     using (_#_; _#ᵒ_; _¬#_; _¬#ᵒ_)
   open ApartnessProps public
-  open ApartnessReasoning {_#_ = _≉_} isEquivalence public
+  
+  open ApartnessReasoning isEquivalence
+    ≉-sym (λ x≉y y≈z → ≉-respʳ y≈z x≉y)
+          (λ x≈y y≉z → ≉-respˡ (sym x≈y) y≉z) public
 
 _≈?_ = ≈._≟_
 
@@ -310,7 +313,7 @@ module ≈ₛ {A : Set} ⦃ hp : HasPrecision A ⦄ {a : A} where
   open ApartnessRelation (≉-apartnessRelation) public
     using (_#_; _#ᵒ_; _¬#_; _¬#ᵒ_)
   open ApartnessProps public
-  open ApartnessReasoning {_#_ = _≉_} isEquivalence public
+  --open ApartnessReasoning {_#_ = _≉_} isEquivalence ≉-sym {!!} public
 
 
 
