@@ -120,6 +120,20 @@ private
 ⊑-consistent  (⊑⇒ p₁ p₂)   (⊑⇒ q₁ q₂)  =  ~⇒ (⊑-consistent p₁ q₁) (⊑-consistent p₂ q₂)
 ⊑-consistent  (⊑∀ p)       (⊑∀ q)      =  ~∀ (⊑-consistent p q)
 
+-- Consistency is under precision
+~-⊑-down : ∀ {τ₁ τ₂ τ₁' τ₂'} → τ₂ ~ τ₂' → τ₁ ⊑t τ₂ → τ₁' ⊑t τ₂' → τ₁ ~ τ₁'
+~-⊑-down _           ⊑□         _         = ~?₂
+~-⊑-down _           _          ⊑□        = ~?₁
+~-⊑-down ~*          ⊑*         ⊑*        = ~*
+~-⊑-down ~Var        ⊑Var       ⊑Var      = ~Var
+~-⊑-down (~⇒ c₁ c₂) (⊑⇒ p₁ p₂) (⊑⇒ q₁ q₂) = ~⇒ (~-⊑-down c₁ p₁ q₁)
+                                               (~-⊑-down c₂ p₂ q₂)
+~-⊑-down (~+ c₁ c₂) (⊑+ p₁ p₂) (⊑+ q₁ q₂) = ~+ (~-⊑-down c₁ p₁ q₁)
+                                               (~-⊑-down c₂ p₂ q₂)
+~-⊑-down (~× c₁ c₂) (⊑× p₁ p₂) (⊑× q₁ q₂) = ~× (~-⊑-down c₁ p₁ q₁)
+                                               (~-⊑-down c₂ p₂ q₂)
+~-⊑-down (~∀ c)      (⊑∀ p)     (⊑∀ q)    = ~∀ (~-⊑-down c p q)
+
 instance
   typ-precision : HasPrecision Typ
   typ-precision = record { _≈_ = _≡_ ; _⊑_ = _⊑t_ ; isDecPartialOrder = ⊑-isDecPartialOrder }

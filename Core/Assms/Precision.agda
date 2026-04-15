@@ -1,7 +1,7 @@
 module Core.Assms.Precision where
 
 open import Data.List using (List; []; _∷_; length)
-open import Data.Product using (_,_; uncurry)
+open import Data.Product using (_,_; uncurry) renaming (_×_ to _∧_)
 open import Relation.Binary using (IsPartialOrder; IsDecPartialOrder; IsPreorder; IsEquivalence)
 open import Relation.Binary.Definitions using (Reflexive; Transitive; Antisymmetric; Minimum)
 open import Relation.Binary.PropositionalEquality as Eq using (_≡_; refl; sym; trans; cong₂)
@@ -62,3 +62,22 @@ private
 instance
   assms-precision : HasPrecision Assms
   assms-precision = record { _≈_ = _≡_ ; _⊑_ = _⊑a_ ; isDecPartialOrder = ⊑-isDecPartialOrder }
+
+-- Lookup preserves precision
+open import Data.Nat using (ℕ; zero; suc)
+open import Data.Maybe using (Maybe; just; nothing)
+open import Data.Product using (∃; _,_; ∃-syntax)
+
+lookup-⊑ : ∀ {Γ₁ Γ₂} {k : ℕ} {τ₂}
+           → Γ₁ ⊑ Γ₂ → Γ₂ at k ≡ just τ₂ →
+           ∃[ τ₁ ] Γ₁ at k ≡ just τ₁ ∧ τ₁ ⊑ τ₂
+lookup-⊑ {k = zero}  (⊑∷ p _) refl = _ , refl , p
+lookup-⊑ {k = suc _} (⊑∷ _ q) eq   = lookup-⊑ q eq
+
+-- Shifting preserves precision
+open import Core.Typ.Properties using (shift-⊑)
+open import Core.Assms.Base using (shiftΓ)
+
+shiftΓ-⊑ : ∀ {a Γ₁ Γ₂} → Γ₁ ⊑ Γ₂ → shiftΓ a Γ₁ ⊑ shiftΓ a Γ₂
+shiftΓ-⊑ ⊑[]      = ⊑[]
+shiftΓ-⊑ (⊑∷ p q) = ⊑∷ (shift-⊑ 0 _ p) (shiftΓ-⊑ q)

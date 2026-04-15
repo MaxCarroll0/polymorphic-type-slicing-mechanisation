@@ -13,7 +13,7 @@ open import Function using (_on_)
 open import Core hiding (_×_)
 open import Data.Empty using (⊥-elim)
 open import Semantics.Statics
-open import Semantics.Metatheory using (static-gradual-syn; syn-precision; static-gradual-ana; syn-unicity)
+open import Semantics.Graduality using (static-gradual-syn; syn-precision; static-gradual-ana; syn-unicity)
 module Slicing.Synthesis where
 
 instance
