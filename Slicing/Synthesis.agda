@@ -1,4 +1,7 @@
 open import Data.Nat hiding (_+_; _⊔_)
+open import Data.Unit
+open import Agda.Builtin.FromNat
+open import Data.Nat.Literals
 open import Data.Product using (_,_; proj₁; proj₂; Σ-syntax; ∃-syntax) renaming (_×_ to _∧_)
 open import Relation.Nullary using (yes; no; ¬_)
 open import Relation.Binary using (IsPartialOrder; IsDecPartialOrder; IsEquivalence; IsDecEquivalence)
@@ -10,8 +13,7 @@ open import Function using (_on_)
 open import Core hiding (_×_)
 open import Data.Empty using (⊥-elim)
 open import Semantics.Statics
-open import Semantics.Metatheory using (static-gradual-syn; syn-precision; static-gradual-ana)
-
+open import Semantics.Metatheory using (static-gradual-syn; syn-precision; static-gradual-ana; syn-unicity)
 module Slicing.Synthesis where
 
 instance
@@ -86,6 +88,7 @@ IsMinimal {A} a = ∀ (a' : A) → a' ⊑ a → a ≈ a'
 IsMinSynSlice : ∀ {n Γ e τ} → (D : n ； Γ ⊢ e ↦ τ) → ⌊ τ ⌋ → Set
 IsMinSynSlice D υ = Σ[ s ∈ SynSlice D ◂ υ ] IsMinimal s
 
+
 -- Theorem 1: By using graduality we can construct a joined derivation
 --            This join must synthesise a more or equally specific type
 --            Hence, it is a valid SynSlice 
@@ -114,12 +117,12 @@ _⊔syn_ {τ = τ} {D = D} {υ₁} {υ₂}
 ...  | ϕ⊔ , d⊔ = ρₛ₁ ⊔ₛ ρₛ₂ ⇑ ϕ⊔ ∈ d⊔ ⊒ υ⊔⊑ϕ⊔
                  where open ⊑ₛ {a = τ}
                        open ⊑ₛLat {a = τ}
-                       υ₁⊑ϕ⊔ = begin υ₁ ≤⟨ υ₁⊑ϕ₁ ⟩
-                                     ϕ₁ ≤⟨ syn-precision-prog d⊔
+                       υ₁⊑ϕ⊔ = begin υ₁ ⊑⟨ υ₁⊑ϕ₁ ⟩
+                                     ϕ₁ ⊑⟨ syn-precision-prog d⊔
                                            (↑ (⊑ₛLat.x⊑ₛx⊔ₛy ρₛ₁ ρₛ₂)) d₁ ⟩
                                      ϕ⊔ ∎
-                       υ₂⊑ϕ⊔ = begin υ₂ ≤⟨ υ₂⊑ϕ₂ ⟩
-                                     ϕ₂ ≤⟨ syn-precision-prog d⊔
+                       υ₂⊑ϕ⊔ = begin υ₂ ⊑⟨ υ₂⊑ϕ₂ ⟩
+                                     ϕ₂ ⊑⟨ syn-precision-prog d⊔
                                            (↑ (⊑ₛLat.y⊑ₛx⊔ₛy ρₛ₁ ρₛ₂)) d₂ ⟩
                                      ϕ⊔ ∎
                        υ⊔⊑ϕ⊔ = ⊔ₛ-least {υ₁} {υ₂} {ϕ⊔}
@@ -136,29 +139,38 @@ _⊔syn_ {τ = τ} {D = D} {υ₁} {υ₂}
 
 module ⊔-closure-counterexample where
   open Eq using (refl)
-  
-  D : 0 ； * ∷ [] ⊢ ⟨ 0 ⟩ ↦ *
+  D : 0 ； * ∷ [] ⊢ 0 ↦ *
   D = ↦Var refl
 
   υ : ⌊ Typ.* ⌋
   υ = ⊥ₛ
 
-  s₁ : ExactSynSlice D ◂ υ
-  s₁ = (⊤ₛ ,ₛ ⊥ₛ) ⇑ ⊥ₛ ∈! ↦□
+  s₁e : ExactSynSlice D ◂ υ
+  s₁e = (⊤ₛ ,ₛ ⊥ₛ) ⇑ ⊥ₛ ∈! ↦□
+  s₁ = s₁e .proj₁
 
-  s₂ : ExactSynSlice D ◂ υ
-  s₂ = (⊥ₛ ,ₛ ⊤ₛ) ⇑ ⊥ₛ ∈! ↦Var refl
+  s₂e : ExactSynSlice D ◂ υ
+  s₂e = (⊥ₛ ,ₛ ⊤ₛ) ⇑ ⊥ₛ ∈! ↦Var refl
+  s₂ = s₂e .proj₁
 
+  ϕ⊔ = (s₁ ⊔syn s₂) .type
   -- Both s₁ s₂ synthesise □ but their join synthesises *
   ⊔-closed-counterexample
-    : ¬ ((s₁ .proj₁ ⊔syn s₂ .proj₁) .type ⊑ₛ υ)
-  ⊔-closed-counterexample = {!!}
+    : ϕ⊔ ⋢ₛ υ
+  ⊔-closed-counterexample = ⊑ₛ.⊐⇒⋢ {x = ϕ⊔} {υ}
+                            (⊑ₛ.⊒∧≉⇒⊐ {x = ϕ⊔} {υ}
+                              ⊑□
+                              (begin-apartness
+                                ϕ⊔ ≈⟨ syn-unicity ((s₁ ⊔syn s₂) .syn) D ⟩
+                                ⊤ₛ #⟨ (λ ()) ⟩
+                                υ ∎)
+                              )
+                            where open ≈ₛ
   
--- Proof
 ¬⊔syn-closed f =
   let open ⊔-closure-counterexample
-      (⋢) = f s₁ s₂
-  in {!!}
+      (⋢) = f s₁e s₂e
+  in ⊔-closed-counterexample ⋢
      
 
 -- -- Counterexample 2: even with minimality, join does not synthesise the exact
