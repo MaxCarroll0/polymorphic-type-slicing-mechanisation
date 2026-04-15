@@ -1,5 +1,5 @@
 module Semantics.Metatheory where
-
+open import Relation.Binary.PropositionalEquality using (_≡_)
 open import Data.Nat hiding (_+_; _⊔_)
 open import Data.List using ([])
 open import Data.Sum using (_⊎_)
@@ -36,6 +36,11 @@ postulate
 
   elab-complete-ana : ∀ {n Γ e τ} →
     n ； Γ ⊢ e ↤ τ → ∃ λ d → n ； Γ ⊢ e ⇓ τ ↝ d
+
+-- Synthesis unicity (determinism)
+postulate
+  syn-unicity : ∀ {n Γ e τ τ'} →
+    n ； Γ ⊢ e ↦ τ → n ； Γ ⊢ e ↦ τ' → τ ≡ τ'
 
 -- Gradual Guarantee (synthesis)
 -- Given a more precise derivation, a less precise one exists with less precise type
