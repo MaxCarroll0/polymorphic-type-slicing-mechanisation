@@ -162,9 +162,9 @@ data MinSyn : ∀ {n Γ e τ} → (D : n ； Γ ⊢ e ↦ τ) → ⌊ τ ⌋ →
 -- Soundness: extract a SynSlice from a MinSyn
 postulate
   extract : ∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} {υ}
-            → MinSyn D υ → Σ[ m ∈ SynSlice D υ ] IsMinimal m
+            → MinSyn D υ → IsMinSynSlice D υ
 
 -- Completeness: every minimal SynSlice arises from some MinSyn
   complete : ∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} {υ}
-             → (s : SynSlice D υ) → IsMinimal s
+             → (s : IsMinSynSlice D υ)
              → Σ[ m ∈ MinSyn D υ ] ((extract m) .proj₁) ≈ s
