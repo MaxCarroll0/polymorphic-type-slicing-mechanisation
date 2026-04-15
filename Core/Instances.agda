@@ -7,6 +7,7 @@ open import Relation.Nullary.Decidable using () renaming (map′ to dec-map)
 open import Relation.Binary using (IsPartialOrder; IsDecPartialOrder; IsEquivalence; IsDecEquivalence; Maximum)
 open import Relation.Binary.Bundles using (Poset; DecPoset; DecStrictPartialOrder; Setoid; DecSetoid)
 import Relation.Binary.Properties.Poset as PosetProps
+import Relation.Binary.Reasoning.PartialOrder as PosetReasoning
 import Relation.Binary.Properties.StrictPartialOrder as StrictPosetProps
 import Relation.Binary.Properties.Setoid as SetoidProps
 import Relation.Binary.Properties.DecSetoid as DecSetoidProps
@@ -141,6 +142,8 @@ module ⊑ {A : Set} ⦃ hp : HasPrecision A ⦄ where
   x ⊏̸? y = ¬? (x ⊏? y)
   _⊐̸?_ : ∀ x y → Dec (x ⊐̸ y)
   x ⊐̸? y = ¬? (x ⊐? y)
+
+  open PosetReasoning poset public
 
 
 module ≈ {A : Set} ⦃ hp : HasPrecision A ⦄ where
@@ -394,6 +397,8 @@ module ⊑ₛ {A : Set} ⦃ hp : HasPrecision A ⦄ {a : A} where
   _⊐̸?_ : ∀ (s₁ s₂ : ⌊ a ⌋) → Dec (s₁ ⊐̸ s₂)
   s₁ ⊐̸? s₂ = ¬? (s₁ ⊐? s₂)
 
+
+  open PosetReasoning poset public
 
 _⊒_ = ⊑._⊒_
 _⊏_ = ⊑._⊏_
