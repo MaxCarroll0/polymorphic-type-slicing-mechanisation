@@ -121,10 +121,10 @@ private
   ⊓-glb (⊑Var {n}) (⊑Var {n})            with n ≟ℕ n
   ...                                       | yes _     = ⊑Var
   ...                                       | no  contr = ⊥-elim (contr refl)
-  ⊓-glb (⊑λ pt pe)   (⊑λ qt qe)          = ⊑λ (⊑Lat.⊓-greatest pt qt) (⊓-glb pe qe)
+  ⊓-glb (⊑λ pt pe)   (⊑λ qt qe)          = ⊑λ (⊑Lat.greatest pt qt) (⊓-glb pe qe)
   ⊓-glb (⊑λu pe)     (⊑λu qe)            = ⊑λu (⊓-glb pe qe)
   ⊓-glb (⊑∘ pe₁ pe₂) (⊑∘ qe₁ qe₂)        = ⊑∘ (⊓-glb pe₁ qe₁) (⊓-glb pe₂ qe₂)
-  ⊓-glb (⊑<> pe pt)  (⊑<> qe qt)         = ⊑<> (⊓-glb pe qe) (⊑Lat.⊓-greatest pt qt)
+  ⊓-glb (⊑<> pe pt)  (⊑<> qe qt)         = ⊑<> (⊓-glb pe qe) (⊑Lat.greatest pt qt)
   ⊓-glb (⊑& pe₁ pe₂) (⊑& qe₁ qe₂)        = ⊑& (⊓-glb pe₁ qe₁) (⊓-glb pe₂ qe₂)
   ⊓-glb (⊑ι₁ pe)     (⊑ι₁ qe)            = ⊑ι₁ (⊓-glb pe qe)
   ⊓-glb (⊑ι₂ pe)     (⊑ι₂ qe)            = ⊑ι₂ (⊓-glb pe qe)

@@ -1,5 +1,5 @@
 module Semantics.Metatheory where
-
+open import Relation.Binary.PropositionalEquality using (_≡_)
 open import Data.Nat hiding (_+_; _⊔_)
 open import Data.List using ([]; _∷_)
 open import Data.Maybe using (just)
@@ -223,6 +223,13 @@ mutual
 -- Type Safety
 -- TODO: Preservation needs substitution lemma for IntExp typing + plug decomposition.
 -- Progress needs canonical forms lemma.
+-- Synthesis unicity (determinism)
+postulate
+  syn-unicity : ∀ {n Γ e τ τ'} →
+    n ； Γ ⊢ e ↦ τ → n ； Γ ⊢ e ↦ τ' → τ ≡ τ'
+
+-- Gradual Guarantee (synthesis)
+-- Given a more precise derivation, a less precise one exists with less precise type
 postulate
   preservation : ∀ {n Γ d d' τ} →
     n ； Γ ⊢ d ∶ τ → d ↦ d' → n ； Γ ⊢ d' ∶ τ
