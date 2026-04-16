@@ -43,17 +43,24 @@ record SynSlice_◂_ {n : ℕ} {Γ : Assms} {e : Exp} {τ : Typ}
   ↓σₛ = sndₛ ↓ρₛ
   ↓σ⊑ = sndₛ ↓ρₛ .proof
 
-  ↓ϕ = type
+  ↓ϕ = type .↓
+  ↓ϕₛ = type
+  ↓ϕ⊑ = type .proof
 open SynSlice_◂_ public
-  renaming ( ↓ρ to _↓ρ; ↓ρₛ to _↓ρₛ; ↓ρ⊑ to _↓ρ⊑; ↓ϕ to _↓ϕ
-           ; ↓γ to _↓γ; ↓γₛ to _↓γₛ; ↓σ to _↓σ; ↓σₛ to _↓σₛ
-           ; ↓γ⊑ to _↓γ⊑; ↓σ⊑ to ↓σ⊑)
+  renaming ( ↓ρ to _↓ρ; ↓ρₛ to _↓ρₛ; ↓ρ⊑ to _↓ρ⊑
+           ; ↓ϕ to _↓ϕ; ↓ϕₛ to _↓ϕₛ; ↓ϕ⊑ to _↓ϕ⊑
+           ; ↓γ to _↓γ; ↓γₛ to _↓γₛ; ↓σ to _↓σ
+           ; ↓σₛ to _↓σₛ; ↓γ⊑ to _↓γ⊑; ↓σ⊑ to ↓σ⊑)
 infix 10 SynSlice_◂_
 infix 10 _⇑_∈_⊒_
 
 -- Sometimes the slice is exact, explaining exactly the queried parts of the type
 ExactSynSlice_◂_ : ∀ {n Γ e τ} (D : n ； Γ ⊢ e ↦ τ) (υ : ⌊ τ ⌋) → Set
 ExactSynSlice_◂_ D υ = Σ[ s ∈ SynSlice D ◂ υ ] s .type ⊑ₛ υ
+
+exact : ∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} {υ} (s : SynSlice D ◂ υ) → {p : s .type ⊑ₛ υ} → ExactSynSlice D ◂ υ
+exact s {p} = s , p
+ 
 
 -- TODO: lift typing rules to slices for ease of use
 _⇑_∈!_ : ∀ {n : ℕ} {Γ : Assms} {e : Exp} {τ : Typ}
@@ -173,54 +180,65 @@ module ⊔-closure-counterexample where
   in ⊔-closed-counterexample ⋢
      
 
--- -- Counterexample 2: even with minimality, join does not synthesise the exact
--- -- join of the output types
--- module ⊔-syn-preserves-join-counterexample where
---   open Eq using (refl)
+-- Counterexample 2: Even with minimality, ⊔syn still
+--                   does not always synthesise exactly υ₁ ⊔ₛ υ₂
+¬⊔syn-preserves-join
+  : ¬ (∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} {υ₁ υ₂}
+        ((s₁ , _) : ExactSynSlice D ◂ υ₁) ((s₂ , _) : ExactSynSlice D ◂ υ₂)
+      → IsMinimal s₁ → IsMinimal s₂
+      → (s₁ ⊔syn s₂) .type ⊑ₛ υ₁ ⊔ₛ υ₂)
+module ⊔-syn-preserves-join-counterexample where
+  open Eq using (refl)
 
---   D : 0 ； * ⇒ * ∷ [] ⊢ ⟨ 0 ⟩ & ⟨ 0 ⟩ ↦ (* ⇒ *) Typ.× (* ⇒ *)
---   D = ↦& (↦Var refl) (↦Var refl)
+  D : 0 ； * ⇒ * ∷ [] ⊢ 0 & 0 ↦ (* ⇒ *) × (* ⇒ *)
+  D = ↦& (↦Var refl) (↦Var refl)
 
---   υ₁ : ⌊ (* ⇒ *) Typ.× (* ⇒ *) ⌋
---   υ₁ = Typ.□ Typ.× (Typ.□ ⇒ *) isSlice ⊑× ⊑□ (⊑⇒ ⊑□ ⊑*)
+  υ₁ : ⌊ (* ⇒ *) × (* ⇒ *) ⌋
+  υ₁ = □ × (□ ⇒ *) isSlice ⊑× ⊑□ (⊑⇒ ⊑□ ⊑*)
 
---   υ₂ : ⌊ (* ⇒ *) Typ.× (* ⇒ *) ⌋
---   υ₂ = (* ⇒ Typ.□) Typ.× Typ.□ isSlice ⊑× (⊑⇒ ⊑* ⊑□) ⊑□
+  υ₂ : ⌊ (* ⇒ *) × (* ⇒ *) ⌋
+  υ₂ = (* ⇒ □) × □ isSlice ⊑× (⊑⇒ ⊑* ⊑□) ⊑□
 
---   s₁ : SynSlice D υ₁
---   s₁ = ↑ (⊑∷ (⊑⇒ ⊑□ ⊑*) ⊑[]) ,ₛ ↑ (⊑& ⊑□ ⊑Var)
---        isSynSlice ↦& ↦□ (↦Var refl)
+  s₁e : ExactSynSlice D ◂ υ₁
+  s₁e = (↑ (⊑∷ (⊑⇒ ⊑□ ⊑*) ⊑[]) ,ₛ ↑ (⊑& ⊑□ ⊑Var))
+        ⇑ υ₁ ∈! ↦& ↦□ (↦Var refl)
+  s₁ = s₁e .proj₁
 
---   s₂ : SynSlice D υ₂
---   s₂ = ↑ (⊑∷ (⊑⇒ ⊑* ⊑□) ⊑[]) ,ₛ ↑ (⊑& ⊑Var ⊑□)
---        isSynSlice ↦& (↦Var refl) ↦□
+  s₂e : ExactSynSlice D ◂ υ₂
+  s₂e = (↑ (⊑∷ (⊑⇒ ⊑* ⊑□) ⊑[]) ,ₛ ↑ (⊑& ⊑Var ⊑□))
+        ⇑ υ₂ ∈! ↦& (↦Var refl) ↦□
+  s₂ = s₂e .proj₁
 
---   -- TODO, obvious
---   postulate min₁ : IsMinimal s₁
---   postulate min₂ : IsMinimal s₂
+  min₁ : IsMinimal s₁
+  min₁ s' ρₛ'⊒ρₛ with s' .syn | s' .valid
+  min₁ _ (⊑∷ (⊑⇒ ⊑□ ⊑*) ⊑[] , ⊑& ⊑□ ⊑Var)
+         | ↦& _ (↦Var refl) | ⊑× _ (⊑⇒ _ _)
+         = refl , refl
+  min₂ : IsMinimal s₂
+  min₂ s' ρₛ'⊒ρₛ with s' .syn | s' .valid
+  min₂ _ (⊑∷ (⊑⇒ ⊑* ⊑□) ⊑[] , ⊑& ⊑Var ⊑□)
+         | ↦& (↦Var refl) _ | ⊑× (⊑⇒ _ _) _
+         = refl , refl
 
---   -- Joined context: (□ ⇒ *) ⊔ (* ⇒ □) = * ⇒ *
---   -- Joined expression: (□ & ⟨0⟩) ⊔ (⟨0⟩ & □) = ⟨0⟩ & ⟨0⟩
---   -- Expected type: (* ⇒ □) × (□ ⇒ *)
---   -- Actual type: (* ⇒ *) × (* ⇒ *)  (more precise)
---   check-expected : (υ₁ ⊔ₛ υ₂) .↓ ≡ (* ⇒ Typ.□) Typ.× (Typ.□ ⇒ *)
---   check-expected = refl
+  -- Joined context: (□ ⇒ *) ⊔ (* ⇒ □) = * ⇒ *
+  -- Joined expression: (□ & ⟨0⟩) ⊔ (⟨0⟩ & □) = ⟨0⟩ & ⟨0⟩
+  -- Expected type: (* ⇒ □) × (□ ⇒ *)
+  -- Actual type: (* ⇒ *) × (* ⇒ *)  (more precise)
+  check-expected : (υ₁ ⊔ₛ υ₂) .↓ ≡ (* ⇒ □) × (□ ⇒ *)
+  check-expected = refl
 
---   ⊔-syn-preserves-join-counterexample
---     : ¬ (0 ； fstₛ (s₁ ⊔syn s₂) .↓ ⊢ sndₛ (s₁ ⊔syn s₂) .↓ ↦ (υ₁ ⊔ₛ υ₂) .↓)
---   ⊔-syn-preserves-join-counterexample (↦& (↦Var ()) _)
+  ϕ⊔ = (s₁ ⊔syn s₂) .type
+  υ⊔ = υ₁ ⊔ₛ υ₂
+  
+  ⊔-syn-preserves-join-counterexample
+    : ϕ⊔ ⊐ₛ υ⊔
+  ⊔-syn-preserves-join-counterexample
+    = ⊑ₛ.⊒∧≉⇒⊐ {x = ϕ⊔} {υ⊔} (⊑× (⊑⇒ ⊑* ⊑□) (⊑⇒ ⊑□ ⊑*)) λ ()
 
--- -- Even with minimality, ⊔syn does not always synthesise υ₁ ⊔ₛ υ₂
--- ¬⊔syn-preserves-join
---   : ¬ (∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} {υ₁ υ₂}
---         (s₁ : SynSlice D υ₁) (s₂ : SynSlice D υ₂)
---       → IsMinimal s₁ → IsMinimal s₂
---       → Σ[ s ∈ SynSlice D (υ₁ ⊔ₛ υ₂) ] prog s ≡ (s₁ ⊔syn s₂) .↓)
--- ¬⊔syn-preserves-join f =
---   let open ⊔-syn-preserves-join-counterexample
---       (s , eq) = f s₁ s₂ min₁ min₂
---   in ⊔-syn-preserves-join-counterexample
---        (subst (λ p → 0 ； proj₁ p ⊢ proj₂ p ↦ (υ₁ ⊔ₛ υ₂) .↓) eq (valid s))
+¬⊔syn-preserves-join f =
+  let open ⊔-syn-preserves-join-counterexample
+      ϕ⊔⊑υ⊔ = f s₁e s₂e min₁ min₂
+  in ⊑ₛ.⊐⇒⋢ {x = ϕ⊔} {υ⊔} ⊔-syn-preserves-join-counterexample ϕ⊔⊑υ⊔
 
 -- -- By graduality we do know that it does synthesise some type slice of τ
 -- _⊔syn'_ : ∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} {υ₁ υ₂}
