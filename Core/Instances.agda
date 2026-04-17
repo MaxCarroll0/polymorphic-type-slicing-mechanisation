@@ -167,7 +167,8 @@ module ≈ {A : Set} ⦃ hp : HasPrecision A ⦄ where
           (λ x≈y y≉z → ≉-respˡ (sym x≈y) y≉z) public
 
 _≈?_ = ≈._≟_
-infix 4 _≈?_
+_≉_  = ≈._≉_
+infix 4 _≈?_ _≉_
 
 record HasMeet (A : Set) ⦃ hp : HasPrecision A ⦄ : Set where
   field

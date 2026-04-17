@@ -8,8 +8,9 @@ open import Relation.Binary.PropositionalEquality as Eq using (_≡_; _≢_; ref
 open import Data.List using (_∷_; [])
 open import Core
 open import Semantics.Statics
-open import Semantics.Graduality using (syn-unicity)
+open import Semantics.Graduality using (syn-unicity; static-gradual-syn)
 open import Slicing.Synthesis.Synthesis
+open import Slicing.Synthesis.Decompositions
 
 module Slicing.Counterexamples where
 
@@ -39,8 +40,8 @@ module ⊔-closure-counterexample where
   ϕ⊔ = (s₁ ⊔syn s₂) .type
   -- Both s₁ s₂ synthesise □ but their join synthesises *
   ⊔-closed-counterexample
-    : ϕ⊔ ⋢ₛ υ
-  ⊔-closed-counterexample = ⊑ₛ.⊐⇒⋢ {x = ϕ⊔} {υ}
+    : ϕ⊔ ⋢ₛ υ
+  ⊔-closed-counterexample = ⊑ₛ.⊐⇒⋢ {x = ϕ⊔} {υ}
                             (⊑ₛ.⊒∧≉⇒⊐ {x = ϕ⊔} {υ}
                               ⊑□
                               (begin-apartness
@@ -52,8 +53,8 @@ module ⊔-closure-counterexample where
 
 ¬⊔syn-closed f =
   let open ⊔-closure-counterexample
-      (⋢) = f s₁e s₂e
-  in ⊔-closed-counterexample ⋢
+      (⋢) = f s₁e s₂e
+  in ⊔-closed-counterexample ⋢
 
 
 -- Counterexample 2: Even with minimality, ⊔syn still
@@ -114,13 +115,74 @@ module ⊔-syn-preserves-join-counterexample where
 ¬⊔syn-preserves-join f =
   let open ⊔-syn-preserves-join-counterexample
       ϕ⊔⊑υ⊔ = f s₁e s₂e min₁ min₂
-  in ⊑ₛ.⊐⇒⋢ {x = ϕ⊔} {υ⊔} ⊔-syn-preserves-join-counterexample ϕ⊔⊑υ⊔
+  in ⊑ₛ.⊐⇒⋢ {x = ϕ⊔} {υ⊔} ⊔-syn-preserves-join-counterexample ϕ⊔⊑υ⊔
 
--- Counterexample 3 (informal): Product of min slices is NOT MINIMAL
--- D: x : * ⇒ *; y : * ⇒ * ⊢ x + y ⇑ * ⇒ *
--- x : * ⇒ □; y : □ ⇒ A ⊢ x + y ⇑ * ⇒ *
--- x : * ⇒ *; y : □ ⊢ x + □ ⇑ A ⇒ □
--- Product of min slices:
--- x : A ⇒ A; y : □ ⇒ A ⊢ (x + y, x + □) ⇑ * ⇒ * × * ⇒ *
--- is NOT MINIMAL!!
--- Naive join of context in constructing products from joins is bad!
+-- Counterexample 3: Naive product of minimal sub-slices (via &syn) is NOT
+-- always minimal. Naive join of contexts over-approximates when
+-- sub-slices use overlapping variables with incompatible precision.
+¬&syn-preserves-minimality
+  : ¬ (∀ {n Γ e₁ e₂ τ₁ τ₂} {D₁ : n ； Γ ⊢ e₁ ↦ τ₁} {D₂ : n ； Γ ⊢ e₂ ↦ τ₂}
+          {υ₁ υ₂}
+        → ((m₁ , _) : MinSynSlice D₁ ◂ υ₁) ((m₂ , _) : MinSynSlice D₂ ◂ υ₂)
+        → IsMinimal (m₁ &syn m₂))
+module &syn-minimality-counterexample where
+  open Eq using (refl)
+
+  Γ = (* ⇒ *) ∷ (* ⇒ *) ∷ []
+
+  -- D₁ = D₂
+  D₁ : 0 ； Γ ⊢ case □ of 1 · 2 ↦ * ⇒ *
+  D₁ = ↦case ↦□ refl (↦Var refl) (↦Var refl) (~⇒ ~* ~*)
+  D₂ = D₁
+
+  υ : ⌊ * ⇒ * ⌋
+  υ = ⊤ₛ
+
+  -- m₁: uses only var 0 (via left branch)
+  -- m₁ : * ⇒ * ∷ □ ⊢ case □ of 1 · □
+  m₁ : SynSlice D₁ ◂ υ
+  m₁ = (↑ (⊑∷ (⊑⇒ ⊑* ⊑*) (⊑∷ ⊑□ ⊑[])) ,ₛ ↑ (⊑case ⊑□ ⊑Var ⊑□))
+       ⇑ ⊤ₛ ∈!₁ ↦case ↦□ refl (↦Var refl) ↦□ ~?₁
+
+  -- m₂: uses both vars with components from each assumption
+  -- m₂ : * ⇒ □ ∷ □ ⇒ * ⊢ case □ of 1 · 2
+  m₂ : SynSlice D₂ ◂ υ
+  m₂ = (↑ (⊑∷ (⊑⇒ ⊑* ⊑□) (⊑∷ (⊑⇒ ⊑□ ⊑*) ⊑[])) ,ₛ ↑ (⊑case ⊑□ ⊑Var ⊑Var))
+       ⇑ ⊤ₛ ∈!₁ ↦case ↦□ refl (↦Var refl) (↦Var refl) (~⇒ ~?₁ ~?₂)
+
+  min₁ : IsMinimal m₁
+  min₁ s s⊑m₁                                        with s .syn                     | s .valid
+  min₁ _ (_                         , ⊑□)               | ↦□                         | ()
+  min₁ _ (_                         , ⊑case _  ⊑□ ⊑□)   | ↦case _ _ ↦□          ↦□ _ | ()
+  min₁ _ (⊑∷ ⊑□         _           , ⊑case _  ⊑Var ⊑□) | ↦case _ _ (↦Var refl) ↦□ _ | ()
+  min₁ _ (⊑∷ (⊑⇒ ⊑□ _)  _           , ⊑case _  ⊑Var ⊑□) | ↦case _ _ (↦Var refl) ↦□ _ | ⊑⇒ () _
+  min₁ _ (⊑∷ (⊑⇒ _ ⊑□)  _           , ⊑case _  ⊑Var ⊑□) | ↦case _ _ (↦Var refl) ↦□ _ | ⊑⇒ _ ()
+  min₁ _ (⊑∷ (⊑⇒ ⊑* ⊑*) (⊑∷ ⊑□ ⊑[]) , ⊑case ⊑□ ⊑Var ⊑□) | ↦case _ _ (↦Var refl) ↦□ _ | ⊑⇒ ⊑* ⊑* = refl , refl
+
+  min₂ : IsMinimal m₂
+  min₂ s s⊑m₂                                                  with s .syn                              | s .valid
+  min₂ _ (_                                 , ⊑□)                 | ↦□                                  | ()
+  min₂ _ (_                                 , ⊑case _  ⊑□   ⊑□)   | ↦case _ _ ↦□          ↦□ _          | ()
+  min₂ _ (⊑∷ ⊑□ _                           , ⊑case _  ⊑Var ⊑□)   | ↦case _ _ (↦Var refl) ↦□ _          | ()
+  min₂ _ (⊑∷ (⊑⇒ _ ⊑□)  _                   , ⊑case _  ⊑Var ⊑□)   | ↦case _ _ (↦Var refl) ↦□ _          | ⊑⇒ _ ()
+  min₂ _ (⊑∷ _          (⊑∷ ⊑□         _)   , ⊑case _  ⊑□   ⊑Var) | ↦case _ _ ↦□          (↦Var refl) _ | ()
+  min₂ _ (⊑∷ _          (⊑∷ (⊑⇒ ⊑□ _)  _)   , ⊑case _  ⊑□   ⊑Var) | ↦case _ _ ↦□          (↦Var refl) _ | ⊑⇒ () _
+  min₂ _ (⊑∷ (⊑⇒ _  ⊑□) (⊑∷ ⊑□         ⊑[]) , ⊑case ⊑□ ⊑Var ⊑Var) | ↦case _ _ (↦Var refl) (↦Var refl) _ | ⊑⇒ _ ()
+  min₂ _ (⊑∷ ⊑□         (⊑∷ (⊑⇒ ⊑□ _)  ⊑[]) , ⊑case ⊑□ ⊑Var ⊑Var) | ↦case _ _ (↦Var refl) (↦Var refl) _ | ⊑⇒ () _
+  min₂ _ (⊑∷ (⊑⇒ ⊑* ⊑□) (⊑∷ (⊑⇒ ⊑□ ⊑*) ⊑[]) , ⊑case ⊑□ ⊑Var ⊑Var) | ↦case _ _ (↦Var refl) (↦Var refl) _ | ⊑⇒ ⊑* ⊑* = refl , refl
+
+  -- naive product join: m₁ &syn m₂:
+  -- (* ⇒ *) ∷ (□ ⇒ *) ∷ [] ⊢ (case □ of 1 · □) & (case □ of 1 · 2)
+  m⊔ = m₁ &syn m₂
+
+  -- Has strict sub-slice m': slicing ⟨2⟩ (the second case branch)
+  -- Yet the result is still valid (ϕ ⊒ (* ⇒ *) × (* ⇒ *))
+  m' : SynSlice (↦& D₁ D₂) ◂ (υ ×ₛ υ)
+  m' = (↑ (⊑∷ (⊑⇒ ⊑* ⊑*) (⊑∷ ⊑□ ⊑[])) ,ₛ ↑ (⊑& (⊑case ⊑□ ⊑Var ⊑□) (⊑case ⊑□ ⊑Var ⊑□)))
+       ⇑ ⊤ₛ ∈!₁ ↦& (↦case ↦□ refl (↦Var refl) ↦□ ~?₁) (↦case ↦□ refl (↦Var refl) ↦□ ~?₁)
+
+¬&syn-preserves-minimality f
+  with (min⊔ m' (⊑∷ (⊑⇒ ⊑* ⊑*) (⊑∷ ⊑□ ⊑[]) , ⊑& (⊑case ⊑□ ⊑Var ⊑□) (⊑case ⊑□ ⊑Var ⊑□)))
+  where open &syn-minimality-counterexample
+        min⊔ = f (m₁ , min₁) (m₂ , min₂)
+...  | ()
