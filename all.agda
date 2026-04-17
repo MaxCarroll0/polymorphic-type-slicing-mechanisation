@@ -9,7 +9,9 @@ module all where
   import Semantics.Marking.Erasure
   import Semantics.Marking.Judgment
   import Semantics.Marking.Metatheory
-  import Slicing.Synthesis
-  import Slicing.SynSliceCalc
-  import Slicing.Analysis
-  import Slicing.AnaSliceCalc
+  import Slicing.Synthesis.Synthesis
+  import Slicing.Synthesis.Decompositions
+  import Slicing.Synthesis.SynSliceCalc
+  import Slicing.Analysis.Analysis
+  import Slicing.Analysis.AnaSliceCalc
+  import Slicing.Counterexamples
