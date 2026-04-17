@@ -5,6 +5,7 @@ open import Data.Nat.Literals
 open import Data.Product using (_,_; proj₁; proj₂; Σ-syntax; ∃-syntax) renaming (_×_ to _∧_)
 open import Data.Sum using (_⊎_; inj₁; inj₂)
 open import Relation.Nullary using (yes; no; ¬_)
+open import Induction.WellFounded using (WellFounded; Acc; acc)
 open import Relation.Binary using (IsPartialOrder; IsDecPartialOrder; IsEquivalence; IsDecEquivalence)
 import Relation.Binary.Construct.On as On
 open import Relation.Binary.PropositionalEquality as Eq using (_≡_; _≢_; refl; subst; cong; cong₂)
@@ -209,14 +210,40 @@ _⊔syn_ {τ = τ} {D = D} {υ₁} {υ₂}
 --                                                      υ ⊔ₛ υ ≈⟨ ⊑ₛLat.⊔-idempotent υ ⟩
 --                                                      υ ∎!})
 
--- Postulate 4: Syn Slice (and hence also any derivation) has a minimal SynSlice
---              below it for any query slices υ
--- TODO: Prove via classical methods using the fact that a bottom element exists
+-- Classical postulates justified by finiteness of slices
+private
+  _⊏ˢ_ : ∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} {υ : ⌊ τ ⌋}
+        → SynSlice D ◂ υ → SynSlice D ◂ υ → Set
+  _⊏ˢ_ = ⊑._⊏_ ⦃ syn-slice-precision ⦄
+
 postulate
-  minExists : ∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} {υ : ⌊ τ ⌋}
-                (s : SynSlice D ◂ υ)
-              → Σ[ (m , _) ∈ MinSynSlice D ◂ υ ]
-                  m ⊑ s
+  -- Well-foundedness of strict precision on SynSlices
+  -- Justified: slices are bounded below by ⊥ₛ over finite terms
+  ⊏-wf-syn : ∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} {υ : ⌊ τ ⌋}
+            → WellFounded (_⊏ˢ_ {D = D} {υ = υ})
+
+  -- Classical minimality decision: either s is minimal,
+  -- or there exists a strictly smaller SynSlice
+  -- Justified: finite enumeration + decidable ⊑
+  minimal? : ∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} {υ : ⌊ τ ⌋}
+           → (s : SynSlice D ◂ υ)
+           → IsMinimal s ⊎ (Σ[ s' ∈ SynSlice D ◂ υ ] s' ⊏ˢ s)
+
+-- Theorem 4: Every SynSlice has a minimal SynSlice below it
+-- Proof by well-founded recursion on strict precision using classical logic
+minExists : ∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} {υ : ⌊ τ ⌋}
+              (s : SynSlice D ◂ υ)
+            → Σ[ (m , _) ∈ MinSynSlice D ◂ υ ]
+                m ⊑ s
+minExists {D = D} {υ = υ} s = go s (⊏-wf-syn s)
+  where
+    go : (s : SynSlice D ◂ υ) → Acc _⊏ˢ_ s
+       → Σ[ (m , _) ∈ MinSynSlice D ◂ υ ] m ⊑ s
+    go s a with minimal? s
+    go s _        | inj₁ min-s       = (s , min-s) , ⊑.refl ⦃ prog-slice-precision ⦄
+    go s (acc rs) | inj₂ (s' , s'⊏s) =
+          let ((m , min-m) , m⊑s') = go s' (rs {s'} s'⊏s)
+          in (m , min-m) , ⊑.trans ⦃ prog-slice-precision ⦄ m⊑s' (proj₁ s'⊏s)
 
 
 -- Postulate 5: Monotonicity: more precise type slice → more precise minimal slice
