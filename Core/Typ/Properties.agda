@@ -238,3 +238,6 @@ sub-⊑ k σ⊑ (⊑∀ p)      = ⊑∀ (sub-⊑ (suc k) σ⊑ p)
 ⊔-wf (wf× p₁ p₂) (wf× q₁ q₂) (~× c₁ c₂) = wf× (⊔-wf p₁ q₁ c₁) (⊔-wf p₂ q₂ c₂)
 ⊔-wf (wf⇒ p₁ p₂) (wf⇒ q₁ q₂) (~⇒ c₁ c₂) = wf⇒ (⊔-wf p₁ q₁ c₁) (⊔-wf p₂ q₂ c₂)
 ⊔-wf (wf∀ p) (wf∀ q) (~∀ c)         = wf∀ (⊔-wf p q c)
+
+⊔□×□ : ∀ {τ₁ τ₂ : Typ} → τ₁ × τ₂ ⊔ □ × □ ≡ τ₁ × τ₂
+⊔□×□ {τ₁} {τ₂} rewrite ⊔t-zeroᵣ {τ₁} | ⊔t-zeroᵣ {τ₂} = refl

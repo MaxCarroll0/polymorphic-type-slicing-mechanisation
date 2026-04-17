@@ -41,9 +41,10 @@ record HasPrecision (A : Set) : Set₁ where
     _≈_                : A → A → Set
     _⊑_                : A → A → Set
     isDecPartialOrder  : IsDecPartialOrder _≈_ _⊑_
-  infix 4 _⊑_
+  infix 4 _≈_ _⊑_
 
   _⊑?_ = IsDecPartialOrder._≤?_ isDecPartialOrder
+  infix 4 _⊑?_
 open HasPrecision ⦃...⦄ public hiding (isDecPartialOrder)
 
 -- Overloaded ⊑ properties module
@@ -166,6 +167,7 @@ module ≈ {A : Set} ⦃ hp : HasPrecision A ⦄ where
           (λ x≈y y≉z → ≉-respˡ (sym x≈y) y≉z) public
 
 _≈?_ = ≈._≟_
+infix 4 _≈?_
 
 record HasMeet (A : Set) ⦃ hp : HasPrecision A ⦄ : Set where
   field
@@ -250,7 +252,7 @@ _≈ₛ?_ ⦃ hp = hp ⦄ s₁ s₂ = IsDecPartialOrder._≟_ (HasPrecision.isDe
 _⊑ₛ_ : ∀ {A : Set} ⦃ hp : HasPrecision A ⦄ {a a' : A} → ⌊ a ⌋ → ⌊ a' ⌋ → Set
 s₁ ⊑ₛ s₂ = _⊑_ (s₁ .↓) (s₂ .↓)
 
-infix 4 _⊑ₛ_
+infix 4 _≈ₛ_ _⊑ₛ_ _≈ₛ?_ _⊑ₛ?_
 
 _⊑ₛ?_ : ∀ {A : Set} ⦃ hp : HasPrecision A ⦄ {a : A} (s₁ s₂ : ⌊ a ⌋) → Dec (s₁ ⊑ₛ s₂)
 _⊑ₛ?_ ⦃ hp = hp ⦄ s₁ s₂ = IsDecPartialOrder._≤?_ (HasPrecision.isDecPartialOrder hp) (s₁ .↓) (s₂ .↓)
