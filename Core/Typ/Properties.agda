@@ -1,10 +1,10 @@
 module Core.Typ.Properties where
 
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; subst; cong₂; cong)
-open import Relation.Nullary using (yes; no)
+open import Relation.Nullary using (yes; no; ¬_)
 open import Data.Empty using (⊥-elim)
-open import Data.Nat using (ℕ; zero; suc; _<ᵇ_) renaming (_≟_ to _≟ℕ_)
-open import Data.Bool using (true; false)
+open import Data.Nat using (ℕ; zero; suc; _<_; _∸_; _≤_; z≤n; s≤s) renaming (_+_ to _ℕ+_; _≟_ to _≟ℕ_)
+open import Data.Nat.Properties using (m+n∸n≡m; m≤m+n; ≤-trans; <-trans; _<?_; <⇒≢; ≮⇒≥)
 open import Data.Product using (∃; _,_; ∃-syntax)
 open import Data.Product using () renaming (_×_ to _∧_)
 
@@ -142,13 +142,46 @@ open import Core.Instances
 shift-⊑ : ∀ {τ₁ τ₂} (c a : ℕ) → τ₁ ⊑t τ₂ → shift c a τ₁ ⊑t shift c a τ₂
 shift-⊑ c a ⊑□         = ⊑□
 shift-⊑ c a ⊑*         = ⊑*
-shift-⊑ c a (⊑Var {n = k}) with k <ᵇ c
-...                           | true  = ⊑Var
-...                           | false = ⊑Var
+shift-⊑ c a (⊑Var {n = k}) with k <? c
+...                           | yes _ = ⊑Var
+...                           | no  _ = ⊑Var
 shift-⊑ c a (⊑⇒ p q)   = ⊑⇒ (shift-⊑ c a p) (shift-⊑ c a q)
 shift-⊑ c a (⊑+ p q)   = ⊑+ (shift-⊑ c a p) (shift-⊑ c a q)
 shift-⊑ c a (⊑× p q)   = ⊑× (shift-⊑ c a p) (shift-⊑ c a q)
 shift-⊑ c a (⊑∀ p)     = ⊑∀ (shift-⊑ (suc c) a p)
+
+-- Unshifting preserves precision (analogous to shift-⊑).
+unshift-⊑ : ∀ {τ₁ τ₂} (c a : ℕ) → τ₁ ⊑t τ₂ → unshift c a τ₁ ⊑t unshift c a τ₂
+unshift-⊑ c a ⊑□         = ⊑□
+unshift-⊑ c a ⊑*         = ⊑*
+unshift-⊑ c a (⊑Var {n = k}) with k <? c
+...                             | yes _ = ⊑Var
+...                             | no  _ = ⊑Var
+unshift-⊑ c a (⊑⇒ p q)   = ⊑⇒ (unshift-⊑ c a p) (unshift-⊑ c a q)
+unshift-⊑ c a (⊑+ p q)   = ⊑+ (unshift-⊑ c a p) (unshift-⊑ c a q)
+unshift-⊑ c a (⊑× p q)   = ⊑× (unshift-⊑ c a p) (unshift-⊑ c a q)
+unshift-⊑ c a (⊑∀ p)     = ⊑∀ (unshift-⊑ (suc c) a p)
+
+-- unshift is a left inverse of shift.
+unshift-shift : ∀ {c a} (τ : Typ) → unshift c a (shift c a τ) ≡ τ
+unshift-shift {c} {a} ⟨ k ⟩ with k <? c
+... | yes k<c with (k <? c)
+...   | yes _ = refl
+...   | no k≮c = ⊥-elim (k≮c k<c)
+unshift-shift {c} {a} ⟨ k ⟩ | no k≮c with (k ℕ+ a) <? c
+...   | yes k+a<c = ⊥-elim (k≮c (≤-trans (s≤s (m≤m+n k a)) k+a<c))
+...   | no  _     = cong ⟨_⟩ (m+n∸n≡m k a)
+unshift-shift *         = refl
+unshift-shift □         = refl
+unshift-shift (τ₁ + τ₂) = cong₂ _+_ (unshift-shift τ₁) (unshift-shift τ₂)
+unshift-shift (τ₁ × τ₂) = cong₂ _×_ (unshift-shift τ₁) (unshift-shift τ₂)
+unshift-shift (τ₁ ⇒ τ₂) = cong₂ _⇒_ (unshift-shift τ₁) (unshift-shift τ₂)
+unshift-shift (∀· τ)    = cong ∀· (unshift-shift τ)
+
+-- unshift is (half) left adjoint to shift.
+unshift-shift-⊑ : ∀ {c a τ τ'} → τ' ⊑t shift c a τ → unshift c a τ' ⊑t τ
+unshift-shift-⊑ {c} {a} {τ} {τ'} p =
+  subst (λ x → unshift c a τ' ⊑t x) (unshift-shift τ) (unshift-⊑ c a p)
 
 -- Substitution preserves precision
 sub-⊑ : ∀ (k : ℕ) {σ₁ σ₂ τ₁ τ₂} → σ₁ ⊑t σ₂ → τ₁ ⊑t τ₂ → [ k ↦ σ₁ ] τ₁ ⊑t [ k ↦ σ₂ ] τ₂
@@ -156,9 +189,9 @@ sub-⊑ k σ⊑ ⊑□         = ⊑□
 sub-⊑ k σ⊑ ⊑*         = ⊑*
 sub-⊑ k σ⊑ (⊑Var {n = m}) with m ≟ℕ k
 ... | yes _ = σ⊑
-... | no  _ with m <ᵇ k
-...            | true  = ⊑Var
-...            | false = ⊑Var
+... | no  _ with m <? k
+...            | yes _ = ⊑Var
+...            | no  _ = ⊑Var
 sub-⊑ k σ⊑ (⊑⇒ p q)    = ⊑⇒ (sub-⊑ k σ⊑ p) (sub-⊑ k σ⊑ q)
 sub-⊑ k σ⊑ (⊑+ p q)    = ⊑+ (sub-⊑ k σ⊑ p) (sub-⊑ k σ⊑ q)
 sub-⊑ k σ⊑ (⊑× p q)    = ⊑× (sub-⊑ k σ⊑ p) (sub-⊑ k σ⊑ q)

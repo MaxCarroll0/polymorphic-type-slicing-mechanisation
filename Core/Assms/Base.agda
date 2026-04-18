@@ -6,7 +6,7 @@ open import Data.Maybe using (Maybe; just; nothing)
 
 open import Core.Typ using (Typ)
 open import Core.Typ.Base as TypBase using () renaming (□ to □t)
-open import Core.Typ.Substitution using (shift)
+open import Core.Typ.Substitution using (shift; unshift)
 
 Assms : Set
 Assms = List Typ
@@ -24,3 +24,6 @@ _at_ : Assms → ℕ → Maybe Typ
 
 shiftΓ : ℕ → Assms → Assms
 shiftΓ a = map (shift 0 a)
+
+unshiftΓ : ℕ → Assms → Assms
+unshiftΓ a = map (unshift 0 a)

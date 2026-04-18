@@ -120,6 +120,7 @@ module ⊔-syn-preserves-join-counterexample where
 -- Counterexample 3: Naive product of minimal sub-slices (via &syn) is NOT
 -- always minimal. Naive join of contexts over-approximates when
 -- sub-slices use overlapping variables with incompatible precision.
+-- However, the converse does hole (Decompositions.min-prod-decomposability)
 ¬&syn-preserves-minimality
   : ¬ (∀ {n Γ e₁ e₂ τ₁ τ₂} {D₁ : n ； Γ ⊢ e₁ ↦ τ₁} {D₂ : n ； Γ ⊢ e₂ ↦ τ₂}
           {υ₁ υ₂}

@@ -2,7 +2,7 @@ module Core.Typ.WellFormedness where
 
 open import Data.Nat using (ℕ; zero; suc; _<_; _≤_; s≤s; z≤n; _<ᵇ_; _∸_)
   renaming (_+_ to _ℕ+_; _≟_ to _≟ℕ_)
-open import Data.Nat.Properties using (m≤n⇒m≤1+n; +-monoˡ-<; m≤m+n; ≤-trans; <-≤-trans; <ᵇ⇒<; ≤-pred; +-comm)
+open import Data.Nat.Properties using (m≤n⇒m≤1+n; +-monoˡ-<; m≤m+n; ≤-trans; <-≤-trans; <ᵇ⇒<; ≤-pred; +-comm; _<?_)
 open import Data.Bool using (true; false; T)
 open import Data.Empty using (⊥-elim)
 open import Data.List using (List; []; _∷_; map)
@@ -50,9 +50,9 @@ wfΓ-weaken (wfΓ∷ p q) = wfΓ∷ (wf-weaken p) (wfΓ-weaken q)
 shift-preserves-wf : ∀ {n c a τ} → n ⊢wf τ → (n ℕ+ a) ⊢wf shift c a τ
 shift-preserves-wf wf*         = wf*
 shift-preserves-wf wf□         = wf□
-shift-preserves-wf {c = c} {a = a} (wfVar {k = k} k<n) with k <ᵇ c
-... | true  = wfVar (≤-trans k<n (m≤m+n _ a))
-... | false = wfVar (+-monoˡ-< a k<n)
+shift-preserves-wf {c = c} {a = a} (wfVar {k = k} k<n) with k <? c
+... | yes _ = wfVar (≤-trans k<n (m≤m+n _ a))
+... | no  _ = wfVar (+-monoˡ-< a k<n)
 shift-preserves-wf (wf+ p q)   = wf+ (shift-preserves-wf p) (shift-preserves-wf q)
 shift-preserves-wf (wf× p q)   = wf× (shift-preserves-wf p) (shift-preserves-wf q)
 shift-preserves-wf (wf⇒ p q)   = wf⇒ (shift-preserves-wf p) (shift-preserves-wf q)
@@ -83,9 +83,9 @@ private
   ...   | suc k' = wfVar (<-≤-trans (s≤s z≤n) k≤n)
   sub-wf k k≤n wfσ (wfVar {k = suc m} m<sn) with suc m ≟ℕ k
   ... | yes _ = wfσ
-  ... | no _ with suc m <ᵇ k in eq
-  ...   | true  = wfVar (<-≤-trans (<ᵇ-true (suc m) k eq) k≤n)
-  ...   | false = wfVar (≤-pred m<sn)
+  ... | no _ with suc m <? k
+  ...   | yes sm<k = wfVar (<-≤-trans sm<k k≤n)
+  ...   | no  _    = wfVar (≤-pred m<sn)
   sub-wf k k≤n wfσ (wf+ p q)   = wf+ (sub-wf k k≤n wfσ p) (sub-wf k k≤n wfσ q)
   sub-wf k k≤n wfσ (wf× p q)   = wf× (sub-wf k k≤n wfσ p) (sub-wf k k≤n wfσ q)
   sub-wf k k≤n wfσ (wf⇒ p q)   = wf⇒ (sub-wf k k≤n wfσ p) (sub-wf k k≤n wfσ q)
