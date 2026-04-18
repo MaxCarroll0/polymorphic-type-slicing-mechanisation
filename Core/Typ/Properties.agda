@@ -14,6 +14,7 @@ open import Core.Typ.Equality
 open import Core.Typ.Consistency
 open import Core.Typ.Precision
 open import Core.Typ.Lattice
+open import Core.Instances
 open import Core.Typ.Substitution
 open import Core.Typ.WellFormedness
 open import Core.Instances
@@ -182,6 +183,10 @@ unshift-shift (∀· τ)    = cong ∀· (unshift-shift τ)
 unshift-shift-⊑ : ∀ {c a τ τ'} → τ' ⊑t shift c a τ → unshift c a τ' ⊑t τ
 unshift-shift-⊑ {c} {a} {τ} {τ'} p =
   subst (λ x → unshift c a τ' ⊑t x) (unshift-shift τ) (unshift-⊑ c a p)
+
+-- shift is a right inverse of unshift (when τ ⊑ shift τ').
+postulate
+  shift-unshift : ∀ {c a} (τ : Typ) {τ' : Typ} → τ ⊑t shift c a τ' → shift c a (unshift c a τ) ≡ τ
 
 -- Substitution preserves precision
 sub-⊑ : ∀ (k : ℕ) {σ₁ σ₂ τ₁ τ₂} → σ₁ ⊑t σ₂ → τ₁ ⊑t τ₂ → [ k ↦ σ₁ ] τ₁ ⊑t [ k ↦ σ₂ ] τ₂

@@ -75,8 +75,6 @@ lookup-⊑ {k = zero}  (⊑∷ p _) refl = _ , refl , p
 lookup-⊑ {k = suc _} (⊑∷ _ q) eq   = lookup-⊑ q eq
 
 -- Shifting preserves precision
-open import Core.Assms.Base using (shiftΓ; unshiftΓ)
-
 shiftΓ-⊑ : ∀ {a Γ₁ Γ₂} → Γ₁ ⊑ Γ₂ → shiftΓ a Γ₁ ⊑ shiftΓ a Γ₂
 shiftΓ-⊑ ⊑[]      = ⊑[]
 shiftΓ-⊑ (⊑∷ p q) = ⊑∷ (shift-⊑ 0 _ p) (shiftΓ-⊑ q)
@@ -86,14 +84,15 @@ unshiftΓ-⊑ : ∀ {a Γ₁ Γ₂} → Γ₁ ⊑ Γ₂ → unshiftΓ a Γ₁ �
 unshiftΓ-⊑ ⊑[]      = ⊑[]
 unshiftΓ-⊑ (⊑∷ p q) = ⊑∷ (unshift-⊑ 0 _ p) (unshiftΓ-⊑ q)
 
--- unshiftΓ is a left inverse of shiftΓ.
-open import Core.Typ.Properties using (unshift-shift; unshift-shift-⊑)
-
 unshiftΓ-shiftΓ : ∀ {a} (Γ : Assms) → unshiftΓ a (shiftΓ a Γ) ≡ Γ
 unshiftΓ-shiftΓ []      = refl
 unshiftΓ-shiftΓ (τ ∷ Γ) = cong₂ _∷_ (unshift-shift τ) (unshiftΓ-shiftΓ Γ)
 
--- unshiftΓ is (half) left adjoint to shiftΓ.
 unshiftΓ-shiftΓ-⊑ : ∀ {a Γ Γ'} → Γ' ⊑ shiftΓ a Γ → unshiftΓ a Γ' ⊑ Γ
 unshiftΓ-shiftΓ-⊑ {Γ = []}    ⊑[]      = ⊑[]
 unshiftΓ-shiftΓ-⊑ {Γ = _ ∷ _} (⊑∷ p q) = ⊑∷ (unshift-shift-⊑ p) (unshiftΓ-shiftΓ-⊑ q)
+
+shiftΓ-unshiftΓ : ∀ {a Γ} (γ : Assms) → γ ⊑ shiftΓ a Γ → shiftΓ a (unshiftΓ a γ) ≡ γ
+shiftΓ-unshiftΓ {Γ = []}    .[] ⊑[] = refl
+shiftΓ-unshiftΓ {Γ = x ∷ _} (τ ∷ γ) (⊑∷ p q) =
+  cong₂ _∷_ (shift-unshift τ {τ' = x} p) (shiftΓ-unshiftΓ γ q)
