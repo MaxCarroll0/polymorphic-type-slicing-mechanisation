@@ -5,6 +5,7 @@ open import Data.Nat.Literals
 open import Data.Product using (_,_; proj₁; proj₂; Σ-syntax; ∃-syntax) renaming (_×_ to _∧_)
 open import Data.Sum using (_⊎_; inj₁; inj₂)
 open import Relation.Nullary using (yes; no; ¬_)
+open import Induction.WellFounded using (WellFounded; Acc; acc)
 open import Relation.Binary using (IsPartialOrder; IsDecPartialOrder; IsEquivalence; IsDecEquivalence)
 import Relation.Binary.Construct.On as On
 open import Relation.Binary.PropositionalEquality as Eq using (_≡_; _≢_; refl; subst; cong; cong₂)
@@ -113,10 +114,10 @@ minimality = proj₂
 --            Hence, it is a valid SynSlice
 
 static-gradual-syn-prog -- (simple helpers)
-  : ∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ}
-    → (ρₛ : ⌊ Γ , e ⌋)
+  : ∀ {n Γ e τ} → (D : n ； Γ ⊢ e ↦ τ)
+    → (ρₛ : ⌊ Γ , e ⌋) 
     → Σ[ ϕ ∈ ⌊ τ ⌋ ] n ； fstₛ ρₛ .↓ ⊢ sndₛ ρₛ .↓ ↦ ϕ .↓
-static-gradual-syn-prog {D = D} ρₛ
+static-gradual-syn-prog D ρₛ
   with static-gradual-syn ((fstₛ ρₛ) .proof) ((sndₛ ρₛ) .proof) D
 ...  | ϕt , (d , ϕt⊑τ) = ↑ ϕt⊑τ , d
 
@@ -133,7 +134,7 @@ _⊔syn_ : ∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} {υ₁ υ₂}
          → SynSlice D ◂ υ₁ → SynSlice D ◂ υ₂ → SynSlice D ◂ υ₁ ⊔ₛ υ₂
 _⊔syn_ {τ = τ} {D = D} {υ₁} {υ₂}
        s₁@(ρₛ₁ ⇑ ϕ₁ ∈ d₁ ⊒ υ₁⊑ϕ₁) s₂@(ρₛ₂ ⇑ ϕ₂ ∈ d₂ ⊒ υ₂⊑ϕ₂)
-  with static-gradual-syn-prog {D = D} (ρₛ₁ ⊔ₛ ρₛ₂) in eq
+  with static-gradual-syn-prog D (ρₛ₁ ⊔ₛ ρₛ₂) in eq
 ...  | ϕ⊔ , d⊔ = ρₛ₁ ⊔ₛ ρₛ₂ ⇑ ϕ⊔ ∈ d⊔ ⊒ υ⊔⊑ϕ⊔
                  where open ⊑ₛ {a = τ}
                        open ⊑ₛLat {a = τ}
@@ -209,15 +210,12 @@ _⊔syn_ {τ = τ} {D = D} {υ₁} {υ₂}
 --                                                      υ ⊔ₛ υ ≈⟨ ⊑ₛLat.⊔-idempotent υ ⟩
 --                                                      υ ∎!})
 
--- Postulate 4: Syn Slice (and hence also any derivation) has a minimal SynSlice
---              below it for any query slices υ
--- TODO: Prove via classical methods using the fact that a bottom element exists
+-- Theorem 4: Every SynSlice has a minimal SynSlice below it
 postulate
   minExists : ∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} {υ : ⌊ τ ⌋}
-                (s : SynSlice D ◂ υ)
+              (s : SynSlice D ◂ υ)
               → Σ[ (m , _) ∈ MinSynSlice D ◂ υ ]
-                  m ⊑ s
-
+                   m ⊑ s
 
 -- Postulate 5: Monotonicity: more precise type slice → more precise minimal slice
 postulate
