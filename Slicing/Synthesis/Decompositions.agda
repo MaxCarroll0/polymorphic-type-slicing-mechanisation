@@ -47,7 +47,7 @@ unmatch⇒      ()   _  _  | diff    | no _
 unmatch∀ : ∀ {τ τ'} → τ ⊔ ∀· □ ≡ ∀· τ' → ⌊ τ' ⌋ → ⌊ τ ⌋
 unmatch∀ {τ} eq s with diag τ (∀· □)
 unmatch∀      refl s | kind∀ = ∀·ₛ (subst ⌊_⌋ ⊔t-zeroᵣ s)
-unmatch∀ {τ} eq   s | diff with τ ≟t □
+unmatch∀ {τ} eq    s | diff with τ ≟t □
 ...                           | yes refl = ⊥ₛ
 unmatch∀      ()   _ | diff    | no _
 
@@ -324,4 +324,57 @@ min-λ:-decomposability {wf = wf} {D = D} {υ₁ = υ₁} (mλ: , min)
     λ:m⊑mλ: with m₂ | m₂⊑s₂ | m₂γ₀⊑ϕ₁
     ... | ((_ ∷ _ , _) isSlice (⊑∷ _ _ , _)) ⇑ _ ∈ _ ⊒ _
         | ⊑∷ _ γ₂⊑ , σ₂⊑ | _ = γ₂⊑ , ⊑λ ⊑t-refl σ₂⊑
+
+-- Let bindings
+defₛ : ∀ {e' e : Exp} → ⌊ e' ⌋ → ⌊ e ⌋ → ⌊ def e' ⊢ e ⌋
+defₛ (σ₁ isSlice σ₁⊑e') (σ₂ isSlice σ₂⊑e) = (def σ₁ ⊢ σ₂) isSlice (⊑def σ₁⊑e' σ₂⊑e)
+
+-- Lift two SynSlices to a SynSlice of (↦def D₁ D₂).
+-- The outer assumption comes from s₁
+defsyn : ∀ {n Γ e' e τ' τ} {D₁ : n ； Γ ⊢ e' ↦ τ'}
+           {D₂ : n ； (τ' ∷ Γ) ⊢ e ↦ τ} {υ' υ}
+         → (s₁ : SynSlice D₁ ◂ υ') → (s₂ : SynSlice D₂ ◂ υ)
+         → s₂ ↓γ ⊑a (s₁ .type .↓ ∷ s₁ ↓γ)
+         → SynSlice (↦def D₁ D₂) ◂ υ
+defsyn {D₁ = D₁} {D₂ = D₂}
+       (ρₛ₁ ⇑ ϕ₁ ∈ d₁ ⊒ υ'⊑ϕ₁) (ρₛ₂ ⇑ ϕ₂ ∈ d₂ ⊒ υ⊑ϕ₂) ctx⊑
+  with static-gradual-syn (⊑∷ ϕ₁⊑τ' (fstₛ ρₛ₁ .proof)) (sndₛ ρₛ₂ .proof) D₂
+  where ϕ₁⊑τ' = syn-precision (fstₛ ρₛ₁ .proof) (sndₛ ρₛ₁ .proof) D₁ d₁
+... | ϕ , d₂' , ϕ⊑τ
+  = (fstₛ ρₛ₁ ,ₛ defₛ (sndₛ ρₛ₁) (sndₛ ρₛ₂))
+    ⇑ ↑ ϕ⊑τ ∈ ↦def d₁ d₂'
+    ⊒ ⊑t-trans υ⊑ϕ₂ (syn-precision ctx⊑ ⊑e-refl d₂' d₂)
+
+min-def-decomposability
+  : ∀ {n Γ e' e τ' τ}
+      {D₁ : n ； Γ ⊢ e' ↦ τ'} {D₂ : n ； (τ' ∷ Γ) ⊢ e ↦ τ}
+      {υ : ⌊ τ ⌋}
+    → υ .↓ ≢ □
+    → ((mdef , _) : MinSynSlice (↦def D₁ D₂) ◂ υ)
+    → ∃[ υ' ]
+      Σ[ (m₁ , _) ∈ MinSynSlice D₁ ◂ υ' ]
+      Σ[ (m₂ , _) ∈ MinSynSlice D₂ ◂ υ ]
+      Σ[ ctx⊑ ∈ m₂ ↓γ ⊑a (m₁ .type .↓ ∷ m₁ ↓γ) ]
+        mdef ≈ (defsyn m₁ m₂ ctx⊑)
+min-def-decomposability {D₁ = D₁} {D₂ = D₂} υ≢□ (mdef , min)
+  with mdef .syn | mdef .valid | mdef ↓σ⊑ | mdef ↓ϕ⊑
+... | ↦□ | ⊑□ | _ | _ = ⊥-elim (υ≢□ refl)
+... | ↦def d₁ d₂ | υ⊑ϕ | ⊑def σ₁⊑e' σ₂⊑e | ϕ⊑τ
+  = ↑ ϕ₁⊑τ' , (m₁ , min-m₁) , (m₂ , min-m₂) , ctx⊑
+    , min (defsyn m₁ m₂ ctx⊑) defm⊑mdef
+  where
+    ϕ₁⊑τ' = syn-precision (mdef ↓γ⊑) σ₁⊑e' D₁ d₁
+    s₁ = ((mdef ↓γₛ) ,ₛ (_ isSlice σ₁⊑e')) ⇑ ↑ ϕ₁⊑τ' ∈ d₁ ⊒ ⊑t-refl
+    s₂ = (↑ (⊑∷ ϕ₁⊑τ' (mdef ↓γ⊑))) ,ₛ (↑ σ₂⊑e) ⇑ ↑ ϕ⊑τ ∈ d₂ ⊒ υ⊑ϕ
+    m₁ = minExists s₁ .proj₁ ↓s
+    min-m₁ = minimality (minExists s₁ .proj₁)
+    m₁⊑s₁ = minExists s₁ .proj₂
+    m₂ = minExists s₂ .proj₁ ↓s
+    min-m₂ = minimality (minExists s₂ .proj₁)
+    m₂⊑s₂ = minExists s₂ .proj₂
+    postulate ctx⊑ : m₂ ↓γ ⊑a (m₁ .type .↓ ∷ m₁ ↓γ)
+    defm⊑mdef : (defsyn m₁ m₂ ctx⊑) ↓ρ ⊑ mdef ↓ρ
+    defm⊑mdef with m₁ | m₂ | m₁⊑s₁ | m₂⊑s₂
+    ... | ρₛ₁ ⇑ _ ∈ _ ⊒ _ | ρₛ₂ ⇑ _ ∈ _ ⊒ _
+        | γ₁⊑ , σ₁'⊑ | γ₂⊑ , σ₂'⊑ = γ₁⊑ , ⊑def σ₁'⊑ σ₂'⊑
 
