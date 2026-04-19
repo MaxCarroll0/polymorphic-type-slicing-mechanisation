@@ -5,7 +5,7 @@ open import Data.List using (_∷_)
 open import Core
 open import Semantics.Statics
 open import Slicing.Synthesis.Synthesis using (SynSlice)
-open import Slicing.Synthesis.SynSliceCalc using (MinSyn; unmatch⇒; unmatch+; unmatch×)
+open import Slicing.Synthesis.SynSliceCalc using (MinSyn)
 open import Slicing.Analysis.Analysis
 
 module Slicing.Analysis.AnaSliceCalc where
@@ -49,8 +49,8 @@ data MinAna : ∀ {n Γ₀ C Γ τ p}
   minS∘₂     : ∀ {n Γ Γ' e₁ C τ₀ τ₁ τ₂ τ}
                  {D₁ : n ； Γ ⊢ e₁ ↦ τ₀} {eq : τ₀ ⊔ □ ⇒ □ ≡ τ₁ ⇒ τ₂}
                  {Cls' : n ； Γ ⊢ C at anaPos τ₁ ▷ Γ' [ ⇐mode τ ]}
-             → {υ : ⌊ τ ⌋} → (υ₁ : ⌊ τ₁ ⌋)
-             → MinSyn D₁ (unmatch⇒ eq υ₁ ⊥ₛ)
+             → {υ : ⌊ τ ⌋} → {Φ : ⌊ Γ ⌋} → (υ₁ : ⌊ τ₁ ⌋)
+             → MinSyn Φ D₁ (unmatch⇒ eq υ₁ ⊥ₛ)
              → MinAna Cls' υ
              → MinAna (s∘₂ D₁ eq Cls') υ
 
@@ -75,16 +75,16 @@ data MinAna : ∀ {n Γ₀ C Γ τ p}
   minScase₁  : ∀ {n Γ Γ' e C e' τ₀ τ₁ τ₂ τ}
                  {D : n ； Γ ⊢ e ↦ τ₀} {eq : τ₀ ⊔ □ + □ ≡ τ₁ + τ₂}
                  {Cls' : n ； (τ₁ ∷ Γ) ⊢ C at synPos ▷ Γ' [ ⇐mode τ ]}
-             → {υ : ⌊ τ ⌋} → (υ₁ : ⌊ τ₁ ⌋)
-             → MinSyn D (unmatch+ eq υ₁ ⊥ₛ)
+             → {υ : ⌊ τ ⌋} → {Φ : ⌊ Γ ⌋} → (υ₁ : ⌊ τ₁ ⌋)
+             → MinSyn Φ D (unmatch+ eq υ₁ ⊥ₛ)
              → MinAna Cls' υ
              → MinAna (scase₁ {e' = e'} D eq Cls') υ
 
   minScase₂  : ∀ {n Γ Γ' e e' C τ₀ τ₁ τ₂ τ}
                  {D : n ； Γ ⊢ e ↦ τ₀} {eq : τ₀ ⊔ □ + □ ≡ τ₁ + τ₂}
                  {Cls' : n ； (τ₂ ∷ Γ) ⊢ C at synPos ▷ Γ' [ ⇐mode τ ]}
-             → {υ : ⌊ τ ⌋} → (υ₂ : ⌊ τ₂ ⌋)
-             → MinSyn D (unmatch+ eq ⊥ₛ υ₂)
+             → {υ : ⌊ τ ⌋} → {Φ : ⌊ Γ ⌋} → (υ₂ : ⌊ τ₂ ⌋)
+             → MinSyn Φ D (unmatch+ eq ⊥ₛ υ₂)
              → MinAna Cls' υ
              → MinAna (scase₂ {e' = e'} D eq Cls') υ
 
@@ -115,8 +115,8 @@ data MinAna : ∀ {n Γ₀ C Γ τ p}
   minSdef₂   : ∀ {n Γ Γ' e C τ' τ}
                  {D : n ； Γ ⊢ e ↦ τ'}
                  {Cls' : n ； (τ' ∷ Γ) ⊢ C at synPos ▷ Γ' [ ⇐mode τ ]}
-             → {υ : ⌊ τ ⌋} → (υ' : ⌊ τ' ⌋)
-             → MinSyn D υ'
+             → {υ : ⌊ τ ⌋} → {Φ : ⌊ Γ ⌋} → (υ' : ⌊ τ' ⌋)
+             → MinSyn Φ D υ'
              → MinAna Cls' υ
              → MinAna (sdef₂ D Cls') υ
 
@@ -168,16 +168,16 @@ data MinAna : ∀ {n Γ₀ C Γ τ p}
   minAcase₁  : ∀ {n Γ Γ' e C e' τ τ₀ τ₁ τ₂ τ'}
                  {D : n ； Γ ⊢ e ↦ τ₀} {eq : τ₀ ⊔ □ + □ ≡ τ₁ + τ₂}
                  {Cls' : n ； (τ₁ ∷ Γ) ⊢ C at anaPos τ ▷ Γ' [ ⇐mode τ' ]}
-             → {υ : ⌊ τ' ⌋} → (υ₁ : ⌊ τ₁ ⌋)
-             → MinSyn D (unmatch+ eq υ₁ ⊥ₛ)
+             → {υ : ⌊ τ' ⌋} → {Φ : ⌊ Γ ⌋} → (υ₁ : ⌊ τ₁ ⌋)
+             → MinSyn Φ D (unmatch+ eq υ₁ ⊥ₛ)
              → MinAna Cls' υ
              → MinAna (acase₁ {e' = e'} D eq Cls') υ
 
   minAcase₂  : ∀ {n Γ Γ' e e' C τ τ₀ τ₁ τ₂ τ'}
                  {D : n ； Γ ⊢ e ↦ τ₀} {eq : τ₀ ⊔ □ + □ ≡ τ₁ + τ₂}
                  {Cls' : n ； (τ₂ ∷ Γ) ⊢ C at anaPos τ ▷ Γ' [ ⇐mode τ' ]}
-             → {υ : ⌊ τ' ⌋} → (υ₂ : ⌊ τ₂ ⌋)
-             → MinSyn D (unmatch+ eq ⊥ₛ υ₂)
+             → {υ : ⌊ τ' ⌋} → {Φ : ⌊ Γ ⌋} → (υ₂ : ⌊ τ₂ ⌋)
+             → MinSyn Φ D (unmatch+ eq ⊥ₛ υ₂)
              → MinAna Cls' υ
              → MinAna (acase₂ {e' = e'} D eq Cls') υ
 
@@ -190,8 +190,8 @@ data MinAna : ∀ {n Γ₀ C Γ τ p}
   minAdef₂   : ∀ {n Γ Γ' e C τ τ' τ''}
                  {D : n ； Γ ⊢ e ↦ τ'}
                  {Cls' : n ； (τ' ∷ Γ) ⊢ C at anaPos τ ▷ Γ' [ ⇐mode τ'' ]}
-             → {υ : ⌊ τ'' ⌋} → (υ' : ⌊ τ' ⌋)
-             → MinSyn D υ'
+             → {υ : ⌊ τ'' ⌋} → {Φ : ⌊ Γ ⌋} → (υ' : ⌊ τ' ⌋)
+             → MinSyn Φ D υ'
              → MinAna Cls' υ
              → MinAna (adef₂ D Cls') υ
 

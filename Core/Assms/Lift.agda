@@ -1,8 +1,10 @@
 module Core.Assms.Lift where
 
-open import Data.Nat using (ℕ)
+open import Data.Nat using (ℕ; zero; suc)
 open import Data.List using (_∷_)
-open import Relation.Binary.PropositionalEquality using (_≡_)
+open import Data.Product using (_,_; proj₁; proj₂) renaming (_×_ to _∧_)
+open import Data.Maybe using (just)
+open import Relation.Binary.PropositionalEquality using (_≡_; refl)
 
 open import Core.Typ
 open import Core.Assms.Base
@@ -40,3 +42,12 @@ shift-unshiftΓ = shiftΓ-unshiftΓ
 
 shift-unshiftΓₛ : ∀ {Γ a} (γₛ : ⌊ shiftΓ a Γ ⌋) → shiftΓₛ (unshiftΓₛ γₛ) ≈ₛ γₛ
 shift-unshiftΓₛ {a = a} (γ isSlice γ⊑) = shift-unshiftΓ γ γ⊑
+
+-- Cons a type slice onto an assumption slice
+_∷ₛ_ : ∀ {τ : Typ} {Γ : Assms} → ⌊ τ ⌋ → ⌊ Γ ⌋ → ⌊ τ ∷ Γ ⌋
+(τ' isSlice τ'⊑τ) ∷ₛ (Γ' isSlice Γ'⊑Γ) = (τ' ∷ Γ') isSlice (⊑∷ τ'⊑τ Γ'⊑Γ)
+
+-- Lookup a type slice from an assumption slice by de Bruijn index
+lookupₛ : ∀ {Γ : Assms} {τ : Typ} {k : ℕ} → ⌊ Γ ⌋ → Γ at k ≡ just τ → ⌊ τ ⌋
+lookupₛ {k = zero}  ((_ ∷ _) isSlice (⊑∷ h _)) refl = _ isSlice h
+lookupₛ {k = suc _} ((_ ∷ _) isSlice (⊑∷ _ t)) eq   = lookupₛ (_ isSlice t) eq

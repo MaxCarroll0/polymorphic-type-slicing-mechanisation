@@ -91,3 +91,19 @@ unmatch∀      refl s | kind∀ = ∀·ₛ (subst ⌊_⌋ ⊔t-zeroᵣ s)
 unmatch∀ {τ} eq    s | diff with τ ≟t □
 ...                           | yes refl = ⊥ₛ
 unmatch∀      ()   _ | diff    | no _
+
+unmatch× : ∀ {τ τ₁ τ₂} → τ ⊔ □ × □ ≡ τ₁ × τ₂ → ⌊ τ₁ ⌋ → ⌊ τ₂ ⌋ → ⌊ τ ⌋
+unmatch× {τ} eq s₁ s₂ with diag τ (□ × □)
+unmatch×      refl s₁ s₂ | kind× =
+  subst ⌊_⌋ ⊔t-zeroᵣ s₁ ×ₛ subst ⌊_⌋ ⊔t-zeroᵣ s₂
+unmatch× {τ} eq   s₁ s₂ | diff with τ ≟t □
+...                                | yes refl = ⊥ₛ
+unmatch×      ()   _  _  | diff    | no _
+
+unmatch+ : ∀ {τ τ₁ τ₂} → τ ⊔ □ + □ ≡ τ₁ + τ₂ → ⌊ τ₁ ⌋ → ⌊ τ₂ ⌋ → ⌊ τ ⌋
+unmatch+ {τ} eq s₁ s₂ with diag τ (□ + □)
+unmatch+      refl s₁ s₂ | kind+ =
+  ↑ (⊑+ (subst ⌊_⌋ ⊔t-zeroᵣ s₁ .proof) (subst ⌊_⌋ ⊔t-zeroᵣ s₂ .proof))
+unmatch+ {τ} eq   s₁ s₂ | diff with τ ≟t □
+...                                | yes refl = ⊥ₛ
+unmatch+      ()   _  _  | diff    | no _
