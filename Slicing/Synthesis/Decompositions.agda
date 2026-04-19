@@ -54,6 +54,9 @@ unmatch∀      ()   _ | diff    | no _
 unsub : ∀ {τ' σ} → ⌊ [ zero ↦ σ ] τ' ⌋ → ⌊ τ' ⌋
 unsub {τ'} s = ↑ (⊑Lat.x⊓y⊑y (s .↓) τ')
 
+subₛ : ∀ {τ' σ} → ⌊ σ ⌋ → ⌊ τ' ⌋ → ⌊ [ zero ↦ σ ] τ' ⌋
+subₛ σ' υ' = ↑ (sub-⊑ zero (σ' .proof) (υ' .proof))
+
 -- Pair construction: given m₁ : D₁ ◂ υ₁ and m₂ : D₂ ◂ υ₂, form
 -- a slice of ↦& D₁ D₂ ◂ (υ₁ ×ₛ υ₂) by joining assumptions (γ₁ ⊔ γ₂)
 -- and re-deriving both components under the shared context.
@@ -242,6 +245,73 @@ min-∘-decomposability {D₁ = D₁} {D₂ = D₂} υ≢□ (m∘ , min)
     ... | ρₛ ⇑ .(_ ⇒ _) isSlice (⊑⇒ _ _) ∈ _ ⊒ ⊑⇒ ⊑□ _ | γ⊑ , σ⊑
       = γ⊑ , ⊑∘ σ⊑ ⊑□
 ... | ⊑□ rewrite ⊔t-zeroₗ {□ ⇒ □} with refl ← isfun with ⊑□ ← υ⊑ϕ₂ = ⊥-elim (υ≢□ refl)
+
+-- Type application
+<>ₛ : ∀ {e : Exp} {τ : Typ} → ⌊ e ⌋ → ⌊ τ ⌋ → ⌊ e < τ > ⌋
+<>ₛ (σ isSlice σ⊑e) (τ isSlice τ⊑σ) = (σ < τ >) isSlice (⊑<> σ⊑e τ⊑σ)
+
+<>typₛ : ∀ {e : Exp} {τ : Typ} → ⌊ e < τ > ⌋ → ⌊ τ ⌋
+<>typₛ (□ isSlice proof₁) = □ isSlice ⊑□
+<>typₛ (_ < υ > isSlice ⊑<> _ υ⊑τ) = υ isSlice υ⊑τ
+
+-- Given a type annotation ϕ₁ to substitute, construct a slice of a type application.
+-- The constraint is υ ⊑ₛ subₛ ϕ₁ υ₂ (not ≈ₛ): the query υ is at most as precise as
+-- [ϕ₁/0]υ₂. This suffices because the valid field needs υ ⊑ₛ type where
+-- type = [ϕ₁/0]ϕ' and υ₂ ⊑ₛ ϕ', so transitivity through sub-⊑ gives the result.
+--
+-- Equality (≈ₛ) is too strong: take τ' = Var 0, σ = * ⇒ *, υ .↓ = * ⇒ □.
+-- Any υ' ⊑t Var 0 is either □ or Var 0, giving [0 ↦ σ_τ] υ' ∈ {□, σ_τ}.
+-- Neither equals * ⇒ □ unless σ_τ = * ⇒ □, which minimality doesn't guarantee
+-- (σ_τ is part of a globally minimal program slice, not independently minimized).
+<>syn : ∀ {n Γ e τ' σ}
+          {D : n ； Γ ⊢ e ↦ ∀· τ'}
+          {wf : n ⊢wf σ} {υ₂ : ⌊ τ' ⌋}
+          {υ : ⌊ [ zero ↦ σ ] τ' ⌋}
+        → (ϕ₁ : ⌊ σ ⌋)
+        → υ ⊑ₛ subₛ ϕ₁ υ₂
+        → SynSlice D ◂ (∀·ₛ υ₂)
+        → SynSlice (↦<> D (⊔□∀□ {τ'}) wf) ◂ υ
+<>syn {D = D} {wf = wf} ϕ₁ υ⊑sub s
+  with s ↓ϕ | s .valid | s ↓ϕ⊑ | s .syn
+... | ∀· ϕ' | ⊑∀ υ'⊑ϕ' | ⊑∀ ϕ'⊑τ' | d
+  = (fstₛ (s ↓ρₛ) ,ₛ <>ₛ (sndₛ (s ↓ρₛ)) ϕ₁)
+    ⇑ ↑ (sub-⊑ zero (ϕ₁ .proof) ϕ'⊑τ')
+    ∈ ↦<> d (⊔□∀□ {ϕ'}) (wf-⊑ wf (ϕ₁ .proof))
+    ⊒ ⊑t-trans υ⊑sub (sub-⊑ zero ⊑t-refl υ'⊑ϕ')
+
+-- A min type app has an annotation ϕ₁ and a min syn slice of the typ fun
+-- where substituting ϕ₁ into the body gives a type at least as precise as υ
+min-<>-decomposability
+  : ∀ {n Γ e τ' σ}
+      {D : n ； Γ ⊢ e ↦ ∀· τ'}
+      {wf : n ⊢wf σ}
+      {υ : ⌊ [ zero ↦ σ ] τ' ⌋}
+    → υ .↓ ≢ □
+    → ((m<> , _) : MinSynSlice (↦<> D (⊔□∀□ {τ'}) wf) ◂ υ)
+    → ∃[ υ' ] ∃[ ϕ₁ ]
+      Σ[ (m∀ , _) ∈ MinSynSlice D ◂ (∀·ₛ υ') ]
+      Σ[ υsub ∈ υ ⊑ₛ subₛ ϕ₁ υ' ]
+        ϕ₁ ≈ₛ <>typₛ (m<> ↓σₛ)
+        ∧ m<> ≈ <>syn ϕ₁ υsub m∀
+min-<>-decomposability {D = D} {wf = wf} υ≢□ (m<> , min)
+  with m<> .syn | m<> .valid | m<> .type | m<> ↓σ⊑
+... | ↦□ | ⊑□ | _ | _ = ⊥-elim (υ≢□ refl)
+... | ↦<> d' isfun wf' | υ⊑ϕ | ϕ isSlice ϕ⊑τ | ⊑<> σ'⊑e σ_τ⊑σ
+  with syn-precision (m<> ↓γ⊑) σ'⊑e D d'
+... | ⊑∀ {τ = ϕ''} ϕ''⊑τ'
+  rewrite ⊔t-zeroᵣ {ϕ''} with refl ← isfun
+  = ↑ ϕ''⊑τ' , ↑ σ_τ⊑σ , (m∀ , min∀) , υ⊑ϕ , refl
+    , min (<>syn (↑ σ_τ⊑σ) υ⊑ϕ m∀) <>m∀⊑m<>
+  where
+    s∀ = ((m<> ↓γₛ) ,ₛ (↑ σ'⊑e))
+           ⇑ ∀·ₛ (↑ ϕ''⊑τ') ∈ d' ⊒ ⊑t-refl
+    m∀ = minExists s∀ .proj₁ ↓s
+    min∀ = minimality (minExists s∀ .proj₁)
+    <>m∀⊑m<> : (<>syn (↑ σ_τ⊑σ) υ⊑ϕ m∀) ↓ρ ⊑ m<> ↓ρ
+    <>m∀⊑m<> with m∀ | minExists s∀ .proj₂
+    ... | ρₛ ⇑ .(∀· _) isSlice (⊑∀ _) ∈ _ ⊒ ⊑∀ _ | γ⊑ , σ⊑
+      = γ⊑ , ⊑<> σ⊑ ⊑t-refl
+... | ⊑□ rewrite ⊔t-zeroₗ {∀· □} with refl ← isfun with ⊑□ ← υ⊑ϕ = ⊥-elim (υ≢□ refl)
 
 -- Type abstraction
 Λₛ : ∀ {e : Exp} → ⌊ e ⌋ → ⌊ Λ e ⌋
@@ -437,4 +507,160 @@ min-def-decomposability {D₁ = D₁} {D₂ = D₂} υ≢□ (mdef , min)
     ... | ρₛ₁ ⇑ _ ∈ _ ⊒ _ | ((_ ∷ _ , _) isSlice (⊑∷ _ _ , _)) ⇑ _ ∈ _ ⊒ _
         | γ₁⊑ , σ₁'⊑ | _ , σ₂'⊑ | _ | tl⊑
       = HasJoin.closure assms-join γ₁⊑ tl⊑ , ⊑def σ₁'⊑ σ₂'⊑
+
+-- Case expressions
+_+ₛ_ : ∀ {τ₁ τ₂ : Typ} → ⌊ τ₁ ⌋ → ⌊ τ₂ ⌋ → ⌊ τ₁ + τ₂ ⌋
+s₁ +ₛ s₂ = (s₁ .↓ + s₂ .↓) isSlice ⊑+ (s₁ .proof) (s₂ .proof)
+
+caseₛ : ∀ {e e₁ e₂ : Exp} → ⌊ e ⌋ → ⌊ e₁ ⌋ → ⌊ e₂ ⌋ → ⌊ case e of e₁ · e₂ ⌋
+caseₛ (σ isSlice p) (σ₁ isSlice p₁) (σ₂ isSlice p₂) =
+  (case σ of σ₁ · σ₂) isSlice (⊑case p p₁ p₂)
+
+fst+ₛ : ∀ {τ₁ τ₂ : Typ} → ⌊ τ₁ + τ₂ ⌋ → ⌊ τ₁ ⌋
+fst+ₛ (□ isSlice ⊑□) = ⊥ₛ
+fst+ₛ ((_ + _) isSlice ⊑+ p _) = _ isSlice p
+
+snd+ₛ : ∀ {τ₁ τ₂ : Typ} → ⌊ τ₁ + τ₂ ⌋ → ⌊ τ₂ ⌋
+snd+ₛ (□ isSlice ⊑□) = ⊥ₛ
+snd+ₛ ((_ + _) isSlice ⊑+ _ q) = _ isSlice q
+
+-- fst+ₛ/snd+ₛ are monotone w.r.t. slice precision
+fst+ₛ-⊑ : ∀ {τ₁ τ₂} {s₁ s₂ : ⌊ τ₁ + τ₂ ⌋} → s₁ ⊑ₛ s₂ → fst+ₛ s₁ ⊑ₛ fst+ₛ s₂
+fst+ₛ-⊑ {s₁ = □ isSlice ⊑□} _ = ⊑□
+fst+ₛ-⊑ {s₁ = (_ + _) isSlice ⊑+ _ _} {□ isSlice ⊑□} ()
+fst+ₛ-⊑ {s₁ = (_ + _) isSlice ⊑+ _ _} {(_ + _) isSlice ⊑+ _ _} (⊑+ p _) = p
+
+snd+ₛ-⊑ : ∀ {τ₁ τ₂} {s₁ s₂ : ⌊ τ₁ + τ₂ ⌋} → s₁ ⊑ₛ s₂ → snd+ₛ s₁ ⊑ₛ snd+ₛ s₂
+snd+ₛ-⊑ {s₁ = □ isSlice ⊑□} _ = ⊑□
+snd+ₛ-⊑ {s₁ = (_ + _) isSlice ⊑+ _ _} {□ isSlice ⊑□} ()
+snd+ₛ-⊑ {s₁ = (_ + _) isSlice ⊑+ _ _} {(_ + _) isSlice ⊑+ _ _} (⊑+ _ q) = q
+
+-- fst+ₛ/snd+ₛ precision through ⊔-+-⊑ decomposition
+fst+ₛ-⊔ : ∀ {τ₁ τ₂} (s : ⌊ τ₁ + τ₂ ⌋) {τ τ₁ τ₂}
+         → s .↓ ⊑t τ → τ ⊔ □ + □ ≡ τ₁ + τ₂ → fst+ₛ s .↓ ⊑t τ₁
+fst+ₛ-⊔ (□ isSlice ⊑□) _ _ = ⊑□
+fst+ₛ-⊔ ((_ + _) isSlice ⊑+ _ _) (⊑+ {τ₁' = a'} {τ₂' = b'} p _) eq
+  rewrite ⊔t-zeroᵣ {a'} | ⊔t-zeroᵣ {b'} with refl ← eq = p
+
+snd+ₛ-⊔ : ∀ {τ₁ τ₂} (s : ⌊ τ₁ + τ₂ ⌋) {τ τ₁ τ₂}
+         → s .↓ ⊑t τ → τ ⊔ □ + □ ≡ τ₁ + τ₂ → snd+ₛ s .↓ ⊑t τ₂
+snd+ₛ-⊔ (□ isSlice ⊑□) _ _ = ⊑□
+snd+ₛ-⊔ ((_ + _) isSlice ⊑+ _ _) (⊑+ {τ₁' = a'} {τ₂' = b'} _ q) eq
+  rewrite ⊔t-zeroᵣ {a'} | ⊔t-zeroᵣ {b'} with refl ← eq = q
+
+-- Given sub-slices of a case scrutinee and both branches, construct a case slice.
+-- Like with funs/bindings: join outer assumptions of s₀, tl(s₁), tl(s₂)
+-- Scrutinee has query υ₁' +ₛ υ₂': branches hd types dervied from the scrutinee's
+-- synthesized sum components 
+-- Each branch head must use at most the information provided by the scrutinee:
+--   hdₛ (sᵢ ↓γₛ) ⊑ₛ s₀ .type
+-- The result type is a join of the branch types, requiring consistency from c.
+-- The result query υ cannot be more precise than the queries on the branches
+casesyn : ∀ {n Γ e e₁ e₂ τ₁ τ₂ τ₁' τ₂'}
+            {D : n ； Γ ⊢ e ↦ τ₁ + τ₂}
+            {D₁ : n ； (τ₁ ∷ Γ) ⊢ e₁ ↦ τ₁'} {D₂ : n ； (τ₂ ∷ Γ) ⊢ e₂ ↦ τ₂'}
+            {c : τ₁' ~ τ₂'} {υ : ⌊ τ₁' ⊔ τ₂' ⌋} {ς : ⌊ τ₁ + τ₂ ⌋} {υ₁ υ₂}
+          → (s₀ : SynSlice D ◂ ς)
+          → (s₁ : SynSlice D₁ ◂ υ₁) → hdₛ (s₁ ↓γₛ) ⊑ₛ fst+ₛ (s₀ .type)
+          → (s₂ : SynSlice D₂ ◂ υ₂) → hdₛ (s₂ ↓γₛ) ⊑ₛ snd+ₛ (s₀ .type)
+          → υ .↓ ⊑t s₁ .type .↓ ⊔ s₂ .type .↓
+          → SynSlice (↦case D (⊔□+□ {τ₁} {τ₂}) D₁ D₂ c) ◂ υ
+casesyn {D = D} {D₁ = D₁} {D₂ = D₂} {c = c}
+        (ρₛ₀ ⇑ ϕ₀ ∈ d₀ ⊒ _)
+        (((_ ∷ γ₁ , σ₁) isSlice (⊑∷ _ γ₁⊑Γ , σ₁⊑e₁)) ⇑ ϕ₁ ∈ d₁ ⊒ υ₁⊑ϕ₁) sγ₁⊑
+        (((_ ∷ γ₂ , σ₂) isSlice (⊑∷ _ γ₂⊑Γ , σ₂⊑e₂)) ⇑ ϕ₂ ∈ d₂ ⊒ υ₂⊑ϕ₂) sγ₂⊑
+        υ⊑⊔
+  with static-gradual-syn (γₛ⊔ .proof) (sndₛ ρₛ₀ .proof) D
+  where γₛ⊔ = (fstₛ ρₛ₀ ⊔ₛ (↑ γ₁⊑Γ)) ⊔ₛ (↑ γ₂⊑Γ)
+... | τs , ds , τs⊑
+  with ⊔-+-⊑ τs⊑ (⊔□+□ {_} {_})
+  where γₛ⊔ = (fstₛ ρₛ₀ ⊔ₛ (↑ γ₁⊑Γ)) ⊔ₛ (↑ γ₂⊑Γ)
+... | _ , _ , ms , pa , pb
+  with static-gradual-syn (⊑∷ pa (γₛ⊔ .proof)) σ₁⊑e₁ D₁
+     | static-gradual-syn (⊑∷ pb (γₛ⊔ .proof)) σ₂⊑e₂ D₂
+  where γₛ⊔ = (fstₛ ρₛ₀ ⊔ₛ (↑ γ₁⊑Γ)) ⊔ₛ (↑ γ₂⊑Γ)
+... | τl , dl , pl | τr , dr , pr
+  = (γₛ⊔ ,ₛ caseₛ (sndₛ ρₛ₀) (↑ σ₁⊑e₁) (↑ σ₂⊑e₂))
+    ⇑ ↑ (⊔-mono-⊑ c pl pr)
+    ∈ ↦case ds ms dl dr (~-⊑-down c pl pr)
+    ⊒ ⊑t-trans υ⊑⊔ (⊔-mono-⊑ (~-⊑-down c pl pr) ϕ₁⊑pl ϕ₂⊑pr)
+  where
+    γₛ⊔ = (fstₛ ρₛ₀ ⊔ₛ (↑ γ₁⊑Γ)) ⊔ₛ (↑ γ₂⊑Γ)
+    γ₀⊑⊔ = ⊑ₛ.trans {i = fstₛ ρₛ₀} {fstₛ ρₛ₀ ⊔ₛ (↑ γ₁⊑Γ)} {γₛ⊔}
+                     (⊑ₛLat.x⊑ₛx⊔ₛy (fstₛ ρₛ₀) (↑ γ₁⊑Γ))
+                     (⊑ₛLat.x⊑ₛx⊔ₛy (fstₛ ρₛ₀ ⊔ₛ (↑ γ₁⊑Γ)) (↑ γ₂⊑Γ))
+    scrut⊑ = syn-precision γ₀⊑⊔ ⊑e-refl ds d₀
+    hd₁⊑pa = ⊑t-trans sγ₁⊑ (fst+ₛ-⊔ ϕ₀ scrut⊑ ms)
+    hd₂⊑pb = ⊑t-trans sγ₂⊑ (snd+ₛ-⊔ ϕ₀ scrut⊑ ms)
+    γ₁⊑⊔₃ = ⊑ₛ.trans {i = ↑ γ₁⊑Γ} {fstₛ ρₛ₀ ⊔ₛ (↑ γ₁⊑Γ)} {γₛ⊔}
+                      (⊑ₛLat.y⊑ₛx⊔ₛy (fstₛ ρₛ₀) (↑ γ₁⊑Γ))
+                      (⊑ₛLat.x⊑ₛx⊔ₛy (fstₛ ρₛ₀ ⊔ₛ (↑ γ₁⊑Γ)) (↑ γ₂⊑Γ))
+    γ₂⊑⊔₃ = ⊑ₛLat.y⊑ₛx⊔ₛy (fstₛ ρₛ₀ ⊔ₛ (↑ γ₁⊑Γ)) (↑ γ₂⊑Γ)
+    ϕ₁⊑pl = syn-precision (⊑∷ hd₁⊑pa γ₁⊑⊔₃) ⊑e-refl dl d₁
+    ϕ₂⊑pr = syn-precision (⊑∷ hd₂⊑pb γ₂⊑⊔₃) ⊑e-refl dr d₂
+
+-- A minimal case slice decomposes into minimal scrutinee and branch slices.
+-- The scrutinee query is υ₁' +ₛ υ₂' (not ⊥ₛ +ₛ ⊥ₛ): the branch heads derive
+-- type info from the scrutinee's sum components (as in def, where the body head
+-- derives info from the binding's synthesized type).
+-- Branch head constraints link to the scrutinee's synthesized type.
+min-case-decomposability
+  : ∀ {n Γ e e₁ e₂ τ₁ τ₂ τ₁' τ₂'}
+      {D : n ； Γ ⊢ e ↦ τ₁ + τ₂}
+      {D₁ : n ； (τ₁ ∷ Γ) ⊢ e₁ ↦ τ₁'} {D₂ : n ； (τ₂ ∷ Γ) ⊢ e₂ ↦ τ₂'}
+      {c : τ₁' ~ τ₂'}
+      {υ : ⌊ τ₁' ⊔ τ₂' ⌋}
+    → υ .↓ ≢ □
+    → ((mc , _) : MinSynSlice (↦case D (⊔□+□ {τ₁} {τ₂}) D₁ D₂ c) ◂ υ)
+    → ∃[ ς ] ∃[ υ₁ ] ∃[ υ₂ ]
+      Σ[ (m₀ , _) ∈ MinSynSlice D ◂ ς ]
+      Σ[ (m₁ , _) ∈ MinSynSlice D₁ ◂ υ₁ ]
+      Σ[ (m₂ , _) ∈ MinSynSlice D₂ ◂ υ₂ ]
+      Σ[ m₁γ₀⊑ ∈ hdₛ (m₁ ↓γₛ) ⊑ₛ fst+ₛ (m₀ .type) ]
+      Σ[ m₂γ₀⊑ ∈ hdₛ (m₂ ↓γₛ) ⊑ₛ snd+ₛ (m₀ .type) ]
+      Σ[ υ⊑⊔ ∈ υ .↓ ⊑t m₁ .type .↓ ⊔ m₂ .type .↓ ]
+        mc ≈ casesyn m₀ m₁ m₁γ₀⊑ m₂ m₂γ₀⊑ υ⊑⊔
+min-case-decomposability {τ₁ = τ₁} {τ₂ = τ₂} {D = D} {D₁ = D₁} {D₂ = D₂} {c = c} υ≢□ (mc , min)
+  with mc .syn | mc ↓σ⊑
+... | ↦□ | _ with ⊑□ ← mc .valid = ⊥-elim (υ≢□ refl)
+... | ↦case d₀ isfun d₁ d₂ c' | ⊑case σ₀⊑e σ₁⊑e₁ σ₂⊑e₂
+  with syn-precision (mc ↓γ⊑) σ₀⊑e D d₀
+... | ⊑□ rewrite ⊔t-zeroₗ {□ + □} with refl ← isfun = body ⊑□ ⊑□ where
+  body : ∀ {ϕ₁ ϕ₂} → ϕ₁ ⊑t τ₁ → ϕ₂ ⊑t τ₂ → _
+  body = {!!}
+... | ⊑+ {τ₁ = ϕ₁} {τ₂ = ϕ₂} ϕ₁⊑τ₁ ϕ₂⊑τ₂
+  rewrite ⊔t-zeroᵣ {ϕ₁} | ⊔t-zeroᵣ {ϕ₂} with refl ← isfun
+  = _ , _ , _ , (m₀ , min₀) , (m₁ , min₁) , (m₂ , min₂)
+    , m₁γ₀⊑ , m₂γ₀⊑ , υ⊑⊔
+    , min (casesyn m₀ m₁ m₁γ₀⊑ m₂ m₂γ₀⊑ υ⊑⊔) casem⊑mc
+  where
+    ϕ₁'⊑τ₁' = syn-precision (⊑∷ ϕ₁⊑τ₁ (mc ↓γ⊑)) σ₁⊑e₁ D₁ d₁
+    ϕ₂'⊑τ₂' = syn-precision (⊑∷ ϕ₂⊑τ₂ (mc ↓γ⊑)) σ₂⊑e₂ D₂ d₂
+    c″ = ~-⊑-down c ϕ₁'⊑τ₁' ϕ₂'⊑τ₂'
+    s₀ = ((mc ↓γₛ) ,ₛ (↑ σ₀⊑e))
+           ⇑ (↑ ϕ₁⊑τ₁) +ₛ (↑ ϕ₂⊑τ₂) ∈ d₀ ⊒ ⊑t-refl
+    s₁ = (↑ (⊑∷ ϕ₁⊑τ₁ (mc ↓γ⊑))) ,ₛ (↑ σ₁⊑e₁) ⇑ ↑ ϕ₁'⊑τ₁' ∈ d₁ ⊒ ⊑t-refl
+    s₂ = (↑ (⊑∷ ϕ₂⊑τ₂ (mc ↓γ⊑))) ,ₛ (↑ σ₂⊑e₂) ⇑ ↑ ϕ₂'⊑τ₂' ∈ d₂ ⊒ ⊑t-refl
+    m₀ = minExists s₀ .proj₁ ↓s
+    min₀ = minimality (minExists s₀ .proj₁)
+    m₁ = minExists s₁ .proj₁ ↓s
+    min₁ = minimality (minExists s₁ .proj₁)
+    m₂ = minExists s₂ .proj₁ ↓s
+    min₂ = minimality (minExists s₂ .proj₁)
+    m₁γ₀⊑ : hdₛ (m₁ ↓γₛ) ⊑ₛ fst+ₛ (m₀ .type)
+    m₁γ₀⊑ = ⊑t-trans (hdₛ-⊑ (m₁ ↓γₛ) (minExists s₁ .proj₂ .proj₁))
+                      (fst+ₛ-⊑ (m₀ .valid))
+    m₂γ₀⊑ : hdₛ (m₂ ↓γₛ) ⊑ₛ snd+ₛ (m₀ .type)
+    m₂γ₀⊑ = ⊑t-trans (hdₛ-⊑ (m₂ ↓γₛ) (minExists s₂ .proj₂ .proj₁))
+                      (snd+ₛ-⊑ (m₀ .valid))
+    υ⊑⊔ : _ ⊑t _
+    υ⊑⊔ = ⊑t-trans (mc .valid)
+            (⊔-mono-⊑ (~-⊑-down c (m₁ ↓ϕ⊑) (m₂ ↓ϕ⊑)) (m₁ .valid) (m₂ .valid))
+    m₀⊑s₀ = minExists s₀ .proj₂
+    m₁⊑s₁ = minExists s₁ .proj₂
+    m₂⊑s₂ = minExists s₂ .proj₂
+    m₁tl⊑ = tlₛ-⊑ (m₁ ↓γₛ) (m₁⊑s₁ .proj₁)
+    m₂tl⊑ = tlₛ-⊑ (m₂ ↓γₛ) (m₂⊑s₂ .proj₁)
+    casem⊑mc : (casesyn m₀ m₁ m₁γ₀⊑ m₂ m₂γ₀⊑ υ⊑⊔) ↓ρ ⊑ mc ↓ρ
+    casem⊑mc = {!!}
 

@@ -75,14 +75,18 @@ mutual
               --------------------
               n ； Γ ⊢ π₂ e ↦ τ₂
 
+    -- Cases are the only syn rule actually requiring explicit consistency,
+    -- as we don't know the uppermost constructor of the synthesised type (τ₁' ⊔ τ₂')
     ↦case : ∀ {n : ℕ} {Γ : Assms} {e e₁ e₂ : Exp} {τ τ₁ τ₂ τ₁' τ₂' : Typ} →
               n ； Γ ⊢ e ↦ τ                                →
               τ ⊔ □ + □ ≡ τ₁ + τ₂                           →
               n ； (τ₁ ∷ Γ) ⊢ e₁ ↦ τ₁'                      →
               n ； (τ₂ ∷ Γ) ⊢ e₂ ↦ τ₂'                      →
-              τ₁' ~ τ₂'                                     →
+              τ₁' ~ τ₂'                                     → 
               ----------------------------------
               n ； Γ ⊢ case e of e₁ · e₂ ↦ τ₁' ⊔ τ₂'
+
+    -- TODO: Synthesis rules for sum injections?
 
   data _；_⊢_↤_ : ℕ → Assms → Exp → Typ → Set where
     ↤Sub  : ∀ {n : ℕ} {Γ : Assms} {e : Exp} {τ τ' : Typ} →

@@ -25,6 +25,7 @@ data Exp : Set where
   π₂         : Exp → Exp              -- Second projection
   Λ          : Exp → Exp              -- Type abstraction
   def_⊢_     : Exp → Exp → Exp        -- Let binding
+  -- TODO: Type aliases (analogous to let bindings)
 
 infixr 5  λ:_⇒_
 infixr 5  λ⇒_
