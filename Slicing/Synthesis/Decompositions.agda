@@ -625,42 +625,73 @@ min-case-decomposability {τ₁ = τ₁} {τ₂ = τ₂} {D = D} {D₁ = D₁} {
 ... | ↦□ | _ with ⊑□ ← mc .valid = ⊥-elim (υ≢□ refl)
 ... | ↦case d₀ isfun d₁ d₂ c' | ⊑case σ₀⊑e σ₁⊑e₁ σ₂⊑e₂
   with syn-precision (mc ↓γ⊑) σ₀⊑e D d₀
-... | ⊑□ rewrite ⊔t-zeroₗ {□ + □} with refl ← isfun = body ⊑□ ⊑□ where
-  body : ∀ {ϕ₁ ϕ₂} → ϕ₁ ⊑t τ₁ → ϕ₂ ⊑t τ₂ → _
-  body = {!!}
+-- NOTE: both ⊑□ and ⊑+ cases are identical structurally, but with differing precision constructors
+... | ⊑□ rewrite ⊔t-zeroₗ {□ + □} with refl ← isfun
+  = ↑ ⊑□ , ↑ ϕ₁'⊑τ₁' , ↑ ϕ₂'⊑τ₂' , (m₀ , min₀) , (m₁ , min₁) , (m₂ , min₂)
+    , m₁γ₀⊑ , m₂γ₀⊑ , υ⊑⊔
+    , min (casesyn m₀ m₁ m₁γ₀⊑ m₂ m₂γ₀⊑ υ⊑⊔) casem⊑mc
+  where
+    ϕ₁'⊑τ₁' = syn-precision (⊑∷ ⊑□ (mc ↓γ⊑)) σ₁⊑e₁ D₁ d₁
+    ϕ₂'⊑τ₂' = syn-precision (⊑∷ ⊑□ (mc ↓γ⊑)) σ₂⊑e₂ D₂ d₂
+    s₀ = ((mc ↓γₛ) ,ₛ (↑ σ₀⊑e)) ⇑ ↑ ⊑□ ∈ d₀ ⊒ ⊑t-refl
+    s₁ = (↑ (⊑∷ ⊑□ (mc ↓γ⊑))) ,ₛ (↑ σ₁⊑e₁) ⇑ ↑ ϕ₁'⊑τ₁' ∈ d₁ ⊒ ⊑t-refl
+    s₂ = (↑ (⊑∷ ⊑□ (mc ↓γ⊑))) ,ₛ (↑ σ₂⊑e₂) ⇑ ↑ ϕ₂'⊑τ₂' ∈ d₂ ⊒ ⊑t-refl
+    me₀ = minExists s₀
+    me₁ = minExists s₁
+    me₂ = minExists s₂
+    m₀ = me₀ .proj₁ ↓s;  min₀ = minimality (me₀ .proj₁);  m₀⊑s₀ = me₀ .proj₂
+    m₁ = me₁ .proj₁ ↓s;  min₁ = minimality (me₁ .proj₁);  m₁⊑s₁ = me₁ .proj₂
+    m₂ = me₂ .proj₁ ↓s;  min₂ = minimality (me₂ .proj₁);  m₂⊑s₂ = me₂ .proj₂
+    m₁γ₀⊑ : hdₛ (m₁ ↓γₛ) ⊑ₛ fst+ₛ (m₀ .type)
+    m₁γ₀⊑ = ⊑t-trans (hdₛ-⊑ (m₁ ↓γₛ) (m₁⊑s₁ .proj₁)) ⊑□
+    m₂γ₀⊑ : hdₛ (m₂ ↓γₛ) ⊑ₛ snd+ₛ (m₀ .type)
+    m₂γ₀⊑ = ⊑t-trans (hdₛ-⊑ (m₂ ↓γₛ) (m₂⊑s₂ .proj₁)) ⊑□
+    υ⊑⊔ = ⊑t-trans (mc .valid)
+            (⊔-mono-⊑ (~-⊑-down c (m₁ ↓ϕ⊑) (m₂ ↓ϕ⊑)) (m₁ .valid) (m₂ .valid))
+    m₁tl⊑ = tlₛ-⊑ (m₁ ↓γₛ) (m₁⊑s₁ .proj₁)
+    m₂tl⊑ = tlₛ-⊑ (m₂ ↓γₛ) (m₂⊑s₂ .proj₁)
+    casem⊑mc : (casesyn m₀ m₁ m₁γ₀⊑ m₂ m₂γ₀⊑ υ⊑⊔) ↓ρ ⊑ mc ↓ρ
+    casem⊑mc with m₀ | m₁ | m₂ | m₀⊑s₀ | m₁⊑s₁ | m₂⊑s₂ | m₁tl⊑ | m₂tl⊑
+    ... | ρₛ₀ ⇑ _ ∈ _ ⊒ _
+        | ((_ ∷ _ , _) isSlice (⊑∷ _ _ , _)) ⇑ _ ∈ _ ⊒ _
+        | ((_ ∷ _ , _) isSlice (⊑∷ _ _ , _)) ⇑ _ ∈ _ ⊒ _
+        | γ₀⊑ , σ₀'⊑ | _ , σ₁'⊑ | _ , σ₂'⊑ | tl₁⊑ | tl₂⊑
+      = HasJoin.closure assms-join (HasJoin.closure assms-join γ₀⊑ tl₁⊑) tl₂⊑
+        , ⊑case σ₀'⊑ σ₁'⊑ σ₂'⊑
 ... | ⊑+ {τ₁ = ϕ₁} {τ₂ = ϕ₂} ϕ₁⊑τ₁ ϕ₂⊑τ₂
   rewrite ⊔t-zeroᵣ {ϕ₁} | ⊔t-zeroᵣ {ϕ₂} with refl ← isfun
-  = _ , _ , _ , (m₀ , min₀) , (m₁ , min₁) , (m₂ , min₂)
+  = (↑ ϕ₁⊑τ₁) +ₛ (↑ ϕ₂⊑τ₂) , ↑ ϕ₁'⊑τ₁' , ↑ ϕ₂'⊑τ₂' , (m₀ , min₀) , (m₁ , min₁) , (m₂ , min₂)
     , m₁γ₀⊑ , m₂γ₀⊑ , υ⊑⊔
     , min (casesyn m₀ m₁ m₁γ₀⊑ m₂ m₂γ₀⊑ υ⊑⊔) casem⊑mc
   where
     ϕ₁'⊑τ₁' = syn-precision (⊑∷ ϕ₁⊑τ₁ (mc ↓γ⊑)) σ₁⊑e₁ D₁ d₁
     ϕ₂'⊑τ₂' = syn-precision (⊑∷ ϕ₂⊑τ₂ (mc ↓γ⊑)) σ₂⊑e₂ D₂ d₂
-    c″ = ~-⊑-down c ϕ₁'⊑τ₁' ϕ₂'⊑τ₂'
     s₀ = ((mc ↓γₛ) ,ₛ (↑ σ₀⊑e))
            ⇑ (↑ ϕ₁⊑τ₁) +ₛ (↑ ϕ₂⊑τ₂) ∈ d₀ ⊒ ⊑t-refl
     s₁ = (↑ (⊑∷ ϕ₁⊑τ₁ (mc ↓γ⊑))) ,ₛ (↑ σ₁⊑e₁) ⇑ ↑ ϕ₁'⊑τ₁' ∈ d₁ ⊒ ⊑t-refl
     s₂ = (↑ (⊑∷ ϕ₂⊑τ₂ (mc ↓γ⊑))) ,ₛ (↑ σ₂⊑e₂) ⇑ ↑ ϕ₂'⊑τ₂' ∈ d₂ ⊒ ⊑t-refl
-    m₀ = minExists s₀ .proj₁ ↓s
-    min₀ = minimality (minExists s₀ .proj₁)
-    m₁ = minExists s₁ .proj₁ ↓s
-    min₁ = minimality (minExists s₁ .proj₁)
-    m₂ = minExists s₂ .proj₁ ↓s
-    min₂ = minimality (minExists s₂ .proj₁)
+    me₀ = minExists s₀
+    me₁ = minExists s₁
+    me₂ = minExists s₂
+    m₀ = me₀ .proj₁ ↓s;  min₀ = minimality (me₀ .proj₁);  m₀⊑s₀ = me₀ .proj₂
+    m₁ = me₁ .proj₁ ↓s;  min₁ = minimality (me₁ .proj₁);  m₁⊑s₁ = me₁ .proj₂
+    m₂ = me₂ .proj₁ ↓s;  min₂ = minimality (me₂ .proj₁);  m₂⊑s₂ = me₂ .proj₂
     m₁γ₀⊑ : hdₛ (m₁ ↓γₛ) ⊑ₛ fst+ₛ (m₀ .type)
-    m₁γ₀⊑ = ⊑t-trans (hdₛ-⊑ (m₁ ↓γₛ) (minExists s₁ .proj₂ .proj₁))
-                      (fst+ₛ-⊑ (m₀ .valid))
+    m₁γ₀⊑ = ⊑t-trans (hdₛ-⊑ (m₁ ↓γₛ) (m₁⊑s₁ .proj₁))
+                     (fst+ₛ-⊑ {s₁ = (↑ ϕ₁⊑τ₁) +ₛ (↑ ϕ₂⊑τ₂)} (m₀ .valid))
     m₂γ₀⊑ : hdₛ (m₂ ↓γₛ) ⊑ₛ snd+ₛ (m₀ .type)
-    m₂γ₀⊑ = ⊑t-trans (hdₛ-⊑ (m₂ ↓γₛ) (minExists s₂ .proj₂ .proj₁))
-                      (snd+ₛ-⊑ (m₀ .valid))
-    υ⊑⊔ : _ ⊑t _
+    m₂γ₀⊑ = ⊑t-trans (hdₛ-⊑ (m₂ ↓γₛ) (m₂⊑s₂ .proj₁))
+                     (snd+ₛ-⊑ {s₁ = (↑ ϕ₁⊑τ₁) +ₛ (↑ ϕ₂⊑τ₂)} (m₀ .valid))
     υ⊑⊔ = ⊑t-trans (mc .valid)
             (⊔-mono-⊑ (~-⊑-down c (m₁ ↓ϕ⊑) (m₂ ↓ϕ⊑)) (m₁ .valid) (m₂ .valid))
-    m₀⊑s₀ = minExists s₀ .proj₂
-    m₁⊑s₁ = minExists s₁ .proj₂
-    m₂⊑s₂ = minExists s₂ .proj₂
     m₁tl⊑ = tlₛ-⊑ (m₁ ↓γₛ) (m₁⊑s₁ .proj₁)
     m₂tl⊑ = tlₛ-⊑ (m₂ ↓γₛ) (m₂⊑s₂ .proj₁)
     casem⊑mc : (casesyn m₀ m₁ m₁γ₀⊑ m₂ m₂γ₀⊑ υ⊑⊔) ↓ρ ⊑ mc ↓ρ
-    casem⊑mc = {!!}
+    casem⊑mc with m₀ | m₁ | m₂ | m₀⊑s₀ | m₁⊑s₁ | m₂⊑s₂ | m₁tl⊑ | m₂tl⊑
+    ... | ρₛ₀ ⇑ _ ∈ _ ⊒ _
+        | ((_ ∷ _ , _) isSlice (⊑∷ _ _ , _)) ⇑ _ ∈ _ ⊒ _
+        | ((_ ∷ _ , _) isSlice (⊑∷ _ _ , _)) ⇑ _ ∈ _ ⊒ _
+        | γ₀⊑ , σ₀'⊑ | _ , σ₁'⊑ | _ , σ₂'⊑ | tl₁⊑ | tl₂⊑
+      = HasJoin.closure assms-join (HasJoin.closure assms-join γ₀⊑ tl₁⊑) tl₂⊑
+        , ⊑case σ₀'⊑ σ₁'⊑ σ₂'⊑
 
