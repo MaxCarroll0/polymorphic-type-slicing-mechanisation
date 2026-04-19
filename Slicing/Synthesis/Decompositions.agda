@@ -299,13 +299,13 @@ min-Λ-decomposability {D = D} (mΛ , min)
 -- a function which some annotation ϕ₁, so long as the annotation
 -- assumes at least as much as the slice of the body used
 λ:syn : ∀ {n Γ e τ₁ τ₂} {wf : n ⊢wf τ₁} {D : n ； (τ₁ ∷ Γ) ⊢ e ↦ τ₂}
-          {υ₂ : ⌊ τ₂ ⌋} {ϕ₁ : ⌊ τ₁ ⌋}
-        → (υ₁ : ⌊ τ₁ ⌋)
+          {υ₁ : ⌊ τ₁ ⌋} {υ₂ : ⌊ τ₂ ⌋}
+        → (ϕ₁ : ⌊ τ₁ ⌋)
         → υ₁ ⊑ₛ ϕ₁
         → (s : SynSlice D ◂ υ₂)
         → hdₛ (s ↓γₛ) ⊑ₛ ϕ₁
         → SynSlice (↦λ: wf D) ◂ (υ₁ ⇒ₛ υ₂)
-λ:syn {wf = wf} {D = D} {ϕ₁ = ϕ₁} υ₁ υ₁⊑ϕ₁
+λ:syn {wf = wf} {D = D} ϕ₁ υ₁⊑ϕ₁
       (((_ ∷ γ' , σ') isSlice (⊑∷ _ γ'⊑Γ , σ'⊑e)) ⇑ ϕ ∈ d ⊒ υ⊑ϕ) sγ₀⊑ϕ₁
   with static-gradual-syn (⊑∷ (ϕ₁ .proof) γ'⊑Γ) σ'⊑e D
 ... | ϕ₂ , d₂ , ϕ₂⊑τ₂
@@ -337,12 +337,12 @@ min-λ:-decomposability
       Σ[ ϕ₁ ∈ ⌊ τ₁ ⌋ ]
       Σ[ υ₁⊑ϕ₁ ∈ υ₁ ⊑ₛ ϕ₁ ]
       Σ[ m₂γ₀⊑ϕ₁ ∈ hdₛ (m₂ ↓γₛ) ⊑ₛ ϕ₁ ]
-         mλ: ≈ (λ:syn {wf = wf} {ϕ₁ = ϕ₁} υ₁ υ₁⊑ϕ₁ m₂ m₂γ₀⊑ϕ₁)
-min-λ:-decomposability {wf = wf} {D = D} {υ₁ = υ₁} (mλ: , min)
+         mλ: ≈ (λ:syn ϕ₁ υ₁⊑ϕ₁ m₂ m₂γ₀⊑ϕ₁)
+min-λ:-decomposability {D = D} {υ₁ = υ₁} (mλ: , min)
   with mλ: .syn | mλ: .valid | mλ: ↓σ⊑ | mλ: ↓ϕ⊑
 ... | ↦λ: wf' d | ⊑⇒ υ₁⊑ϕ₁ υ₂⊑ϕ₂ | ⊑λ α⊑τ₁ σ⊑e | ⊑⇒ ϕ₁⊑τ₁ ϕ₂⊑τ₂
   = (m₂ , min-m₂) , ↑ ϕ₁⊑τ₁ , υ₁⊑ϕ₁ , m₂γ₀⊑ϕ₁
-    , min (λ:syn {wf = wf} υ₁ υ₁⊑ϕ₁ m₂ m₂γ₀⊑ϕ₁) λ:m⊑mλ:
+    , min (λ:syn (↑ ϕ₁⊑τ₁) υ₁⊑ϕ₁ m₂ m₂γ₀⊑ϕ₁) λ:m⊑mλ:
   where
     s₂ = (↑ (⊑∷ ϕ₁⊑τ₁ (mλ: ↓γ⊑))) ,ₛ (↑ σ⊑e) ⇑ ↑ ϕ₂⊑τ₂ ∈ d ⊒ υ₂⊑ϕ₂
     m₂ = minExists s₂ .proj₁ ↓s
@@ -350,7 +350,7 @@ min-λ:-decomposability {wf = wf} {D = D} {υ₁ = υ₁} (mλ: , min)
     m₂⊑s₂ = minExists s₂ .proj₂
     m₂γ₀⊑ϕ₁ : hdₛ (m₂ ↓γₛ) ⊑ₛ (↑ ϕ₁⊑τ₁)
     m₂γ₀⊑ϕ₁ = hdₛ-⊑ (m₂ ↓γₛ) (m₂⊑s₂ .proj₁)
-    λ:m⊑mλ: : (λ:syn {wf = wf} υ₁ υ₁⊑ϕ₁ m₂ m₂γ₀⊑ϕ₁) ↓ρ ⊑ mλ: ↓ρ
+    λ:m⊑mλ: : (λ:syn (↑ ϕ₁⊑τ₁) υ₁⊑ϕ₁ m₂ m₂γ₀⊑ϕ₁) ↓ρ ⊑ mλ: ↓ρ
     λ:m⊑mλ: with m₂ | m₂⊑s₂ | m₂γ₀⊑ϕ₁
     ... | ((_ ∷ _ , _) isSlice (⊑∷ _ _ , _)) ⇑ _ ∈ _ ⊒ _
         | ⊑∷ _ γ₂⊑ , σ₂⊑ | _ = γ₂⊑ , ⊑λ ⊑t-refl σ₂⊑
