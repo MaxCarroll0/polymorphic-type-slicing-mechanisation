@@ -8,6 +8,7 @@ open import Data.List using (_∷_)
 open import Core
 open import Semantics.Statics
 open import Slicing.Synthesis.Synthesis
+open import Slicing.Synthesis.Decompositions
 
 module Slicing.Synthesis.SynSliceCalc where
 
@@ -24,130 +25,85 @@ module Slicing.Synthesis.SynSliceCalc where
 ⊔ₛ-proj₂ : ∀ {τ₁ τ₂} → τ₁ ~ τ₂ → ⌊ τ₁ ⊔ τ₂ ⌋ → ⌊ τ₂ ⌋
 ⊔ₛ-proj₂ {τ₂ = τ₂} _ s = ↑ (⊑Lat.x⊓y⊑y (s .↓) τ₂)
 
--- Minimal synthesis slice derivation.
--- Φ : ⌊ Γ ⌋ is a 'lower bound' on assumption slices
--- representing binder-introduced types that cannot be sliced further
--- without making an external part of the slice (e.g. a function arg part)
-data MinSyn {n : ℕ} : ∀ {Γ : Assms} {e : Exp} {τ : Typ}
-          → ⌊ Γ ⌋ → (D : n ； Γ ⊢ e ↦ τ) → ⌊ τ ⌋ → Set where
+-- Minimal synthesis slice derivation with bidirectional assumption contexts.
+-- Γₐ : available assumptions from binders (input, flows down)
+-- Φ  : assumptions actually used by the slice (output, flows up)
+infix 4 _⊢_◂_⊣_
+data _⊢_◂_⊣_ {n : ℕ} {Γ : Assms} : ∀ {e : Exp} {τ : Typ}
+          → ⌊ Γ ⌋ → (D : n ； Γ ⊢ e ↦ τ) → ⌊ τ ⌋ → ⌊ Γ ⌋ → Set where
 
-  min□     : ∀ {Γ e τ} {Φ : ⌊ Γ ⌋} {D : n ； Γ ⊢ e ↦ τ}
-           → MinSyn Φ D ⊥ₛ
+  min□     : ∀ {e τ} {Γₐ : ⌊ Γ ⌋} {D : n ； Γ ⊢ e ↦ τ}
+           → Γₐ ⊢ D ◂ ⊥ₛ ⊣ ⊥ₛ
 
-  min*     : ∀ {Γ} {Φ : ⌊ Γ ⌋}
-           → MinSyn Φ (↦* {n} {Γ}) ⊤ₛ
+  min*     : ∀ {Γₐ : ⌊ Γ ⌋}
+           → Γₐ ⊢ ↦* ◂ ⊤ₛ ⊣ ⊥ₛ
 
-  minVar   : ∀ {Γ k τ} {Φ : ⌊ Γ ⌋} {p : Γ at k ≡ just τ}
+  minVar   : ∀ {k τ Φ} {Γₐ : ⌊ Γ ⌋} {p : Γ at k ≡ just τ}
            → (υ : ⌊ τ ⌋)
-           → lookupₛ Φ p ⊑ₛ υ
-           → MinSyn Φ (↦Var {n = n} p) υ
+           → Γₐ ⊢ ↦Var p ◂ υ ⊣ Φ
 
-  minλ:    : ∀ {Γ e τ₁ τ₂} {Φ : ⌊ Γ ⌋} {wf : n ⊢wf τ₁} {D : n ； (τ₁ ∷ Γ) ⊢ e ↦ τ₂}
+  minλ:    : ∀ {e τ₁ τ₂ Φ} {Γₐ : ⌊ Γ ⌋} {wf : n ⊢wf τ₁}
+               {D : n ； (τ₁ ∷ Γ) ⊢ e ↦ τ₂} {ψ : ⌊ τ₁ ⌋}
            → (ϕ₁ : ⌊ τ₁ ⌋) (υ₁ : ⌊ τ₁ ⌋) (υ₂ : ⌊ τ₂ ⌋)
            → υ₁ ⊑ₛ ϕ₁
-           → MinSyn (ϕ₁ ∷ₛ Φ) D υ₂
-           → MinSyn Φ (↦λ: wf D) (υ₁ ⇒ₛ υ₂)
+           → (ϕ₁ ∷ₛ Γₐ) ⊢ D ◂ υ₂ ⊣ (ψ ∷ₛ Φ)
+           → Γₐ ⊢ (↦λ: wf D) ◂ (υ₁ ⇒ₛ υ₂) ⊣ Φ
 
-  mindef   : ∀ {Γ e' e τ' τ} {Φ : ⌊ Γ ⌋}
-               {D₁ : n ； Γ ⊢ e' ↦ τ'} {D₂ : n ； (τ' ∷ Γ) ⊢ e ↦ τ}
+  mindef   : ∀ {e' e τ' τ Φ₁ Φ₂} {Γₐ : ⌊ Γ ⌋}
+               {D₁ : n ； Γ ⊢ e' ↦ τ'} {D₂ : n ； (τ' ∷ Γ) ⊢ e ↦ τ} {ψ : ⌊ τ' ⌋}
            → (ϕ : ⌊ τ' ⌋) (υ' : ⌊ τ' ⌋) (υ : ⌊ τ ⌋)
-           → MinSyn Φ D₁ υ'
-           → MinSyn (ϕ ∷ₛ Φ) D₂ υ
-           → MinSyn Φ (↦def D₁ D₂) υ
+           → Γₐ ⊢ D₁ ◂ υ' ⊣ Φ₁
+           → (ϕ ∷ₛ Γₐ) ⊢ D₂ ◂ υ ⊣ (ψ ∷ₛ Φ₂)
+           → Γₐ ⊢ (↦def D₁ D₂) ◂ υ ⊣ (Φ₁ ⊔ₛ Φ₂)
 
-  minΛ     : ∀ {Γ e τ} {Φ : ⌊ Γ ⌋} {D : suc n ； shiftΓ (suc zero) Γ ⊢ e ↦ τ}
+  minΛ     : ∀ {e τ Φ} {Γₐ : ⌊ Γ ⌋} {D : suc n ； shiftΓ (suc zero) Γ ⊢ e ↦ τ}
            → (υ : ⌊ τ ⌋)
-           → MinSyn (shiftΓₛ Φ) D υ
-           → MinSyn Φ (↦Λ D) (∀·ₛ υ)
+           → (shiftΓₛ Γₐ) ⊢ D ◂ υ ⊣ (shiftΓₛ Φ)
+           → Γₐ ⊢ (↦Λ D) ◂ (∀·ₛ υ) ⊣ Φ
 
-  min∘     : ∀ {Γ e₁ e₂ τ τ₁ τ₂} {Φ : ⌊ Γ ⌋}
+  min∘     : ∀ {e₁ e₂ τ τ₁ τ₂ Φ} {Γₐ : ⌊ Γ ⌋}
                {D₁ : n ； Γ ⊢ e₁ ↦ τ} {m : τ ⊔ □ ⇒ □ ≡ τ₁ ⇒ τ₂}
                {D₂ : n ； Γ ⊢ e₂ ↤ τ₁}
            → (υ : ⌊ τ₂ ⌋)
-           → MinSyn Φ D₁ (unmatch⇒ m ⊥ₛ υ)
-           → MinSyn Φ (↦∘ D₁ m D₂) υ
+           → Γₐ ⊢ D₁ ◂ (unmatch⇒ m ⊥ₛ υ) ⊣ Φ
+           → Γₐ ⊢ (↦∘ D₁ m D₂) ◂ υ ⊣ Φ
 
-  min<>    : ∀ {Γ e τ τ' σ} {Φ : ⌊ Γ ⌋}
+  min<>    : ∀ {e τ τ' σ Φ} {Γₐ : ⌊ Γ ⌋}
                {D : n ； Γ ⊢ e ↦ τ} {m : τ ⊔ ∀· □ ≡ ∀· τ'} {wf : n ⊢wf σ}
            → (υ : ⌊ [ zero ↦ σ ] τ' ⌋) (υ' : ⌊ τ' ⌋) (ϕ₁ : ⌊ σ ⌋)
            → υ ⊑ₛ subₛ ϕ₁ υ'
-           → MinSyn Φ D (unmatch∀ m υ')
-           → MinSyn Φ (↦<> D m wf) υ
+           → Γₐ ⊢ D ◂ (unmatch∀ m υ') ⊣ Φ
+           → Γₐ ⊢ (↦<> D m wf) ◂ υ ⊣ Φ
 
-  min&     : ∀ {Γ e₁ e₂ τ₁ τ₂} {Φ : ⌊ Γ ⌋}
+  min&     : ∀ {e₁ e₂ τ₁ τ₂ Φ₁ Φ₂} {Γₐ : ⌊ Γ ⌋}
                {D₁ : n ； Γ ⊢ e₁ ↦ τ₁} {D₂ : n ； Γ ⊢ e₂ ↦ τ₂}
            → (υ₁ : ⌊ τ₁ ⌋) (υ₂ : ⌊ τ₂ ⌋)
-           → MinSyn Φ D₁ υ₁ → MinSyn Φ D₂ υ₂
-           → MinSyn Φ (↦& D₁ D₂) (υ₁ ×ₛ υ₂)
+           → Γₐ ⊢ D₁ ◂ υ₁ ⊣ Φ₁ → Γₐ ⊢ D₂ ◂ υ₂ ⊣ Φ₂
+           → Γₐ ⊢ (↦& D₁ D₂) ◂ (υ₁ ×ₛ υ₂) ⊣ (Φ₁ ⊔ₛ Φ₂)
 
-  minπ₁    : ∀ {Γ e τ τ₁ τ₂} {Φ : ⌊ Γ ⌋}
+  minπ₁    : ∀ {e τ τ₁ τ₂ Φ} {Γₐ : ⌊ Γ ⌋}
                {D : n ； Γ ⊢ e ↦ τ} {m : τ ⊔ □ × □ ≡ τ₁ × τ₂}
            → (υ : ⌊ τ₁ ⌋)
-           → MinSyn Φ D (unmatch× m υ ⊥ₛ)
-           → MinSyn Φ (↦π₁ D m) υ
+           → Γₐ ⊢ D ◂ (unmatch× m υ ⊥ₛ) ⊣ Φ
+           → Γₐ ⊢ (↦π₁ D m) ◂ υ ⊣ Φ
 
-  minπ₂    : ∀ {Γ e τ τ₁ τ₂} {Φ : ⌊ Γ ⌋}
+  minπ₂    : ∀ {e τ τ₁ τ₂ Φ} {Γₐ : ⌊ Γ ⌋}
                {D : n ； Γ ⊢ e ↦ τ} {m : τ ⊔ □ × □ ≡ τ₁ × τ₂}
            → (υ : ⌊ τ₂ ⌋)
-           → MinSyn Φ D (unmatch× m ⊥ₛ υ)
-           → MinSyn Φ (↦π₂ D m) υ
+           → Γₐ ⊢ D ◂ (unmatch× m ⊥ₛ υ) ⊣ Φ
+           → Γₐ ⊢ (↦π₂ D m) ◂ υ ⊣ Φ
 
-  -- Single case constructor — when a branch doesn't contribute,
-  -- its query is ⊥ₛ and sub-proof is min□
-  mincase  : ∀ {Γ e e₁ e₂ τ τ₁ τ₂ τ₁' τ₂'} {Φ : ⌊ Γ ⌋}
+  mincase  : ∀ {e e₁ e₂ τ τ₁ τ₂ τ₁' τ₂' Φ₀ Φ₁ Φ₂} {Γₐ : ⌊ Γ ⌋}
                {D : n ； Γ ⊢ e ↦ τ} {m : τ ⊔ □ + □ ≡ τ₁ + τ₂}
                {D₁ : n ； (τ₁ ∷ Γ) ⊢ e₁ ↦ τ₁'} {D₂ : n ； (τ₂ ∷ Γ) ⊢ e₂ ↦ τ₂'}
-               {c : τ₁' ~ τ₂'}
+               {c : τ₁' ~ τ₂'} {ψ₁ : ⌊ τ₁ ⌋} {ψ₂ : ⌊ τ₂ ⌋}
            → (υ : ⌊ τ₁' ⊔ τ₂' ⌋) (ς₁ : ⌊ τ₁ ⌋) (ς₂ : ⌊ τ₂ ⌋)
                (υ₁ : ⌊ τ₁' ⌋) (υ₂ : ⌊ τ₂' ⌋)
-           → MinSyn Φ D (unmatch+ m ς₁ ς₂)
-           → MinSyn (ς₁ ∷ₛ Φ) D₁ υ₁
-           → MinSyn (ς₂ ∷ₛ Φ) D₂ υ₂
-           → MinSyn Φ (↦case D m D₁ D₂ c) υ
-
--- Construction helpers (postulated for now)
-postulate
-  build-Var   : ∀ {n Γ k τ} → (Φ : ⌊ Γ ⌋) → (p : Γ at k ≡ just τ) → (υ : ⌊ τ ⌋)
-              → lookupₛ Φ p ⊑ₛ υ
-              → SynSlice (↦Var {n = n} p) ◂ υ
-
--- Build a SynSlice from a MinSyn derivation
-build-extract : ∀ {n Γ e τ} {Φ : ⌊ Γ ⌋} {D : n ； Γ ⊢ e ↦ τ} {υ}
-              → MinSyn Φ D υ → SynSlice D ◂ υ
-build-extract min□ = ⊥-syn
-build-extract (min* {Γ = Γ}) = (⊥ₛ {a = Γ} ,ₛ ⊤ₛ) ⇑ ⊤ₛ ∈ ↦* ⊒ ⊑ₛ.refl {x = ⊤ₛ}
-build-extract (minVar {Φ = Φ} {p = p} υ lb) = build-Var Φ p υ lb
-build-extract (minλ: ϕ₁ υ₁ υ₂ υ₁⊑ϕ₁ m₂) = {!λ:syn!}
-build-extract (mindef ϕ υ' υ m₁ m₂) = {!defsyn!}
-build-extract (minΛ υ m) = {!Λsyn!}
-build-extract (min∘ υ m) = {!∘syn!}
-build-extract (min<> υ υ' ϕ₁ υ⊑sub m) = {!<>syn!}
-build-extract (min& υ₁ υ₂ m₁ m₂) = {!&syn!}
-build-extract (minπ₁ υ m) = {!π₁syn!}
-build-extract (minπ₂ υ m) = {!π₂syn!}
-build-extract (mincase υ ς₁ ς₂ υ₁ υ₂ m m₁ m₂) = {!casesyn!}
+           → Γₐ ⊢ D ◂ (unmatch+ m ς₁ ς₂) ⊣ Φ₀
+           → (ς₁ ∷ₛ Γₐ) ⊢ D₁ ◂ υ₁ ⊣ (ψ₁ ∷ₛ Φ₁)
+           → (ς₂ ∷ₛ Γₐ) ⊢ D₂ ◂ υ₂ ⊣ (ψ₂ ∷ₛ Φ₂)
+           → Γₐ ⊢ (↦case D m D₁ D₂ c) ◂ υ ⊣ ((Φ₀ ⊔ₛ Φ₁) ⊔ₛ Φ₂)
 
 -- □ can only synthesize □
 □-syn-inv : ∀ {n Γ τ} → n ； Γ ⊢ □ ↦ τ → τ ≡ □
 □-syn-inv ↦□ = refl
-
--- ⊥-syn is minimal: the bottom program slice is the smallest
-minimal-□ : ∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} → IsMinimal (⊥-syn {D = D})
-minimal-□ s' s'⊑ = ⊑.antisym ⦃ prog-slice-precision ⦄
-                    (⊑ₛLat.⊥ₛ-min (s' .progₛ)) s'⊑
-
--- Minimality: each constructed SynSlice is minimal
-postulate
-  minimal : ∀ {n Γ e τ} {Φ : ⌊ Γ ⌋} {D : n ； Γ ⊢ e ↦ τ} {υ}
-          → (m : MinSyn Φ D υ) → IsMinimal (build-extract m)
-
--- Soundness: extract a minimal SynSlice from a MinSyn
-extract-min : ∀ {n Γ e τ} {Φ : ⌊ Γ ⌋} {D : n ； Γ ⊢ e ↦ τ} {υ}
-            → MinSyn Φ D υ → MinSynSlice D ◂ υ
-extract-min m = build-extract m , minimal m
-
--- Completeness: every minimal SynSlice arises from some MinSyn
-postulate
-  complete : ∀ {n Γ e τ} {Φ : ⌊ Γ ⌋} {D : n ； Γ ⊢ e ↦ τ} {υ}
-           → (s : MinSynSlice D ◂ υ)
-           → Σ[ m ∈ MinSyn Φ D υ ] build-extract m ≈ s .proj₁

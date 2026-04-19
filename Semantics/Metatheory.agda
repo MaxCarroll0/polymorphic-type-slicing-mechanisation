@@ -231,5 +231,5 @@ postulate
     zero ； [] ⊢ d ∶ τ → Final d ⊎ (∃[ d' ] d ↦ d')
 
 -- Gradual Guarantee
-open import Semantics.GradualGuarantee public
+open import Semantics.Graduality public
   using (static-gradual-syn; static-gradual-ana)
