@@ -6,10 +6,10 @@ open import Data.Empty using (⊥-elim)
 open import Data.Product using (_,_; ∃-syntax) renaming (_×_ to _∧_)
 open import Relation.Nullary using (yes; no)
 
-open import Core.Typ.Base using (Typ; □; _⇒_; _×_; ∀·; _+_; diag; kind□; kind⇒; kind×; kind+; kind∀; diff)
+open import Core.Typ.Base using (Typ; □; _⇒_; _×_; ∀·; _+_; diag; _kind?_; kind□; kind⇒; kind×; kind+; kind∀; diff)
 open import Core.Typ.Precision
 open import Core.Typ.Lattice -- for instances
-open import Core.Typ.Properties using (⊔t-zeroₗ; ⊔t-zeroᵣ; sub-⊑)
+open import Core.Typ.Properties using (⊔t-zeroₗ; ⊔t-zeroᵣ; sub-⊑; ⊔-⇒-⊑; ⊔-×-⊑)
 open import Core.Typ.Substitution using ([_↦_]_)
 open import Core.Typ.Equality using (typ-decEq)
 open import Core.Instances
@@ -107,3 +107,49 @@ unmatch+      refl s₁ s₂ | kind+ =
 unmatch+ {τ} eq   s₁ s₂ | diff with τ ≟t □
 ...                                | yes refl = ⊥ₛ
 unmatch+      ()   _  _  | diff    | no _
+
+-- unmatch precision inversion lemmas:
+unmatch⇒-cod : ∀ {τ} → (q : ⌊ τ ⌋) → (ϕ : ⌊ τ ⌋)
+             → q ⊑ₛ ϕ
+             → ∀ {τ₁' τ₂'} → ϕ .↓ ⊔ □ ⇒ □ ≡ τ₁' ⇒ τ₂'
+             → ∀ {τ₁'' τ₂''} → q .↓ ⊔ □ ⇒ □ ≡ τ₁'' ⇒ τ₂''
+             → τ₂'' ⊑t τ₂'
+unmatch⇒-cod q ϕ v m' m''
+  with ⊔-⇒-⊑ v m'
+... | _ , _ , eq , _ , p rewrite eq with refl ← m'' = p
+
+unmatch×-fst : ∀ {τ} → (q : ⌊ τ ⌋) → (ϕ : ⌊ τ ⌋)
+             → q ⊑ₛ ϕ
+             → ∀ {τ₁' τ₂'} → ϕ .↓ ⊔ □ × □ ≡ τ₁' × τ₂'
+             → ∀ {τ₁'' τ₂''} → q .↓ ⊔ □ × □ ≡ τ₁'' × τ₂''
+             → τ₁'' ⊑t τ₁'
+unmatch×-fst q ϕ v m' m''
+  with ⊔-×-⊑ v m'
+... | _ , _ , eq , p , _ rewrite eq with refl ← m'' = p
+
+unmatch×-snd : ∀ {τ} → (q : ⌊ τ ⌋) → (ϕ : ⌊ τ ⌋)
+             → q ⊑ₛ ϕ
+             → ∀ {τ₁' τ₂'} → ϕ .↓ ⊔ □ × □ ≡ τ₁' × τ₂'
+             → ∀ {τ₁'' τ₂''} → q .↓ ⊔ □ × □ ≡ τ₁'' × τ₂''
+             → τ₂'' ⊑t τ₂'
+unmatch×-snd q ϕ v m' m''
+  with ⊔-×-⊑ v m'
+... | _ , _ , eq , _ , p rewrite eq with refl ← m'' = p
+
+-- Extract component equalities from unmatch⇒ match
+postulate
+  unmatch⇒-≡-fst : ∀ {τ τ₁ τ₂} (m : τ ⊔ □ ⇒ □ ≡ τ₁ ⇒ τ₂)
+                 (s₁ : ⌊ τ₁ ⌋) (s₂ : ⌊ τ₂ ⌋)
+                 → ∀ {a b} → (unmatch⇒ {τ} m s₁ s₂) .↓ ⊔ □ ⇒ □ ≡ a ⇒ b → s₁ .↓ ≡ a
+
+  unmatch⇒-≡-snd : ∀ {τ τ₁ τ₂} (m : τ ⊔ □ ⇒ □ ≡ τ₁ ⇒ τ₂)
+                 (s₁ : ⌊ τ₁ ⌋) (s₂ : ⌊ τ₂ ⌋)
+                 → ∀ {a b} → (unmatch⇒ {τ} m s₁ s₂) .↓ ⊔ □ ⇒ □ ≡ a ⇒ b → s₂ .↓ ≡ b
+
+  unmatch×-≡-fst : ∀ {τ τ₁ τ₂} (m : τ ⊔ □ × □ ≡ τ₁ × τ₂)
+                 (s₁ : ⌊ τ₁ ⌋) (s₂ : ⌊ τ₂ ⌋)
+                 → ∀ {a b} → (unmatch× {τ} m s₁ s₂) .↓ ⊔ □ × □ ≡ a × b → s₁ .↓ ≡ a
+
+  unmatch×-≡-snd : ∀ {τ τ₁ τ₂} (m : τ ⊔ □ × □ ≡ τ₁ × τ₂)
+                 (s₁ : ⌊ τ₁ ⌋) (s₂ : ⌊ τ₂ ⌋)
+                 → ∀ {a b} → (unmatch× {τ} m s₁ s₂) .↓ ⊔ □ × □ ≡ a × b → s₂ .↓ ≡ b

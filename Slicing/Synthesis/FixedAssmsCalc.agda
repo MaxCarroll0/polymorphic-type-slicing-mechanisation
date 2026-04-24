@@ -1,15 +1,18 @@
 open import Data.Nat hiding (_+_; _⊔_; _≟_)
 open import Data.Product using (_,_; proj₁; proj₂; Σ-syntax; ∃-syntax) renaming (_×_ to _∧_)
-open import Relation.Binary.PropositionalEquality using (_≡_; _≢_; subst; cong) renaming (refl to ≡refl)
+open import Relation.Binary.PropositionalEquality using (_≡_; _≢_; subst; cong) renaming (refl to ≡refl; sym to ≡sym)
 open import Relation.Nullary using (yes; no)
 open import Data.Empty using (⊥-elim)
 open import Data.Maybe using (just)
 open import Data.List using (_∷_)
 open import Core
 open import Semantics.Statics
+
 open import Slicing.Synthesis.FixedAssmsSynthesis
 
 module Slicing.Synthesis.FixedAssmsCalc where
+
+private _≟t_ = HasDecEq._≟_ typ-decEq
 
 -- Fixed-context minimal expression slice calculus
 -- D ◂ₑ υ ↦ ψ ⊣ γ: derivation D explains type query υ within full free context,
@@ -114,29 +117,51 @@ extract (min& s₁ s₂)
   with extract s₁ | extract s₂
 ... | σ₁ ⇑ ϕ₁ ∈ d₁ ⊒ v₁ | σ₂ ⇑ ϕ₂ ∈ d₂ ⊒ v₂
   = σ₁ &ₛ σ₂ ⇑ ϕ₁ ×ₛ ϕ₂ ∈ ↦& d₁ d₂ ⊒ ⊑× v₁ v₂
-extract (min∘ {D₁ = D₁} {m = m} {D₂ = D₂} {υ = υ} sub)
+  
+extract (min∘ {τ = τ} {m = m} {υ = υ} sub)
   with extract sub
 ... | σ-fn ⇑ ϕ-fn ∈ d-fn ⊒ v-fn
-  -- Use matching monotonicity: ϕ-fn .↓ ⊑ τ and m : τ ⊔ □⇒□ ≡ τ₁⇒τ₂
   with ⊔-⇒-⊑ (ϕ-fn .proof) m
-... | τ₁' , τ₂' , m' , τ₁'⊑ , τ₂'⊑
+... | ϕ₁' , ϕ₂' , m' , _ , ϕ₂'⊑τ₂
+  with ⊔-⇒-⊑ v-fn m'
+... | ϕ₁'' , ϕ₂'' , m'' , ϕ₁''⊑ϕ₁' , υ⊑ϕ₂'
+  rewrite ≡sym (unmatch⇒-≡-snd {τ} m ⊥ₛ υ m'')
   = ∘ₛ σ-fn ⊥ₛ
-    ⇑ ↑ τ₂'⊑
+    ⇑ ↑ ϕ₂'⊑τ₂
     ∈ ↦∘ d-fn m' (↤Sub ↦□ ~?₁)
-    ⊒ {!υ ⊑ₛ ↑ τ₂'⊑!}
-extract (min<> sub⊑ sub)
+    ⊒ υ⊑ϕ₂'
+    
+extract (min<> {D = D} {m = m} {wf = wf} sub⊑ sub)
   with extract sub
-... | σ ⇑ ϕ ∈ d ⊒ v = {!<>-case!}
-extract (mindef s₁ s₂)
+... | σ ⇑ ϕ ∈ d ⊒ v = {!<>-case — needs sub-⊑ for substitution!}
+
+extract (mindef {D₁ = D₁} s₁ s₂)
   with extract s₁ | extract s₂
-... | σ₁ ⇑ ϕ₁ ∈ d₁ ⊒ v₁ | σ₂ ⇑ ϕ₂ ∈ d₂ ⊒ v₂ = {!def-case!}
+... | σ₁ ⇑ ϕ₁ ∈ d₁ ⊒ v₁ | σ₂ ⇑ ϕ₂ ∈ d₂ ⊒ v₂
+  = defₛ ⊤ₛ σ₂
+    ⇑ ϕ₂
+    ∈ ↦def D₁ d₂
+    ⊒ v₂
+
 extract (minπ₁ {m = m} sub)
   with extract sub
-... | σ ⇑ ϕ ∈ d ⊒ v = {!π₁-case!}
+... | σ ⇑ ϕ ∈ d ⊒ v
+  with ⊔-×-⊑ (ϕ .proof) m
+... | τ₁' , τ₂' , m' , τ₁'⊑ , τ₂'⊑
+  = π₁ₛ σ
+    ⇑ ↑ τ₁'⊑
+    ∈ ↦π₁ d m'
+    ⊒ {!υ .↓ ⊑ τ₁'!}
+
 extract (minπ₂ {m = m} sub)
   with extract sub
-... | σ ⇑ ϕ ∈ d ⊒ v = {!π₂-case!}
+... | σ ⇑ ϕ ∈ d ⊒ v
+  with ⊔-×-⊑ (ϕ .proof) m
+... | τ₁' , τ₂' , m' , τ₁'⊑ , τ₂'⊑
+  = π₂ₛ σ
+    ⇑ ↑ τ₂'⊑
+    ∈ ↦π₂ d m'
+    ⊒ {!υ .↓ ⊑ τ₂'!}
+
 extract (mincase s s₁ s₂ υ⊑)
-  with extract s | extract s₁ | extract s₂
-... | σ₀ ⇑ ϕ₀ ∈ d₀ ⊒ v₀ | σ₁ ⇑ ϕ₁ ∈ d₁ ⊒ v₁ | σ₂ ⇑ ϕ₂ ∈ d₂ ⊒ v₂
-  = {!case-case!}
+  = {!case — same context mismatch as def: branches typed in τᵢ ∷ Γ but match gives τᵢ'' ∷ Γ!}
