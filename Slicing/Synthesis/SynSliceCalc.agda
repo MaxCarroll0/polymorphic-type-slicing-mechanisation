@@ -20,16 +20,11 @@ module Slicing.Synthesis.SynSliceCalc where
 -- Φ : assumptions available from the surrounding context (lower bound)
 -- γ : assumptions of the extracted min slice (may omit elements from Φ)
 -- ψ : the actual synthesised type of the sliced term (υ ⊑ₛ ψ)
--- The extracted slice satisfies: Φ ≼ γ (biased precision)
--- and is minimal among slices satisfying that bound.
 --
 -- For rules with multiple independent sub-derivations, each component's
--- γ is cross-fed into the other's Φ, capturing the mutual dependency
--- of assumption usage.
+-- used assumptions γ is mutually-fed into the other's available assumptions Φ
 --
--- ψ is used to connect binding sites: in mindef, D₁'s ψ becomes the
--- bound variable type for D₂; in mincase, the scrutinee's ψ provides
--- the bound variable types for both branches via fst+ₛ/snd+ₛ.
+-- ψ is used as in MinFixedAssmsSynCalc
 infix 4 _⊢_◂_↦_⊣_
 data _⊢_◂_↦_⊣_ {n : ℕ} {Γ : Assms} : ∀ {e : Exp} {τ : Typ}
           → ⌊ Γ ⌋ → (D : n ； Γ ⊢ e ↦ τ) → ⌊ τ ⌋ → ⌊ τ ⌋ → ⌊ Γ ⌋ → Set where
@@ -82,11 +77,11 @@ data _⊢_◂_↦_⊣_ {n : ℕ} {Γ : Assms} : ∀ {e : Exp} {τ : Typ}
              → Φ ⊢ (↦<> D m wf) ◂ υ ↦ ψ ⊣ γ
 
   -- D₁'s 'realised' type ψ becomes D₂'s bound variable
-  mindef   : ∀ {e' e τ' τ Φ γ₁ γ₂ υ' υ ψ₁ ψ₂}
+  mindef   : ∀ {e' e τ' τ Φ γ₁ γ₂ υ₁ υ₂ ψ₁ ψ₂}
                {D₁ : n ； Γ ⊢ e' ↦ τ'} {D₂ : n ； (τ' ∷ Γ) ⊢ e ↦ τ}
-             → (Φ ⊔ₛ γ₂) ⊢ D₁ ◂ υ' ↦ ψ₁ ⊣ γ₁
-             → (ψ₁ ∷ₛ (Φ ⊔ₛ γ₁)) ⊢ D₂ ◂ υ ↦ ψ₂ ⊣ (ψ₁ ∷ₛ γ₂)
-             → Φ ⊢ (↦def D₁ D₂) ◂ υ ↦ ψ₂ ⊣ γ₁ ⊔ₛ γ₂
+             → (Φ ⊔ₛ γ₂) ⊢ D₁ ◂ υ₁ ↦ ψ₁ ⊣ γ₁
+             → (ψ₁ ∷ₛ (Φ ⊔ₛ γ₁)) ⊢ D₂ ◂ υ₂ ↦ ψ₂ ⊣ (υ₁ ∷ₛ γ₂)
+             → Φ ⊢ (↦def D₁ D₂) ◂ υ₂ ↦ ψ₂ ⊣ γ₁ ⊔ₛ γ₂
 
   minπ₁   : ∀ {e τ τ₁ τ₂ Φ γ υ ψ₁}
                {D : n ； Γ ⊢ e ↦ τ} {m : τ ⊔ □ × □ ≡ τ₁ × τ₂}
@@ -100,17 +95,18 @@ data _⊢_◂_↦_⊣_ {n : ℕ} {Γ : Assms} : ∀ {e : Exp} {τ : Typ}
              → Φ ⊢ D ◂ (unmatch× m ⊥ₛ υ) ↦ ψ₁ ⊣ γ
              → Φ ⊢ (↦π₂ D m) ◂ υ ↦ ψ ⊣ γ
 
-  -- scrutinee's ψ provides bound variable types for branches
-  mincase  : ∀ {e e₁ e₂ τ₁ τ₂ τ₁' τ₂' Φ γ₀ γ₁ γ₂ ς υ₁ υ₂ ψ₀ ψ₁ ψ₂}
+  -- ψ₀ provides bound variable types for branches;
+  -- branch outputs ς₁, ς₂ form scrutinee query ς₁ +ₛ ς₂
+  mincase  : ∀ {e e₁ e₂ τ₁ τ₂ τ₁' τ₂' Φ γ₀ γ₁ γ₂ ς₁ ς₂ υ₁ υ₂ ψ₀ ψ₁ ψ₂}
                {D : n ； Γ ⊢ e ↦ τ₁ + τ₂}
                {D₁ : n ； (τ₁ ∷ Γ) ⊢ e₁ ↦ τ₁'} {D₂ : n ； (τ₂ ∷ Γ) ⊢ e₂ ↦ τ₂'}
                {c : τ₁' ~ τ₂'}
                {υ ψ : ⌊ τ₁' ⊔ τ₂' ⌋}
-             → ((Φ ⊔ₛ γ₁) ⊔ₛ γ₂) ⊢ D ◂ ς ↦ ψ₀ ⊣ γ₀
-             → (fst+ₛ ψ₀ ∷ₛ ((Φ ⊔ₛ γ₀) ⊔ₛ γ₂)) ⊢ D₁ ◂ υ₁ ↦ ψ₁ ⊣ (fst+ₛ ψ₀ ∷ₛ γ₁)
-             → (snd+ₛ ψ₀ ∷ₛ ((Φ ⊔ₛ γ₀) ⊔ₛ γ₁)) ⊢ D₂ ◂ υ₂ ↦ ψ₂ ⊣ (snd+ₛ ψ₀ ∷ₛ γ₂)
-             → υ .↓ ⊑ υ₁ .↓ ⊔ υ₂ .↓
-             → Φ ⊢ (↦case D (⊔□+□ {τ₁} {τ₂}) D₁ D₂ c) ◂ υ ↦ ψ ⊣ (γ₀ ⊔ₛ γ₁) ⊔ₛ γ₂
+             → ((Φ ⊔ₛ γ₁) ⊔ₛ γ₂) ⊢ D ◂ (ς₁ +ₛ ς₂) ↦ ψ₀ ⊣ γ₀
+             → (fst+ₛ ψ₀ ∷ₛ ((Φ ⊔ₛ γ₀) ⊔ₛ γ₂)) ⊢ D₁ ◂ υ₁ ↦ ψ₁ ⊣ (ς₁ ∷ₛ γ₁)
+             → (snd+ₛ ψ₀ ∷ₛ ((Φ ⊔ₛ γ₀) ⊔ₛ γ₁)) ⊢ D₂ ◂ υ₂ ↦ ψ₂ ⊣ (ς₂ ∷ₛ γ₂)
+             → υ .↓ ⊑ υ₁ .↓ ⊔ υ₂ .↓ -- Non-deterministic split on υ
+             → Φ ⊢ (↦case D ⊔□+□ D₁ D₂ c) ◂ υ ↦ ψ ⊣ (γ₀ ⊔ₛ γ₁) ⊔ₛ γ₂
 
 -- □ can only synthesize □
 □-syn-inv : ∀ {n Γ τ} → n ； Γ ⊢ □ ↦ τ → τ ≡ □
