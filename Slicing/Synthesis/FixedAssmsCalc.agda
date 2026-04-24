@@ -103,17 +103,18 @@ extract
     → D ◂ₑ υ ↦ ψ ⊣ γ
     → FixedAssmsSynSlice D υ
 
+-- Properties
+extract-ψ
+  : ∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} {υ ψ γ}
+    → (c : D ◂ₑ υ ↦ ψ ⊣ γ)
+    → (extract c) .type ≡ ψ
+
 -- The extracted expression types under the used context γ, synthesising ψ
--- ψ equals the .type field of the extracted slice
 postulate
   extract-ctx
     : ∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} {υ ψ γ}
       → (c : D ◂ₑ υ ↦ ψ ⊣ γ)
       → n ； γ .↓ ⊢ (extract c) ↓σ ↦ ψ .↓
-  extract-ψ
-    : ∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} {υ ψ γ}
-      → (c : D ◂ₑ υ ↦ ψ ⊣ γ)
-      → (extract c) .type ≡ ψ
 
 extract (minVar {τ' = τ'} p {υ = υ} _)
   = ⊤ₛ ⇑ ⊤ₛ ∈ ↦Var p ⊒ ⊤ₛ-max {a = τ'} υ
@@ -219,6 +220,20 @@ extract (mincase {D = D} {c = c} _ s₁ s₂ s υ⊑)
        ⇑ ↑ (⊔-mono-⊑ c (ϕ₁ .proof) (ϕ₂ .proof))
        ∈ ↦case D ⊔□+□ d₁ d₂ c'
        ⊒ ⊑.trans {Typ} υ⊑ (⊔-mono-⊑ c' v₁ v₂)
+
+-- extract-ψ clauses
+extract-ψ (minVar _ _) = ≡refl
+extract-ψ min□ = ≡refl
+extract-ψ min* = ≡refl
+extract-ψ (minλ: sub) = {!!}
+extract-ψ (minΛ sub) rewrite extract-ψ sub = ≡refl
+extract-ψ (min& s₁ s₂) rewrite extract-ψ s₁ | extract-ψ s₂ = ≡refl
+extract-ψ (min∘ _ sub) = {!!}
+extract-ψ (min<> _ _ sub) = {!!}
+extract-ψ (mindef _ s-body s-def) rewrite extract-ψ s-body = ≡refl
+extract-ψ (minπ₁ _ sub) = {!!}
+extract-ψ (minπ₂ _ sub) = {!!}
+extract-ψ (mincase _ s₁ s₂ s _) = {!!}
 
 -- Lemmas for minimality proof
 ⊤⋢⊥ : ∀ {τ : Typ} → τ ≢ □ → (⊤ₛ {a = τ}) ⊑ₛ  (⊥ₛ {a = τ}) → Data.Empty.⊥
