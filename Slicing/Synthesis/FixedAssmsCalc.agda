@@ -189,5 +189,68 @@ extract (minπ₂ {τ = τ} {m = m} _ sub)
     ∈ ↦π₂ d m'
     ⊒ υ⊑τ₂'
 
-extract (mincase s₁ s₂ s υ⊑)
-  = {!case!}
+extract (mincase {D = D} {c = c} _ s₁ s₂ s υ⊑)
+  with extract s₁ | extract s₂ | extract s
+... | σ₁ ⇑ ϕ₁ ∈ d₁ ⊒ v₁ | σ₂ ⇑ ϕ₂ ∈ d₂ ⊒ v₂ | σ₀ ⇑ ϕ₀ ∈ d₀ ⊒ v₀
+  = let c' = ~-⊑-down c (ϕ₁ .proof) (ϕ₂ .proof)
+    in caseₛ ⊤ₛ σ₁ σ₂
+       ⇑ ↑ (⊔-mono-⊑ c (ϕ₁ .proof) (ϕ₂ .proof))
+       ∈ ↦case D ⊔□+□ d₁ d₂ c'
+       ⊒ ⊑.trans {Typ} υ⊑ (⊔-mono-⊑ c' v₁ v₂)
+
+-- Helpers for minimality proof
+
+⊤⋢⊥ : ∀ {τ} → ⊤ₛ {a = τ} ⊑ₛ (⊥ₛ {a = τ}) → Data.Empty.⊥
+⊤⋢⊥ {□} ()
+⊤⋢⊥ {*} ()
+⊤⋢⊥ {⟨ _ ⟩} ()
+⊤⋢⊥ {_ ⇒ _} ()
+⊤⋢⊥ {_ + _} ()
+⊤⋢⊥ {_ × _} ()
+⊤⋢⊥ {∀· _} ()
+
+⊑ₛ⊥-inv : ∀ {τ} {υ : ⌊ τ ⌋} → υ ⊑ₛ ⊥ₛ → υ .↓ ≡ □
+⊑ₛ⊥-inv ⊑□ = ≡refl
+
+*-non□ : ∀ {n Γ} {D : n ； Γ ⊢ * ↦ *}
+       → (s' : FixedAssmsSynSlice D ⊤ₛ)
+       → ⊤ₛ ⊑ₛ s' .type → n ； Γ ⊢ s' ↓σ ↦ s' ↓ϕ
+       → ⊤ₛ ⊑ₛ s' .expₛ
+*-non□ s' v d with s' .expₛ
+... | □ isSlice ⊑□ with d
+...   | ↦□ = ⊥-elim (⊤⋢⊥ v)
+*-non□ s' v d | * isSlice ⊑* = ⊑*
+
+var-non□ : ∀ {n Γ n' τ' υ}
+         → {p : Γ at n' ≡ just τ'}
+         → (s' : FixedAssmsSynSlice (↦Var p) υ)
+         → υ .↓ ≢ □ → υ ⊑ₛ s' .type → n ； Γ ⊢ s' ↓σ ↦ s' ↓ϕ
+         → ⊤ₛ ⊑ₛ s' .expₛ
+var-non□ s' υ≢□ v d with s' .expₛ
+... | □ isSlice ⊑□ with d
+...   | ↦□ = ⊥-elim (υ≢□ (⊑ₛ⊥-inv v))
+var-non□ s' υ≢□ v d | ⟨ _ ⟩ isSlice ⊑Var = ⊑Var
+
+-- Minimality: extract produces minimal slices
+extract-min
+  : ∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} {υ ψ γ}
+    → D ◂ₑ υ ↦ ψ ⊣ γ
+    → MinFixedAssmsSynSlice D υ
+extract-min min□
+  = extract min□
+  , λ s' s'⊑ → ⊑.antisym {A = Exp} (⊑ₛLat.⊥ₛ-min {A = Exp} (s' .expₛ)) s'⊑
+extract-min min*
+  = extract min*
+  , λ s' s'⊑ → ⊑.antisym {A = Exp} (*-non□ s' (s' .valid) (s' .syn)) s'⊑
+extract-min (minVar p υ≢□)
+  = extract (minVar p υ≢□)
+  , λ s' s'⊑ → ⊑.antisym {A = Exp} (var-non□ s' υ≢□ (s' .valid) (s' .syn)) s'⊑
+extract-min (minλ: sub) = {!!}
+extract-min (minΛ sub) = {!!}
+extract-min (min& s₁ s₂) = {!!}
+extract-min (min∘ υ≢□ sub) = {!!}
+extract-min (min<> υ≢□ sub⊑ sub) = {!!}
+extract-min (mindef υ≢□ s-body s-def) = {!!}
+extract-min (minπ₁ υ≢□ sub) = {!!}
+extract-min (minπ₂ υ≢□ sub) = {!!}
+extract-min (mincase υ≢□ s₁ s₂ s υ⊑) = {!!}
