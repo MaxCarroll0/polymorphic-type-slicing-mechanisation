@@ -11,6 +11,7 @@ open import Semantics.Statics
 open import Semantics.Graduality using (syn-unicity; static-gradual-syn)
 open import Slicing.Synthesis.Synthesis
 open import Slicing.Synthesis.Decompositions
+open import Slicing.Synthesis.FixedAssmsSynthesis as Fix
 
 module Slicing.Counterexamples where
 
@@ -188,7 +189,33 @@ module &syn-minimality-counterexample where
         min⊔ = f (m₁ , min₁) (m₂ , min₂)
 ...  | ()
 
--- TODO: Counterexample showing that for a minimal slice it is not necessary that
---       it is a part of some product slice. Consequently, when minimising a product
---       you cannot arbitrarily minimise one element of a product without considering
---       the other element
+-- Counterexample 4: MinSynSlice ⇏ MinFixedAssmsSynSlice.
+-- Consequence: min syn slices purely slicing the expression
+-- followed by slicing the context will not be complete
+¬min-syn-is-min-fixedassms
+  : ¬ (∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} {υ}
+       → ((m , _) : MinSynSlice D ◂ υ)
+       → (f : FixedAssmsSynSlice D υ)
+       → f .expₛ .↓ ⊑ m Fix.↓σ
+       → m Fix.↓σ ⊑ f .Fix.expₛ .↓)
+
+module min-syn-not-fixedassms-counterexample where
+  open &syn-minimality-counterexample
+  open Eq using (refl)
+
+  f' : Fix.FixedAssmsSynSlice D₁ υ
+  f' = record
+    { expₛ = ↑ (⊑case ⊑□ ⊑Var ⊑□)
+    ; type  = ⊤ₛ
+    ; syn   = ↦case ↦□ refl (↦Var refl) ↦□ ~?₁
+    ; valid = ⊑ₛ.refl {A = Typ} {x = ⊤ₛ}
+    }
+
+  f'⊑m₂ : f' .Fix.expₛ .↓ ⊑ m₂ Fix.↓σ
+  f'⊑m₂ = ⊑case ⊑□ ⊑Var ⊑□
+
+¬min-syn-is-min-fixedassms g
+  with g (m₂ , min₂) f' f'⊑m₂
+  where open min-syn-not-fixedassms-counterexample
+        open &syn-minimality-counterexample
+...  | ⊑case _ _ ()
