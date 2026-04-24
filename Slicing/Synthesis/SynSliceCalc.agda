@@ -1,109 +1,133 @@
 open import Data.Nat hiding (_+_; _⊔_; _≟_)
 open import Data.Product using (_,_; proj₁; proj₂; Σ-syntax; ∃-syntax) renaming (_×_ to _∧_)
-open import Relation.Binary.PropositionalEquality using (_≡_; refl; subst)
+open import Relation.Binary.PropositionalEquality using (_≡_; _≢_; subst; cong) renaming (refl to ≡refl)
 open import Relation.Nullary using (yes; no)
 open import Data.Empty using (⊥-elim)
 open import Data.Maybe using (just)
 open import Data.List using (_∷_)
 open import Core
 open import Semantics.Statics
+open import Semantics.Graduality using (static-gradual-syn)
 open import Slicing.Synthesis.Synthesis
+open import Slicing.Synthesis.BoundedSynthesis
 open import Slicing.Synthesis.Decompositions
 
 module Slicing.Synthesis.SynSliceCalc where
 
--- Embed slices into join
-⊔ₛ-inj₁ : ∀ {τ₁ τ₂} → τ₁ ~ τ₂ → ⌊ τ₁ ⌋ → ⌊ τ₁ ⊔ τ₂ ⌋
-⊔ₛ-inj₁ con s = weaken (~.⊔-ub₁ con) s
+-- Bounded minimal synthesis slice calculus
+-- Φ ⊢ D ◂ υ ↦ ψ ⊣ γ represents a BoundedMinSynSlice D υ Φ
+--
+-- Φ : assumptions available from the surrounding context (lower bound)
+-- γ : assumptions of the extracted min slice (may omit elements from Φ)
+-- ψ : the actual synthesised type of the sliced term (υ ⊑ₛ ψ)
+-- The extracted slice satisfies: Φ ≼ γ (biased precision)
+-- and is minimal among slices satisfying that bound.
+--
+-- For rules with multiple independent sub-derivations, each component's
+-- γ is cross-fed into the other's Φ, capturing the mutual dependency
+-- of assumption usage.
+--
+-- ψ is used to connect binding sites: in mindef, D₁'s ψ becomes the
+-- bound variable type for D₂; in mincase, the scrutinee's ψ provides
+-- the bound variable types for both branches via fst+ₛ/snd+ₛ.
+infix 4 _⊢_◂_↦_⊣_
+data _⊢_◂_↦_⊣_ {n : ℕ} {Γ : Assms} : ∀ {e : Exp} {τ : Typ}
+          → ⌊ Γ ⌋ → (D : n ； Γ ⊢ e ↦ τ) → ⌊ τ ⌋ → ⌊ τ ⌋ → ⌊ Γ ⌋ → Set where
 
-⊔ₛ-inj₂ : ∀ {τ₁ τ₂} → τ₁ ~ τ₂ → ⌊ τ₂ ⌋ → ⌊ τ₁ ⊔ τ₂ ⌋
-⊔ₛ-inj₂ con s = weaken (~.⊔-ub₂ con) s
+  -- Only allow vars to query a LARGER type than already used in Φ
+  minVar   : ∀ {n τ} {Φ : ⌊ Γ ⌋} (p : Γ at n ≡ just τ) {υ : ⌊ τ ⌋}
+             → (υ .↓ ≢ □)   -- To avoid overlap with min□ rule
+             → Φ ⊢ ↦Var p ◂ υ ↦ (Φ atₛ p) ⊔ₛ υ ⊣ Φ [ p ≔ (Φ atₛ p) ⊔ₛ υ ]ₛ
 
-⊔ₛ-proj₁ : ∀ {τ₁ τ₂} → τ₁ ~ τ₂ → ⌊ τ₁ ⊔ τ₂ ⌋ → ⌊ τ₁ ⌋
-⊔ₛ-proj₁ {τ₁} _ s = ↑ (⊑Lat.x⊓y⊑y (s .↓) τ₁)
+  -- Corresponds to slicing out a redundant term
+  min□     : ∀ {e τ} {Φ : ⌊ Γ ⌋} {D : n ； Γ ⊢ e ↦ τ}
+             → Φ ⊢ D ◂ ⊥ₛ ↦ ⊥ₛ ⊣ Φ
 
-⊔ₛ-proj₂ : ∀ {τ₁ τ₂} → τ₁ ~ τ₂ → ⌊ τ₁ ⊔ τ₂ ⌋ → ⌊ τ₂ ⌋
-⊔ₛ-proj₂ {τ₂ = τ₂} _ s = ↑ (⊑Lat.x⊓y⊑y (s .↓) τ₂)
+  min*     : ∀ {Φ : ⌊ Γ ⌋}
+             → Φ ⊢ ↦* ◂ ⊤ₛ ↦ ⊤ₛ ⊣ Φ
 
--- Minimal synthesis slice derivation with bidirectional assumption contexts.
--- Γₐ : available assumptions from binders (input, flows down)
--- Φ  : assumptions actually used by the slice (output, flows up)
-infix 4 _⊢_◂_⊣_
-data _⊢_◂_⊣_ {n : ℕ} {Γ : Assms} : ∀ {e : Exp} {τ : Typ}
-          → ⌊ Γ ⌋ → (D : n ； Γ ⊢ e ↦ τ) → ⌊ τ ⌋ → ⌊ Γ ⌋ → Set where
+  -- Body sees minimum annotation in Φ, but may require MORE (ϕ₁)
+  -- to fully type the body.
+  -- ψ = (ϕ₁ ⊔ₛ υ₁) ⇒ₛ ψ₂: annotation is join of body usage and query
+  minλ:    : ∀ {e τ₁ τ₂ υ₁ υ₂ Φ ϕ₁ γ ψ₂} {wf : n ⊢wf τ₁}
+               {D : n ； (τ₁ ∷ Γ) ⊢ e ↦ τ₂}
+             → (υ₁ ∷ₛ Φ) ⊢ D ◂ υ₂ ↦ ψ₂ ⊣ (ϕ₁ ∷ₛ γ)
+             → Φ ⊢ (↦λ: wf D) ◂ (υ₁ ⇒ₛ υ₂) ↦ ((ϕ₁ ⊔ₛ υ₁) ⇒ₛ ψ₂) ⊣ γ
 
-  min□     : ∀ {e τ} {Γₐ : ⌊ Γ ⌋} {D : n ； Γ ⊢ e ↦ τ}
-           → Γₐ ⊢ D ◂ ⊥ₛ ⊣ ⊥ₛ
+  minΛ     : ∀ {e τ Φ γ υ ψ'}
+               {D : suc n ； shiftΓ 1 Γ ⊢ e ↦ τ}
+             → (shiftΓₛ Φ) ⊢ D ◂ υ ↦ ψ' ⊣ (shiftΓₛ γ)
+             → Φ ⊢ (↦Λ D) ◂ (∀·ₛ υ) ↦ (∀·ₛ ψ') ⊣ γ
 
-  min*     : ∀ {Γₐ : ⌊ Γ ⌋}
-           → Γₐ ⊢ ↦* ◂ ⊤ₛ ⊣ ⊥ₛ
+  -- Each component sees the other's needed assumptions
+  -- This rules out counterexample 3
+  min&     : ∀ {e₁ e₂ τ₁ τ₂ υ₁ υ₂ Φ γ₁ γ₂ ψ₁ ψ₂}
+               {D₁ : n ； Γ ⊢ e₁ ↦ τ₁} {D₂ : n ； Γ ⊢ e₂ ↦ τ₂}
+             → (Φ ⊔ₛ γ₂) ⊢ D₁ ◂ υ₁ ↦ ψ₁ ⊣ γ₁
+             → (Φ ⊔ₛ γ₁) ⊢ D₂ ◂ υ₂ ↦ ψ₂ ⊣ γ₂
+             → Φ ⊢ (↦& D₁ D₂) ◂ (υ₁ ×ₛ υ₂) ↦ (ψ₁ ×ₛ ψ₂) ⊣ γ₁ ⊔ₛ γ₂
 
-  minVar   : ∀ {k τ Φ} {Γₐ : ⌊ Γ ⌋} {p : Γ at k ≡ just τ}
-           → (υ : ⌊ τ ⌋)
-           → Γₐ ⊢ ↦Var p ◂ υ ⊣ Φ
-
-  minλ:    : ∀ {e τ₁ τ₂ Φ} {Γₐ : ⌊ Γ ⌋} {wf : n ⊢wf τ₁}
-               {D : n ； (τ₁ ∷ Γ) ⊢ e ↦ τ₂} {ψ : ⌊ τ₁ ⌋}
-           → (ϕ₁ : ⌊ τ₁ ⌋) (υ₁ : ⌊ τ₁ ⌋) (υ₂ : ⌊ τ₂ ⌋)
-           → υ₁ ⊑ₛ ϕ₁
-           → (ϕ₁ ∷ₛ Γₐ) ⊢ D ◂ υ₂ ⊣ (ψ ∷ₛ Φ)
-           → Γₐ ⊢ (↦λ: wf D) ◂ (υ₁ ⇒ₛ υ₂) ⊣ Φ
-
-  mindef   : ∀ {e' e τ' τ Φ₁ Φ₂} {Γₐ : ⌊ Γ ⌋}
-               {D₁ : n ； Γ ⊢ e' ↦ τ'} {D₂ : n ； (τ' ∷ Γ) ⊢ e ↦ τ} {ψ : ⌊ τ' ⌋}
-           → (ϕ : ⌊ τ' ⌋) (υ' : ⌊ τ' ⌋) (υ : ⌊ τ ⌋)
-           → Γₐ ⊢ D₁ ◂ υ' ⊣ Φ₁
-           → (ϕ ∷ₛ Γₐ) ⊢ D₂ ◂ υ ⊣ (ψ ∷ₛ Φ₂)
-           → Γₐ ⊢ (↦def D₁ D₂) ◂ υ ⊣ (Φ₁ ⊔ₛ Φ₂)
-
-  minΛ     : ∀ {e τ Φ} {Γₐ : ⌊ Γ ⌋} {D : suc n ； shiftΓ (suc zero) Γ ⊢ e ↦ τ}
-           → (υ : ⌊ τ ⌋)
-           → (shiftΓₛ Γₐ) ⊢ D ◂ υ ⊣ (shiftΓₛ Φ)
-           → Γₐ ⊢ (↦Λ D) ◂ (∀·ₛ υ) ⊣ Φ
-
-  min∘     : ∀ {e₁ e₂ τ τ₁ τ₂ Φ} {Γₐ : ⌊ Γ ⌋}
+  min∘     : ∀ {e₁ e₂ τ τ₁ τ₂ Φ γ₁ ψ₁}
                {D₁ : n ； Γ ⊢ e₁ ↦ τ} {m : τ ⊔ □ ⇒ □ ≡ τ₁ ⇒ τ₂}
                {D₂ : n ； Γ ⊢ e₂ ↤ τ₁}
-           → (υ : ⌊ τ₂ ⌋)
-           → Γₐ ⊢ D₁ ◂ (unmatch⇒ m ⊥ₛ υ) ⊣ Φ
-           → Γₐ ⊢ (↦∘ D₁ m D₂) ◂ υ ⊣ Φ
+               {υ ψ : ⌊ τ₂ ⌋}
+             → Φ ⊢ D₁ ◂ (unmatch⇒ m ⊥ₛ υ) ↦ ψ₁ ⊣ γ₁
+             → Φ ⊢ (↦∘ D₁ m D₂) ◂ υ ↦ ψ ⊣ γ₁
 
-  min<>    : ∀ {e τ τ' σ Φ} {Γₐ : ⌊ Γ ⌋}
+  min<>    : ∀ {e τ τ' σ Φ γ ψ₁}
                {D : n ； Γ ⊢ e ↦ τ} {m : τ ⊔ ∀· □ ≡ ∀· τ'} {wf : n ⊢wf σ}
-           → (υ : ⌊ [ zero ↦ σ ] τ' ⌋) (υ' : ⌊ τ' ⌋) (ϕ₁ : ⌊ σ ⌋)
-           → υ ⊑ₛ subₛ ϕ₁ υ'
-           → Γₐ ⊢ D ◂ (unmatch∀ m υ') ⊣ Φ
-           → Γₐ ⊢ (↦<> D m wf) ◂ υ ⊣ Φ
+               {υ ψ : ⌊ [ zero ↦ σ ] τ' ⌋} {υ' : ⌊ τ' ⌋} {ϕ₁ : ⌊ σ ⌋}
+             → υ ⊑ₛ subₛ ϕ₁ υ'
+             → Φ ⊢ D ◂ (unmatch∀ m υ') ↦ ψ₁ ⊣ γ
+             → Φ ⊢ (↦<> D m wf) ◂ υ ↦ ψ ⊣ γ
 
-  min&     : ∀ {e₁ e₂ τ₁ τ₂ Φ₁ Φ₂} {Γₐ : ⌊ Γ ⌋}
-               {D₁ : n ； Γ ⊢ e₁ ↦ τ₁} {D₂ : n ； Γ ⊢ e₂ ↦ τ₂}
-           → (υ₁ : ⌊ τ₁ ⌋) (υ₂ : ⌊ τ₂ ⌋)
-           → Γₐ ⊢ D₁ ◂ υ₁ ⊣ Φ₁ → Γₐ ⊢ D₂ ◂ υ₂ ⊣ Φ₂
-           → Γₐ ⊢ (↦& D₁ D₂) ◂ (υ₁ ×ₛ υ₂) ⊣ (Φ₁ ⊔ₛ Φ₂)
+  -- D₁'s 'realised' type ψ becomes D₂'s bound variable
+  mindef   : ∀ {e' e τ' τ Φ γ₁ γ₂ υ' υ ψ₁ ψ₂}
+               {D₁ : n ； Γ ⊢ e' ↦ τ'} {D₂ : n ； (τ' ∷ Γ) ⊢ e ↦ τ}
+             → (Φ ⊔ₛ γ₂) ⊢ D₁ ◂ υ' ↦ ψ₁ ⊣ γ₁
+             → (ψ₁ ∷ₛ (Φ ⊔ₛ γ₁)) ⊢ D₂ ◂ υ ↦ ψ₂ ⊣ (ψ₁ ∷ₛ γ₂)
+             → Φ ⊢ (↦def D₁ D₂) ◂ υ ↦ ψ₂ ⊣ γ₁ ⊔ₛ γ₂
 
-  minπ₁    : ∀ {e τ τ₁ τ₂ Φ} {Γₐ : ⌊ Γ ⌋}
+  minπ₁   : ∀ {e τ τ₁ τ₂ Φ γ υ ψ₁}
                {D : n ； Γ ⊢ e ↦ τ} {m : τ ⊔ □ × □ ≡ τ₁ × τ₂}
-           → (υ : ⌊ τ₁ ⌋)
-           → Γₐ ⊢ D ◂ (unmatch× m υ ⊥ₛ) ⊣ Φ
-           → Γₐ ⊢ (↦π₁ D m) ◂ υ ⊣ Φ
+               {ψ : ⌊ τ₁ ⌋}
+             → Φ ⊢ D ◂ (unmatch× m υ ⊥ₛ) ↦ ψ₁ ⊣ γ
+             → Φ ⊢ (↦π₁ D m) ◂ υ ↦ ψ ⊣ γ
 
-  minπ₂    : ∀ {e τ τ₁ τ₂ Φ} {Γₐ : ⌊ Γ ⌋}
+  minπ₂   : ∀ {e τ τ₁ τ₂ Φ γ υ ψ₁}
                {D : n ； Γ ⊢ e ↦ τ} {m : τ ⊔ □ × □ ≡ τ₁ × τ₂}
-           → (υ : ⌊ τ₂ ⌋)
-           → Γₐ ⊢ D ◂ (unmatch× m ⊥ₛ υ) ⊣ Φ
-           → Γₐ ⊢ (↦π₂ D m) ◂ υ ⊣ Φ
+               {ψ : ⌊ τ₂ ⌋}
+             → Φ ⊢ D ◂ (unmatch× m ⊥ₛ υ) ↦ ψ₁ ⊣ γ
+             → Φ ⊢ (↦π₂ D m) ◂ υ ↦ ψ ⊣ γ
 
-  mincase  : ∀ {e e₁ e₂ τ τ₁ τ₂ τ₁' τ₂' Φ₀ Φ₁ Φ₂} {Γₐ : ⌊ Γ ⌋}
-               {D : n ； Γ ⊢ e ↦ τ} {m : τ ⊔ □ + □ ≡ τ₁ + τ₂}
+  -- scrutinee's ψ provides bound variable types for branches
+  mincase  : ∀ {e e₁ e₂ τ₁ τ₂ τ₁' τ₂' Φ γ₀ γ₁ γ₂ ς υ₁ υ₂ ψ₀ ψ₁ ψ₂}
+               {D : n ； Γ ⊢ e ↦ τ₁ + τ₂}
                {D₁ : n ； (τ₁ ∷ Γ) ⊢ e₁ ↦ τ₁'} {D₂ : n ； (τ₂ ∷ Γ) ⊢ e₂ ↦ τ₂'}
-               {c : τ₁' ~ τ₂'} {ψ₁ : ⌊ τ₁ ⌋} {ψ₂ : ⌊ τ₂ ⌋}
-           → (υ : ⌊ τ₁' ⊔ τ₂' ⌋) (ς₁ : ⌊ τ₁ ⌋) (ς₂ : ⌊ τ₂ ⌋)
-               (υ₁ : ⌊ τ₁' ⌋) (υ₂ : ⌊ τ₂' ⌋)
-           → Γₐ ⊢ D ◂ (unmatch+ m ς₁ ς₂) ⊣ Φ₀
-           → (ς₁ ∷ₛ Γₐ) ⊢ D₁ ◂ υ₁ ⊣ (ψ₁ ∷ₛ Φ₁)
-           → (ς₂ ∷ₛ Γₐ) ⊢ D₂ ◂ υ₂ ⊣ (ψ₂ ∷ₛ Φ₂)
-           → Γₐ ⊢ (↦case D m D₁ D₂ c) ◂ υ ⊣ ((Φ₀ ⊔ₛ Φ₁) ⊔ₛ Φ₂)
+               {c : τ₁' ~ τ₂'}
+               {υ ψ : ⌊ τ₁' ⊔ τ₂' ⌋}
+             → ((Φ ⊔ₛ γ₁) ⊔ₛ γ₂) ⊢ D ◂ ς ↦ ψ₀ ⊣ γ₀
+             → (fst+ₛ ψ₀ ∷ₛ ((Φ ⊔ₛ γ₀) ⊔ₛ γ₂)) ⊢ D₁ ◂ υ₁ ↦ ψ₁ ⊣ (fst+ₛ ψ₀ ∷ₛ γ₁)
+             → (snd+ₛ ψ₀ ∷ₛ ((Φ ⊔ₛ γ₀) ⊔ₛ γ₁)) ⊢ D₂ ◂ υ₂ ↦ ψ₂ ⊣ (snd+ₛ ψ₀ ∷ₛ γ₂)
+             → υ .↓ ⊑ υ₁ .↓ ⊔ υ₂ .↓
+             → Φ ⊢ (↦case D (⊔□+□ {τ₁} {τ₂}) D₁ D₂ c) ◂ υ ↦ ψ ⊣ (γ₀ ⊔ₛ γ₁) ⊔ₛ γ₂
 
 -- □ can only synthesize □
 □-syn-inv : ∀ {n Γ τ} → n ； Γ ⊢ □ ↦ τ → τ ≡ □
-□-syn-inv ↦□ = refl
+□-syn-inv ↦□ = ≡refl
+
+⊑□-inv : ∀ {τ : Typ} {υ : ⌊ τ ⌋} → υ .↓ ⊑ □ → υ .↓ ≡ □
+⊑□-inv ⊑□ = ≡refl
+
+-- The calculus judgment extracts to a BoundedMinSynSlice
+-- CONJECTURES (currently)
+postulate
+  extract
+    : ∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} {Φ υ ψ γ}
+      → Φ ⊢ D ◂ υ ↦ ψ ⊣ γ
+      → BoundedMinSynSlice D υ Φ
+
+  completeness
+    : ∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} {Φ υ}
+      → (m : BoundedMinSynSlice D υ Φ)
+      → ∃[ γ ] ∃[ ψ ] (Φ ⊢ D ◂ υ ↦ ψ ⊣ γ)

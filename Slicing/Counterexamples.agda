@@ -187,3 +187,8 @@ module &syn-minimality-counterexample where
   where open &syn-minimality-counterexample
         min⊔ = f (m₁ , min₁) (m₂ , min₂)
 ...  | ()
+
+-- TODO: Counterexample showing that for a minimal slice it is not necessary that
+--       it is a part of some product slice. Consequently, when minimising a product
+--       you cannot arbitrarily minimise one element of a product without considering
+--       the other element

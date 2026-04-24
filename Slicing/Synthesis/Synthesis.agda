@@ -108,6 +108,8 @@ _↓s = proj₁
 minimality : ∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} {υ} → ((s , _) : MinSynSlice D ◂ υ) → IsMinimal s
 minimality = proj₂
 
+-- Bounded minimality (BoundedIsMinimal, BoundedMinSynSlice)
+-- is in Slicing.Synthesis.BoundedSynthesis
 
 -- Theorem 1: By using graduality we can construct a joined derivation
 --            This join must synthesise a more or equally specific type
@@ -223,3 +225,4 @@ postulate
          → υ₁ ⊑ₛ υ₂
          → (m₂ : SynSlice D ◂ υ₂) → IsMinimal m₂
          → Σ[ m₁ ∈ SynSlice D ◂ υ₁ ] IsMinimal m₁ ∧ m₁ ↓ρ ⊑ m₂ ↓ρ
+

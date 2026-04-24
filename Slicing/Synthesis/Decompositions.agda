@@ -16,7 +16,6 @@ module Slicing.Synthesis.Decompositions where
 open ⊑ {A = Typ} using () renaming (refl to ⊑t-refl; trans to ⊑t-trans)
 open ⊑ {A = Exp} using () renaming (refl to ⊑e-refl)
 open ⊑ {A = Assms} using () renaming (refl to ⊑a-refl)
-private _≟t_ = HasDecEq._≟_ typ-decEq
 
 
 -- MIN SLICE DECOMPOSITIONS
@@ -49,6 +48,17 @@ _&syn_ {D₁ = D₁} {D₂ = D₂}
     υ₂⊑ϕ₂' = ⊑t-trans υ₂⊑ϕ₂
               (syn-precision (⊑ₛLat.y⊑ₛx⊔ₛy (fstₛ ρₛ₁) (fstₛ ρₛ₂))
                              ⊑e-refl d₂' d₂)
+
+&syn-↓ρ : ∀ {n Γ e₁ e₂ τ₁ τ₂} {D₁ : n ； Γ ⊢ e₁ ↦ τ₁} {D₂ : n ； Γ ⊢ e₂ ↦ τ₂}
+             {υ₁ υ₂}
+           (s₁ : SynSlice D₁ ◂ υ₁) (s₂ : SynSlice D₂ ◂ υ₂)
+         → (s₁ &syn s₂) ↓ρ ≡ (((s₁ ↓γₛ) ⊔ₛ (s₂ ↓γₛ)) .↓ , (s₁ ↓σ) & (s₂ ↓σ))
+&syn-↓ρ {D₁ = D₁} {D₂ = D₂}
+        (ρₛ₁ ⇑ ϕ₁ ∈ d₁ ⊒ _) (ρₛ₂ ⇑ ϕ₂ ∈ d₂ ⊒ _)
+  with static-gradual-syn (γₛ⊔ .proof) (sndₛ ρₛ₁ .proof) D₁
+     | static-gradual-syn (γₛ⊔ .proof) (sndₛ ρₛ₂ .proof) D₂
+  where γₛ⊔ = fstₛ ρₛ₁ ⊔ₛ fstₛ ρₛ₂
+... | _ | _ = refl
 
 -- Minimal product slices decompose into minimal component slices.
 min-prod-decomposability
@@ -313,6 +323,17 @@ min-Λ-decomposability {D = D} (mΛ , min)
     ⇑ ϕ₁ ⇒ₛ (↑ ϕ₂⊑τ₂)
     ∈ ↦λ: (wf-⊑ wf (ϕ₁ .proof)) d₂
     ⊒ ⊑⇒ υ₁⊑ϕ₁ (⊑t-trans υ⊑ϕ (syn-precision (⊑∷ sγ₀⊑ϕ₁ ⊑a-refl) ⊑e-refl d₂ d))
+
+λ:syn-↓ρ : ∀ {n Γ e τ₁ τ₂} {wf : n ⊢wf τ₁} {D : n ； (τ₁ ∷ Γ) ⊢ e ↦ τ₂}
+              {υ₁ : ⌊ τ₁ ⌋} {υ₂ : ⌊ τ₂ ⌋}
+            → (ϕ₁ : ⌊ τ₁ ⌋) (υ₁⊑ϕ₁ : υ₁ ⊑ₛ ϕ₁)
+            → (s : SynSlice D ◂ υ₂) (h : hdₛ (s ↓γₛ) ⊑ₛ ϕ₁)
+            → (λ:syn {wf = wf} {υ₁ = υ₁} ϕ₁ υ₁⊑ϕ₁ s h) ↓ρ
+              ≡ (tlₛ (s ↓γₛ) .↓ , λ: ϕ₁ .↓ ⇒ (s ↓σ))
+λ:syn-↓ρ {wf = wf} {D = D} ϕ₁ _
+         (((_ ∷ γ' , σ') isSlice (⊑∷ _ γ'⊑Γ , σ'⊑e)) ⇑ _ ∈ _ ⊒ _) _
+  with static-gradual-syn (⊑∷ (ϕ₁ .proof) γ'⊑Γ) σ'⊑e D
+... | _ = refl
 
 -- Minimal λ: slices decompose: a minimal slice of ↦λ: wf D ◂ (υ₁ ⇒ₛ υ₂)
 -- contains a minimal slice of D ◂ υ₂ with υ₁ (or weaker) in the context
