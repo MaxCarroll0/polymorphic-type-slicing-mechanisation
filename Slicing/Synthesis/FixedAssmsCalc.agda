@@ -7,7 +7,7 @@ open import Data.Maybe using (just)
 open import Data.List using (_∷_)
 open import Core
 open import Semantics.Statics
-open import Semantics.Graduality using (syn-unicity)
+open import Semantics.Graduality using (syn-unicity; static-gradual-syn; syn-precision)
 
 open import Slicing.Synthesis.Synthesis using (IsMinimal)
 open import Slicing.Synthesis.FixedAssmsSynthesis
@@ -103,6 +103,18 @@ extract
     → D ◂ₑ υ ↦ ψ ⊣ γ
     → FixedAssmsSynSlice D υ
 
+-- The extracted expression types under the used context γ, synthesising ψ
+-- ψ equals the .type field of the extracted slice
+postulate
+  extract-ctx
+    : ∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} {υ ψ γ}
+      → (c : D ◂ₑ υ ↦ ψ ⊣ γ)
+      → n ； γ .↓ ⊢ (extract c) ↓σ ↦ ψ .↓
+  extract-ψ
+    : ∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} {υ ψ γ}
+      → (c : D ◂ₑ υ ↦ ψ ⊣ γ)
+      → (extract c) .type ≡ ψ
+
 extract (minVar {τ' = τ'} p {υ = υ} _)
   = ⊤ₛ ⇑ ⊤ₛ ∈ ↦Var p ⊒ ⊤ₛ-max {a = τ'} υ
   
@@ -111,14 +123,23 @@ extract min□
   
 extract min*
   = ⊤-fixedassms-syn ↦*
-  
-extract (minλ: {υ₁ = υ₁} {wf = wf} sub)
-  with extract sub
-... | σ-body ⇑ ϕ-body ∈ d-body ⊒ v-body
-  = λ:ₛ ⊤ₛ σ-body
-    ⇑ ⊤ₛ ⇒ₛ ϕ-body
-    ∈ ↦λ: wf d-body
-    ⊒ ⊑⇒ (⊤ₛ-max υ₁) v-body
+
+-- Using graduality and unicity to derive derivation with minimal annotation
+extract (minλ: {υ₁ = υ₁} {υ₂ = υ₂} {ψ₂ = ψ₂} {ϕ₁ = ϕ₁} {γ = γ} {wf = wf} {D = D} sub)
+  with extract sub       | extract-ctx sub | extract-ψ sub
+...  | σ₂ ⇑ ψ₂ ∈ d₂ ⊒ v₂ | d₂-ϕ₁           | ≡refl
+  with static-gradual-syn-exp (↦λ: wf D) (λ:ₛ (ϕ₁ ⊔ₛ υ₁) σ₂)
+     | static-gradual-syn (⊑∷ ((ϕ₁ ⊔ₛ υ₁) .proof) (⊑.refl {Assms})) (σ₂ .proof) D
+...  | ϕ-λ , d-λ | ϕ-body-⊔ , d-body-⊔ , ϕ-body-⊔⊑τ₂
+  = let d-λ-ϕ₁ = ↦λ: (wf-⊑ wf (ϕ₁ .proof)) d₂-ϕ₁
+        d-λ-⊔  = ↦λ: (wf-⊑ wf ((ϕ₁ ⊔ₛ υ₁) .proof)) d-body-⊔
+        ψ₂⊑ϕ⊔ = syn-precision (⊑∷ (⊑ₛLat.x⊑ₛx⊔ₛy ϕ₁ υ₁) (γ .proof))
+                   (⊑.refl {Exp}) d-body-⊔ d₂-ϕ₁
+    in λ:ₛ (ϕ₁ ⊔ₛ υ₁) σ₂
+       ⇑ ϕ-λ
+       ∈ d-λ
+       ⊒ subst ((υ₁ ⇒ₛ υ₂) .↓ ⊑_) (syn-unicity d-λ-⊔ d-λ)
+           (⊑⇒ (⊑ₛLat.y⊑ₛx⊔ₛy ϕ₁ υ₁) (⊑.trans {Typ} v₂ ψ₂⊑ϕ⊔))
     
 extract (minΛ sub)
   with extract sub
@@ -249,7 +270,6 @@ extract-minimal (minπ₁ υ≢□ sub) = {!!}
 extract-minimal (minπ₂ υ≢□ sub) = {!!}
 extract-minimal (mincase υ≢□ s₁ s₂ s υ⊑) = {!!}
 
--- Corollary: calculus derivation gives a MinFixedAssmsSynSlice
 extract-min
   : ∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} {υ ψ γ}
     → D ◂ₑ υ ↦ ψ ⊣ γ
