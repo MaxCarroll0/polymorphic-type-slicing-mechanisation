@@ -16,7 +16,8 @@ private _≟t_ = HasDecEq._≟_ typ-decEq
 
 -- Fixed-context minimal expression slice calculus
 -- D ◂ₑ υ ↦ ψ ⊣ γ: derivation D explains type query υ within full free context,
--- actually synthesising ψ (where υ ⊑ₛ ψ), using context entries γ.
+-- actually synthesising ψ (where υ ⊑ₛ ψ), actually using context entries γ.
+-- We need to track used context entries to decide how to slice unannotated let bindings and case scrutinees
 infix 4 _◂ₑ_↦_⊣_
 data _◂ₑ_↦_⊣_ {n : ℕ} {Γ : Assms} : ∀ {e : Exp} {τ : Typ}
           → (D : n ； Γ ⊢ e ↦ τ) → ⌊ τ ⌋ → ⌊ τ ⌋ → ⌊ Γ ⌋ → Set where
@@ -136,9 +137,18 @@ extract (min∘ {τ = τ} {m = m} {υ = υ} sub)
     ∈ ↦∘ d-fn m' (↤Sub ↦□ ~?₁)
     ⊒ υ⊑ϕ₂'
     
-extract (min<> {D = D} {m = m} {wf = wf} sub⊑ sub)
+extract (min<> {τ = τ} {σ = σ} {D = D} {m = m} {wf = wf} {ϕ₁ = ϕ₁} sub⊑ sub)
   with extract sub
-... | σ ⇑ ϕ ∈ d ⊒ v = {!<>-case — needs sub-⊑ for substitution!}
+... | σ-e ⇑ ϕ ∈ d ⊒ v
+  with ⊔-∀-⊑ (ϕ .proof) m
+... | τ₁' , m' , τ₁'⊑τ'
+  with ⊔-∀-⊑ v m'
+... | ϕ₁' , m'' , υ'⊑τ₁'
+  rewrite ≡sym (unmatch∀-≡ {τ} m _ m'')
+  = <>ₛ σ-e ⊤ₛ
+    ⇑ ↑ (sub-⊑ zero (⊑.refl {A = Typ} {x = σ}) τ₁'⊑τ')
+    ∈ ↦<> d m' wf
+    ⊒ ⊑.trans {Typ} sub⊑ (sub-⊑ zero (ϕ₁ .proof) υ'⊑τ₁')
 
 extract (mindef {D₁ = D₁} s-body s-def)
   with extract s-body | extract s-def
