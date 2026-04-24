@@ -9,6 +9,7 @@ open import Core
 open import Semantics.Statics
 open import Semantics.Graduality using (syn-unicity)
 
+open import Slicing.Synthesis.Synthesis using (IsMinimal)
 open import Slicing.Synthesis.FixedAssmsSynthesis
 
 module Slicing.Synthesis.FixedAssmsCalc where
@@ -198,59 +199,59 @@ extract (mincase {D = D} {c = c} _ s₁ s₂ s υ⊑)
        ∈ ↦case D ⊔□+□ d₁ d₂ c'
        ⊒ ⊑.trans {Typ} υ⊑ (⊔-mono-⊑ c' v₁ v₂)
 
--- Helpers for minimality proof
+-- Lemmas for minimality proof
+⊤⋢⊥ : ∀ {τ : Typ} → τ ≢ □ → (⊤ₛ {a = τ}) ⊑ₛ  (⊥ₛ {a = τ}) → Data.Empty.⊥
+⊤⋢⊥ {□} τ≢□ _ = τ≢□ ≡refl
 
-⊤⋢⊥ : ∀ {τ} → ⊤ₛ {a = τ} ⊑ₛ (⊥ₛ {a = τ}) → Data.Empty.⊥
-⊤⋢⊥ {□} ()
-⊤⋢⊥ {*} ()
-⊤⋢⊥ {⟨ _ ⟩} ()
-⊤⋢⊥ {_ ⇒ _} ()
-⊤⋢⊥ {_ + _} ()
-⊤⋢⊥ {_ × _} ()
-⊤⋢⊥ {∀· _} ()
-
-⊑ₛ⊥-inv : ∀ {τ} {υ : ⌊ τ ⌋} → υ ⊑ₛ ⊥ₛ → υ .↓ ≡ □
+⊑ₛ⊥-inv : ∀ {τ : Typ} {υ : ⌊ τ ⌋} → _⊑ₛ_ {A = Typ} {a = τ} υ (⊥ₛ {A = Typ} {a = τ}) → υ .↓ ≡ □
 ⊑ₛ⊥-inv ⊑□ = ≡refl
 
 *-non□ : ∀ {n Γ} {D : n ； Γ ⊢ * ↦ *}
        → (s' : FixedAssmsSynSlice D ⊤ₛ)
-       → ⊤ₛ ⊑ₛ s' .type → n ； Γ ⊢ s' ↓σ ↦ s' ↓ϕ
-       → ⊤ₛ ⊑ₛ s' .expₛ
+       → (⊤ₛ {a = *}) ⊑ₛ (s' .type)
+       → n ； Γ ⊢ s' ↓σ ↦ s' ↓ϕ
+       → ⊤ₛ ⊑ₛ (s' .expₛ)
 *-non□ s' v d with s' .expₛ
 ... | □ isSlice ⊑□ with d
-...   | ↦□ = ⊥-elim (⊤⋢⊥ v)
+... | ↦□ = ⊥-elim (⊤⋢⊥ (λ ()) v)
 *-non□ s' v d | * isSlice ⊑* = ⊑*
 
-var-non□ : ∀ {n Γ n' τ' υ}
+var-non□ : ∀ {n Γ n' τ'} {υ : ⌊ τ' ⌋}
          → {p : Γ at n' ≡ just τ'}
-         → (s' : FixedAssmsSynSlice (↦Var p) υ)
-         → υ .↓ ≢ □ → υ ⊑ₛ s' .type → n ； Γ ⊢ s' ↓σ ↦ s' ↓ϕ
-         → ⊤ₛ ⊑ₛ s' .expₛ
-var-non□ s' υ≢□ v d with s' .expₛ
+         → (s' : FixedAssmsSynSlice {n = n} {Γ = Γ} (↦Var p) υ)
+         → υ .↓ ≢ □
+         → υ ⊑ₛ (s' .type)
+         → n ； Γ ⊢ s' ↓σ ↦ s' ↓ϕ
+         → ⊤ₛ ⊑ₛ (s' .expₛ)
+var-non□ {τ' = τ'} {υ = υ} s' υ≢□ v d with s' .expₛ
 ... | □ isSlice ⊑□ with d
-...   | ↦□ = ⊥-elim (υ≢□ (⊑ₛ⊥-inv v))
+... | ↦□ = ⊥-elim (υ≢□ (⊑ₛ⊥-inv {τ = τ'} {υ = υ} v))
 var-non□ s' υ≢□ v d | ⟨ _ ⟩ isSlice ⊑Var = ⊑Var
 
--- Minimality: extract produces minimal slices
+-- extract produces minimal slices
+extract-minimal
+  : ∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} {υ ψ γ}
+    → (c : D ◂ₑ υ ↦ ψ ⊣ γ)
+    → IsMinimal (extract c)
+extract-minimal min□ s' s'⊑
+  = ⊑.antisym {Exp} (⊑ₛLat.⊥ₛ-min (s' .expₛ)) s'⊑
+extract-minimal min* s' s'⊑
+  = ⊑.antisym {Exp} (*-non□ s' (s' .valid) (s' .syn)) s'⊑
+extract-minimal (minVar p υ≢□) s' s'⊑
+  = ⊑.antisym {Exp} (var-non□ s' υ≢□ (s' .valid) (s' .syn)) s'⊑
+extract-minimal (minλ: sub) = {!!}
+extract-minimal (minΛ sub) = {!!}
+extract-minimal (min& s₁ s₂) = {!!}
+extract-minimal (min∘ υ≢□ sub) = {!!}
+extract-minimal (min<> υ≢□ sub⊑ sub) = {!!}
+extract-minimal (mindef υ≢□ s-body s-def) = {!!}
+extract-minimal (minπ₁ υ≢□ sub) = {!!}
+extract-minimal (minπ₂ υ≢□ sub) = {!!}
+extract-minimal (mincase υ≢□ s₁ s₂ s υ⊑) = {!!}
+
+-- Corollary: calculus derivation gives a MinFixedAssmsSynSlice
 extract-min
   : ∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} {υ ψ γ}
     → D ◂ₑ υ ↦ ψ ⊣ γ
     → MinFixedAssmsSynSlice D υ
-extract-min min□
-  = extract min□
-  , λ s' s'⊑ → ⊑.antisym {A = Exp} (⊑ₛLat.⊥ₛ-min {A = Exp} (s' .expₛ)) s'⊑
-extract-min min*
-  = extract min*
-  , λ s' s'⊑ → ⊑.antisym {A = Exp} (*-non□ s' (s' .valid) (s' .syn)) s'⊑
-extract-min (minVar p υ≢□)
-  = extract (minVar p υ≢□)
-  , λ s' s'⊑ → ⊑.antisym {A = Exp} (var-non□ s' υ≢□ (s' .valid) (s' .syn)) s'⊑
-extract-min (minλ: sub) = {!!}
-extract-min (minΛ sub) = {!!}
-extract-min (min& s₁ s₂) = {!!}
-extract-min (min∘ υ≢□ sub) = {!!}
-extract-min (min<> υ≢□ sub⊑ sub) = {!!}
-extract-min (mindef υ≢□ s-body s-def) = {!!}
-extract-min (minπ₁ υ≢□ sub) = {!!}
-extract-min (minπ₂ υ≢□ sub) = {!!}
-extract-min (mincase υ≢□ s₁ s₂ s υ⊑) = {!!}
+extract-min c = extract c , extract-minimal c
