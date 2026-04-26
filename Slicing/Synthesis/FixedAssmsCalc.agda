@@ -273,7 +273,17 @@ extract-minimal (minVar p υ≢□) s' s'⊑
   = ⊑.antisym {Exp} (var-non□ s' υ≢□ (s' .valid) (s' .syn)) s'⊑
 extract-minimal (minλ: sub _) = {!!}
 extract-minimal (minΛ sub) = {!!}
-extract-minimal (min& s₁ s₂) = {!!}
+extract-minimal (min& s₁ s₂) s' s'⊑
+  with extract' s₁ | extract-minimal s₁ | extract' s₂ | extract-minimal s₂
+...  | _ , ≡refl , ≡refl | ih₁ | _ , ≡refl , ≡refl | ih₂
+  with s' .syn     | s' .valid   | s' ↓σ⊑    | s' ↓ϕ⊑
+...  | ↦□          | ()          | _          | _
+...  | ↦& d₁' d₂' | ⊑× v₁' v₂' | ⊑& p₁ p₂  | ⊑× q₁ q₂
+  with s'⊑
+...  | ⊑& e₁⊑ e₂⊑
+  with ih₁ (↑ p₁ ⇑ ↑ q₁ ∈ d₁' ⊒ v₁') e₁⊑
+     | ih₂ (↑ p₂ ⇑ ↑ q₂ ∈ d₂' ⊒ v₂') e₂⊑
+...  | ≡refl | ≡refl = ≡refl
 extract-minimal (min∘ υ≢□ sub) = {!!}
 extract-minimal (min<> υ≢□ sub) = {!!}
 extract-minimal (mindef υ≢□ s-body s-def _) = {!!}
