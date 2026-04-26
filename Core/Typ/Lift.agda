@@ -9,7 +9,8 @@ open import Relation.Nullary using (yes; no)
 open import Core.Typ.Base using (Typ; □; _⇒_; _×_; ∀·; _+_; diag; _kind?_; kind□; kind⇒; kind×; kind+; kind∀; diff)
 open import Core.Typ.Precision
 open import Core.Typ.Lattice -- for instances
-open import Core.Typ.Properties using (⊔t-zeroₗ; ⊔t-zeroᵣ; sub-⊑; ⊔-⇒-⊑; ⊔-×-⊑)
+open import Core.Typ.Properties using (⊔t-zeroₗ; ⊔t-zeroᵣ; sub-⊑; ⊔-⇒-⊑; ⊔-×-⊑; ⊔-∀-⊑; ⊔-mono-⊑)
+open import Core.Typ.Consistency using (_~_)
 open import Core.Typ.Substitution using ([_↦_]_)
 open import Core.Typ.Equality using (typ-decEq)
 open import Core.Instances
@@ -107,6 +108,42 @@ unmatch+      refl s₁ s₂ | kind+ =
 unmatch+ {τ} eq   s₁ s₂ | diff with τ ≟t □
 ...                                | yes refl = ⊥ₛ
 unmatch+      ()   _  _  | diff    | no _
+
+private
+  ⇒-⊑ = ⊔-⇒-⊑
+  ×-⊑ = ⊔-×-⊑
+  ∀-⊑ = ⊔-∀-⊑
+
+dom⇒ₛ : ∀ {τ τ₁ τ₂} → ⌊ τ ⌋ → τ ⊔ □ ⇒ □ ≡ τ₁ ⇒ τ₂ → ⌊ τ₁ ⌋
+dom⇒ₛ ψ m = let _ , _ , _ , p , _ = ⇒-⊑ (ψ .proof) m in ↑ p
+
+cod⇒ₛ : ∀ {τ τ₁ τ₂} → ⌊ τ ⌋ → τ ⊔ □ ⇒ □ ≡ τ₁ ⇒ τ₂ → ⌊ τ₂ ⌋
+cod⇒ₛ ψ m = let _ , _ , _ , _ , q = ⇒-⊑ (ψ .proof) m in ↑ q
+
+match⇒ₛ : ∀ {τ τ₁ τ₂} → (ψ : ⌊ τ ⌋) → (m : τ ⊔ □ ⇒ □ ≡ τ₁ ⇒ τ₂)
+         → ψ .↓ ⊔ □ ⇒ □ ≡ (dom⇒ₛ ψ m) .↓ ⇒ (cod⇒ₛ ψ m) .↓
+match⇒ₛ ψ m = let _ , _ , m' , _ , _ = ⇒-⊑ (ψ .proof) m in m'
+
+fst×ₛ' : ∀ {τ τ₁ τ₂} → ⌊ τ ⌋ → τ ⊔ □ × □ ≡ τ₁ × τ₂ → ⌊ τ₁ ⌋
+fst×ₛ' ψ m = let _ , _ , _ , p , _ = ×-⊑ (ψ .proof) m in ↑ p
+
+snd×ₛ : ∀ {τ τ₁ τ₂} → ⌊ τ ⌋ → τ ⊔ □ × □ ≡ τ₁ × τ₂ → ⌊ τ₂ ⌋
+snd×ₛ ψ m = let _ , _ , _ , _ , q = ×-⊑ (ψ .proof) m in ↑ q
+
+match×ₛ : ∀ {τ τ₁ τ₂} → (ψ : ⌊ τ ⌋) → (m : τ ⊔ □ × □ ≡ τ₁ × τ₂)
+         → ψ .↓ ⊔ (□ × □) ≡ ((fst×ₛ' ψ m) .↓) × ((snd×ₛ ψ m) .↓)
+match×ₛ ψ m = let _ , _ , m' , _ , _ = ×-⊑ (ψ .proof) m in m'
+
+body∀ₛ : ∀ {τ τ'} → ⌊ τ ⌋ → τ ⊔ ∀· □ ≡ ∀· τ' → ⌊ τ' ⌋
+body∀ₛ ψ m = let _ , _ , p = ∀-⊑ (ψ .proof) m in ↑ p
+
+match∀ₛ : ∀ {τ τ'} → (ψ : ⌊ τ ⌋) → (m : τ ⊔ ∀· □ ≡ ∀· τ')
+         → ψ .↓ ⊔ ∀· □ ≡ ∀· ((body∀ₛ ψ m) .↓)
+match∀ₛ ψ m = let _ , m' , _ = ∀-⊑ (ψ .proof) m in m'
+
+-- Join of slices of consistent types
+_⊔~ₛ_ : ∀ {τ₁ τ₂} → ⌊ τ₁ ⌋ → ⌊ τ₂ ⌋ → {c : τ₁ ~ τ₂} → ⌊ τ₁ ⊔ τ₂ ⌋
+_⊔~ₛ_ ψ₁ ψ₂ {c} = ↑ (⊔-mono-⊑ c (ψ₁ .proof) (ψ₂ .proof))
 
 -- unmatch precision inversion lemmas:
 unmatch⇒-cod : ∀ {τ} → (q : ⌊ τ ⌋) → (ϕ : ⌊ τ ⌋)
