@@ -11,6 +11,7 @@ open import Semantics.Statics
 open import Semantics.Graduality using (syn-unicity; static-gradual-syn; syn-precision)
 
 open import Slicing.Synthesis.Synthesis using (IsMinimal)
+open import Slicing.MinSub using (min-sub; min-sub-valid)
 open import Slicing.Synthesis.FixedAssmsSynthesis
 
 module Slicing.Synthesis.FixedAssmsCalc where
@@ -57,13 +58,14 @@ data _◂_⤳_↦_⊣_ {n : ℕ} {Γ : Assms} : ∀ {e : Exp} {τ : Typ}
              → D₁ ◂ (unmatch⇒ m ⊥ₛ υ) ⤳ σ-fn ↦ ψ₁ ⊣ γ₁
              → (↦∘ D₁ m D₂) ◂ υ ⤳ ∘ₛ σ-fn ⊥ₛ ↦ cod⇒ₛ ψ₁ m ⊣ γ₁
 
+  -- Makes use of min-sub which finds the minimum type argument for a typfun
   min<>    : ∀ {e τ τ' σ ψ₁ γ σ-e}
                {D : n ； Γ ⊢ e ↦ τ} {m : τ ⊔ ∀· □ ≡ ∀· τ'} {wf : n ⊢wf σ}
-               {υ : ⌊ [ zero ↦ σ ] τ' ⌋} {υ' : ⌊ τ' ⌋} {ϕ₁ : ⌊ σ ⌋}
+               {υ : ⌊ [ zero ↦ σ ] τ' ⌋}
              → (υ .↓ ≢ □)
-             → υ ⊑ₛ subₛ ϕ₁ υ'
-             → D ◂ (unmatch∀ m υ') ⤳ σ-e ↦ ψ₁ ⊣ γ
-             → (↦<> D m wf) ◂ υ ⤳ <>ₛ σ-e ϕ₁ ↦ subₛ ϕ₁ (body∀ₛ ψ₁ m) ⊣ γ
+             → D ◂ (unmatch∀ m (unsub {τ'} {σ} υ)) ⤳ σ-e ↦ ψ₁ ⊣ γ
+             → (↦<> D m wf) ◂ υ ⤳ <>ₛ σ-e (min-sub {τ'} υ)
+               ↦ subₛ (min-sub {τ'} υ) (body∀ₛ ψ₁ m) ⊣ γ
 
   -- D₂'s required assumption on def used to slice D₁
   mindef   : ∀ {e' e τ' τ υ₂ υ₁ ψ₁ ψ₂ ψ₂' γ₁ γ₂ σ-body σ-def}
@@ -169,16 +171,16 @@ extract' (min∘ {τ = τ} {m = m} {υ = υ} _ sub)
     ∈ ↦∘ d-fn (match⇒ₛ ψ₁ m) (↤Sub ↦□ ~?₁)
     ⊒ υ⊑cod) , ≡refl , ≡refl
     
-extract' (min<> {τ = τ} {σ = σ} {D = D} {m = m} {wf = wf} {ϕ₁ = ϕ₁} _ sub⊑ sub)
+extract' (min<> {τ = τ} {σ = σ} {m = m} {wf = wf} {υ = υ} _ sub)
   with extract' sub
 ... | (σ-e ⇑ ψ₁ ∈ d ⊒ v) , ≡refl , ≡refl
   with ⊔-∀-⊑ v (match∀ₛ ψ₁ m)
 ... | _ , m'' , υ'⊑body
   rewrite ≡sym (unmatch∀-≡ {τ} m _ m'')
-  = (<>ₛ σ-e ϕ₁
-    ⇑ subₛ ϕ₁ (body∀ₛ ψ₁ m)
-    ∈ ↦<> d (match∀ₛ ψ₁ m) (wf-⊑ wf (ϕ₁ .proof))
-    ⊒ ⊑.trans {Typ} sub⊑ (sub-⊑ zero (⊑.refl {Typ}) υ'⊑body)) , ≡refl , ≡refl
+  = (<>ₛ σ-e (min-sub υ)
+    ⇑ subₛ (min-sub υ) (body∀ₛ ψ₁ m)
+    ∈ ↦<> d (match∀ₛ ψ₁ m) (wf-⊑ wf (min-sub υ .proof))
+    ⊒ ⊑.trans {Typ} (min-sub-valid υ) (sub-⊑ zero (⊑.refl {Typ}) υ'⊑body)) , ≡refl , ≡refl
 
 extract' (mindef {γ₂ = γ₂} _ s-body s-def d-def)
   with extract' s-body | extract' s-def | extract-ctx s-body
@@ -273,7 +275,7 @@ extract-minimal (minλ: sub _) = {!!}
 extract-minimal (minΛ sub) = {!!}
 extract-minimal (min& s₁ s₂) = {!!}
 extract-minimal (min∘ υ≢□ sub) = {!!}
-extract-minimal (min<> υ≢□ sub⊑ sub) = {!!}
+extract-minimal (min<> υ≢□ sub) = {!!}
 extract-minimal (mindef υ≢□ s-body s-def _) = {!!}
 extract-minimal (minπ₁ υ≢□ sub) = {!!}
 extract-minimal (minπ₂ υ≢□ sub) = {!!}

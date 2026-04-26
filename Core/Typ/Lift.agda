@@ -9,7 +9,8 @@ open import Relation.Nullary using (yes; no)
 open import Core.Typ.Base using (Typ; □; _⇒_; _×_; ∀·; _+_; diag; _kind?_; kind□; kind⇒; kind×; kind+; kind∀; diff)
 open import Core.Typ.Precision
 open import Core.Typ.Lattice -- for instances
-open import Core.Typ.Properties using (⊔t-zeroₗ; ⊔t-zeroᵣ; sub-⊑; ⊔-⇒-⊑; ⊔-×-⊑; ⊔-∀-⊑; ⊔-+-⊑; ⊔-mono-⊑; ⊔□+□)
+open import Core.Typ.Properties using (⊔t-zeroₗ; ⊔t-zeroᵣ; sub-⊑; ⊔-⇒-⊑; ⊔-×-⊑; ⊔-∀-⊑; ⊔-+-⊑; ⊔-mono-⊑)
+private ⊔□+□ = Core.Typ.Properties.⊔□+□
 open import Core.Typ.Consistency using (_~_)
 open import Core.Typ.Substitution using ([_↦_]_)
 open import Core.Typ.Equality using (typ-decEq)
