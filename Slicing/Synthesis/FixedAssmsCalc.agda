@@ -1,7 +1,7 @@
 {-# OPTIONS --allow-unsolved-metas #-}
 open import Data.Nat hiding (_+_; _⊔_; _≟_)
 open import Data.Product using (_,_; proj₁; proj₂; Σ-syntax; ∃-syntax) renaming (_×_ to _∧_)
-open import Relation.Binary.PropositionalEquality using (_≡_; _≢_; subst; cong) renaming (refl to ≡refl; sym to ≡sym)
+open import Relation.Binary.PropositionalEquality using (_≡_; _≢_; subst; cong) renaming (refl to ≡refl; sym to ≡sym; trans to ≡trans)
 open import Relation.Nullary using (yes; no)
 open import Data.Empty using (⊥-elim)
 open import Data.Maybe using (just)
@@ -11,7 +11,7 @@ open import Semantics.Statics
 open import Semantics.Graduality using (syn-unicity; static-gradual-syn; syn-precision)
 
 open import Slicing.Synthesis.Synthesis using (IsMinimal)
-open import Slicing.MinSub using (min-sub; min-sub-valid)
+open import Slicing.MinSub using (min-sub; min-sub-valid; min-sub-minimal; unsub-non□; unsub-⊑-body)
 open import Slicing.Synthesis.FixedAssmsSynthesis
 
 module Slicing.Synthesis.FixedAssmsCalc where
@@ -252,17 +252,36 @@ extract' (min∘ {τ = τ} {τ₂ = τ₂} {D₁ = D₁} {m = m} {υ = υ} υ≢
       with ih-min (↑ p₁ ⇑ ↑ τ₃⊑τ ∈ d₁' ⊒ unmatch⇒-mono-cod m υ υ≢□ τ₃⊑τ m' v') e₁⊑
     ... | ≡refl = ≡refl
     
-extract' (min<> {τ = τ} {σ = σ} {m = m} {wf = wf} {υ = υ} _ sub)
+extract' (min<> {τ = τ} {τ' = τ'} {σ = σ} {D = D} {m = m} {wf = wf} {υ = υ} υ≢□ sub)
   with extract' sub
 ... | ((σ-e ⇑ ψ₁ ∈ d ⊒ v) , ih-min) , ≡refl , ≡refl
   with ⊔-∀-⊑ v (match∀ₛ ψ₁ m)
 ... | _ , m'' , υ'⊑body
   rewrite ≡sym (unmatch∀-≡ {τ} m _ m'')
-  = (<>ₛ σ-e (min-sub υ)
-    ⇑ subₛ (min-sub υ) (body∀ₛ ψ₁ m)
-    ∈ ↦<> d (match∀ₛ ψ₁ m) (wf-⊑ wf (min-sub υ .proof))
-    ⊒ ⊑.trans {Typ} (min-sub-valid υ) (sub-⊑ zero (⊑.refl {Typ}) υ'⊑body)
-    , {!!}) , ≡refl , ≡refl
+  = (s , min) , ≡refl , ≡refl
+  where
+    s = <>ₛ σ-e (min-sub υ) ⇑ subₛ (min-sub υ) (body∀ₛ ψ₁ m)
+        ∈ ↦<> d (match∀ₛ ψ₁ m) (wf-⊑ wf (min-sub υ .proof))
+        ⊒ ⊑.trans {Typ} (min-sub-valid υ) (sub-⊑ zero (⊑.refl {Typ}) υ'⊑body)
+    ∀·-inj : ∀ {a b : Typ} → ∀· a ≡ ∀· b → a ≡ b
+    ∀·-inj ≡refl = ≡refl
+
+    min : IsMinimal s
+    min s' s'⊑
+      with s' .syn | s' .valid | s' ↓σ⊑ | s' ↓ϕ⊑ | s'⊑
+    ... | ↦□              | v'  | _          | _  | _
+        = ⊥-elim (υ≢□ (⊑ₛ⊥-inv {υ = υ} v'))
+    ... | ↦<> d' m' wf'  | v'  | ⊑<> p₁ p₂ | q  | ⊑<> e⊑ τ⊑
+      with syn-precision (⊑.refl {Assms}) p₁ D d'
+         | ⊔-∀-⊑ (syn-precision (⊑.refl {Assms}) p₁ D d') m
+    ... | τ₃⊑τ | _ , m₃ , τ₃body⊑
+      with ih-min (↑ p₁ ⇑ ↑ τ₃⊑τ ∈ d'
+                     ⊒ unmatch∀-mono m (unsub υ) (unsub-non□ {τ' = τ'} υ υ≢□)
+                         τ₃⊑τ m₃ (unsub-⊑-body {τ' = τ'} υ τ₃⊑τ m₃)) e⊑
+    ... | ≡refl
+      rewrite ∀·-inj (≡trans (≡sym m₃) m')
+      with ⊑.antisym {Typ} (min-sub-minimal υ (↑ p₂) (↑ τ₃body⊑) v') τ⊑
+    ... | ≡refl = ≡refl
 
 extract' (mindef {γ₂ = γ₂} _ s-body s-def d-def)
   with extract' s-body | extract' s-def | extract-ctx s-body

@@ -245,3 +245,16 @@ unmatch⇒-mono-cod _ _ υ≢□ ⊑□ refl ⊑□ = ⊥-elim (υ≢□ refl)
 unmatch⇒-mono-cod {τ₁' ⇒ τ₂'} refl υ _ (⊑⇒ {τ₁ = a} {τ₂ = b} _ _) m' υ⊑
   rewrite ⊔t-zeroᵣ {τ₁'} | ⊔t-zeroᵣ {τ₂'} | ⊔t-zeroᵣ {a} | ⊔t-zeroᵣ {b}
   with refl ← m' = ⊑⇒ ⊑□ υ⊑
+
+unmatch∀-mono : ∀ {τ τ' τ''}
+  → (m : τ ⊔ ∀· □ ≡ ∀· τ')
+  → (υ' : ⌊ τ' ⌋)
+  → υ' .↓ ≢ □
+  → τ'' ⊑ τ
+  → ∀ {τ₁'} → τ'' ⊔ ∀· □ ≡ ∀· τ₁'
+  → υ' .↓ ⊑ τ₁'
+  → (unmatch∀ {τ} m υ') .↓ ⊑t τ''
+unmatch∀-mono _ _ υ≢□ ⊑□ refl ⊑□ = ⊥-elim (υ≢□ refl)
+unmatch∀-mono {∀· τ₁'} refl υ' _ (⊑∀ {τ = a} _) m' υ⊑
+  rewrite ⊔t-zeroᵣ {τ₁'} | ⊔t-zeroᵣ {a}
+  with refl ← m' = ⊑∀ υ⊑
