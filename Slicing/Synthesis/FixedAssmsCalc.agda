@@ -18,6 +18,7 @@ module Slicing.Synthesis.FixedAssmsCalc where
 -- D ◂ₑ υ ↦ ψ ⊣ γ: derivation D explains type query υ within full free context,
 -- actually synthesising ψ (where υ ⊑ₛ ψ), actually using context entries γ.
 -- We need to track used context entries to decide how to slice unannotated let bindings and case scrutinees
+-- This context (γ) will end up being minimal
 infix 4 _◂ₑ_↦_⊣_
 data _◂ₑ_↦_⊣_ {n : ℕ} {Γ : Assms} : ∀ {e : Exp} {τ : Typ}
           → (D : n ； Γ ⊢ e ↦ τ) → ⌊ τ ⌋ → ⌊ τ ⌋ → ⌊ Γ ⌋ → Set where
@@ -94,7 +95,8 @@ data _◂ₑ_↦_⊣_ {n : ℕ} {Γ : Assms} : ∀ {e : Exp} {τ : Typ}
              → D₂ ◂ₑ υ₂ ↦ ψ₂ ⊣ (ς₂ ∷ₛ γ₂)
              → D ◂ₑ (ς₁ +ₛ ς₂) ↦ ψ₀ ⊣ γ₀
              → υ .↓ ⊑ υ₁ .↓ ⊔ υ₂ .↓
-             → (↦case D (⊔□+□ {τ₁} {τ₂}) D₁ D₂ c) ◂ₑ υ ↦ (ψ₁ ⊔~ₛ ψ₂) {c} ⊣ (γ₀ ⊔ₛ γ₁) ⊔ₛ γ₂
+             → (↦case D (⊔□+□ {τ₁} {τ₂}) D₁ D₂ c) ◂ₑ υ
+               ↦ (ψ₁ ⊔~ₛ ψ₂) {c} ⊣ (γ₀ ⊔ₛ γ₁) ⊔ₛ γ₂
 
 -- Extract a FixedAssmsSynSlice from a calculus derivation, with proof that .type ≡ ψ
 extract'
@@ -219,7 +221,7 @@ extract' (mincase {D = D} {c = c} _ s₁ s₂ s υ⊑)
 ⊤⋢⊥ : ∀ {τ : Typ} → τ ≢ □ → (⊤ₛ {a = τ}) ⊑ₛ  (⊥ₛ {a = τ}) → Data.Empty.⊥
 ⊤⋢⊥ {□} τ≢□ _ = τ≢□ ≡refl
 
-⊑ₛ⊥-inv : ∀ {τ : Typ} {υ : ⌊ τ ⌋} → _⊑ₛ_ {A = Typ} {a = τ} υ (⊥ₛ {A = Typ} {a = τ}) → υ .↓ ≡ □
+⊑ₛ⊥-inv : ∀ {τ : Typ} {υ : ⌊ τ ⌋} → υ ⊑ₛ (⊥ₛ {a = τ}) → υ .↓ ≡ □
 ⊑ₛ⊥-inv ⊑□ = ≡refl
 
 *-non□ : ∀ {n Γ} {D : n ； Γ ⊢ * ↦ *}
