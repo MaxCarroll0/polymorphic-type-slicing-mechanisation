@@ -15,7 +15,6 @@ open import Slicing.Synthesis.FixedAssmsSynthesis
 
 module Slicing.Synthesis.FixedAssmsSlicing where
 
--- Helper: if υ .↓ ≡ □ then υ ≡ ⊥ₛ
 ↓□→⊥ₛ : ∀ {τ : Typ} (υ : ⌊ τ ⌋) → υ .↓ ≡ □ → υ ≡ ⊥ₛ {a = τ}
 ↓□→⊥ₛ (□ isSlice ⊑□) ≡refl = ≡refl
 
@@ -24,20 +23,15 @@ slice
   : ∀ {n Γ e τ} → (D : n ； Γ ⊢ e ↦ τ) → (υ : ⌊ τ ⌋)
     → ∃[ σ ] ∃[ ψ ] ∃[ γ ] D ◂ υ ⤳ σ ↦ ψ ⊣ γ
 
--- □ query: always min□
 slice D (□ isSlice ⊑□) = _ , _ , _ , min□
-
--- ↦*
 slice ↦* (.* isSlice ⊑*) = _ , _ , _ , min*
-
--- Variables
 slice (↦Var {τ = τ} p) υ with υ .↓ ≈? □
 ... | yes eq = _ , _ , _ , subst (λ υ' → ↦Var p ◂ υ' ⤳ ⊥ₛ ↦ ⊥ₛ ⊣ ⊥ₛ)
                                  (≡sym (↓□→⊥ₛ υ eq))
                                  min□
 ... | no υ≢□ = _ , _ , _ , minVar p υ≢□
 
--- Lambda
+-- Lambda: use graduality to source the derivations
 slice (↦λ: {τ₁ = τ₁} wf D) ((._ ⇒ ._) isSlice ⊑⇒ p₁ p₂)
   with slice D (↑ p₂)
 ... | _ , _ , ((ϕ₁-↓ ∷ γ-↓) isSlice ⊑∷ ϕ₁-⊑ γ-⊑) , sub
@@ -53,11 +47,7 @@ slice (↦λ: {τ₁ = τ₁} wf D) ((._ ⇒ ._) isSlice ⊑⇒ p₁ p₂)
         d-ann = proj₁ (proj₂ sgs)
         ψ₂'-⊑ = proj₂ (proj₂ sgs)
     in _ , _ , _ , minλ: {ψ₂' = ↑ ψ₂'-⊑} sub d-ann
-
--- Type abstraction
 slice (↦Λ D) υ = {!!}
-
--- Pair
 slice (↦& D₁ D₂) ((._ × ._) isSlice ⊑× p₁ p₂)
   with slice D₁ (↑ p₁) | slice D₂ (↑ p₂)
 ... | _ , _ , _ , s₁ | _ , _ , _ , s₂ = _ , _ , _ , min& s₁ s₂
