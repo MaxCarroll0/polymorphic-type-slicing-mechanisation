@@ -9,7 +9,7 @@ open import Relation.Nullary using (yes; no)
 open import Core.Typ.Base using (Typ; □; _⇒_; _×_; ∀·; _+_; diag; _kind?_; kind□; kind⇒; kind×; kind+; kind∀; diff)
 open import Core.Typ.Precision
 open import Core.Typ.Lattice -- for instances
-open import Core.Typ.Properties using (⊔t-zeroₗ; ⊔t-zeroᵣ; sub-⊑; ⊔-⇒-⊑; ⊔-×-⊑; ⊔-∀-⊑; ⊔-mono-⊑)
+open import Core.Typ.Properties using (⊔t-zeroₗ; ⊔t-zeroᵣ; sub-⊑; ⊔-⇒-⊑; ⊔-×-⊑; ⊔-∀-⊑; ⊔-+-⊑; ⊔-mono-⊑; ⊔□+□)
 open import Core.Typ.Consistency using (_~_)
 open import Core.Typ.Substitution using ([_↦_]_)
 open import Core.Typ.Equality using (typ-decEq)
@@ -41,6 +41,11 @@ fst+ₛ ((_ + _) isSlice ⊑+ p _) = _ isSlice p
 snd+ₛ : ∀ {τ₁ τ₂ : Typ} → ⌊ τ₁ + τ₂ ⌋ → ⌊ τ₂ ⌋
 snd+ₛ (□ isSlice ⊑□) = ⊥ₛ
 snd+ₛ ((_ + _) isSlice ⊑+ _ q) = _ isSlice q
+
+diag+ₛ : ∀ {τ₁ τ₂ : Typ} → (ψ : ⌊ τ₁ + τ₂ ⌋)
+        → ψ .↓ ⊔ □ + □ ≡ fst+ₛ ψ .↓ + snd+ₛ ψ .↓
+diag+ₛ (□ isSlice ⊑□) = refl
+diag+ₛ ((a + b) isSlice ⊑+ _ _) = ⊔□+□ {a} {b}
 
 -- fst+ₛ/snd+ₛ monotone w.r.t. slice precision
 fst+ₛ-⊑ : ∀ {τ₁ τ₂} {s₁ s₂ : ⌊ τ₁ + τ₂ ⌋} → s₁ ⊑ₛ s₂ → fst+ₛ s₁ ⊑ₛ fst+ₛ s₂
@@ -109,37 +114,42 @@ unmatch+ {τ} eq   s₁ s₂ | diff with τ ≟t □
 ...                                | yes refl = ⊥ₛ
 unmatch+      ()   _  _  | diff    | no _
 
-private
-  ⇒-⊑ = ⊔-⇒-⊑
-  ×-⊑ = ⊔-×-⊑
-  ∀-⊑ = ⊔-∀-⊑
-
 dom⇒ₛ : ∀ {τ τ₁ τ₂} → ⌊ τ ⌋ → τ ⊔ □ ⇒ □ ≡ τ₁ ⇒ τ₂ → ⌊ τ₁ ⌋
-dom⇒ₛ ψ m = let _ , _ , _ , p , _ = ⇒-⊑ (ψ .proof) m in ↑ p
+dom⇒ₛ ψ m = let _ , _ , _ , p , _ = ⊔-⇒-⊑ (ψ .proof) m in ↑ p
 
 cod⇒ₛ : ∀ {τ τ₁ τ₂} → ⌊ τ ⌋ → τ ⊔ □ ⇒ □ ≡ τ₁ ⇒ τ₂ → ⌊ τ₂ ⌋
-cod⇒ₛ ψ m = let _ , _ , _ , _ , q = ⇒-⊑ (ψ .proof) m in ↑ q
+cod⇒ₛ ψ m = let _ , _ , _ , _ , q = ⊔-⇒-⊑ (ψ .proof) m in ↑ q
 
 match⇒ₛ : ∀ {τ τ₁ τ₂} → (ψ : ⌊ τ ⌋) → (m : τ ⊔ □ ⇒ □ ≡ τ₁ ⇒ τ₂)
          → ψ .↓ ⊔ □ ⇒ □ ≡ (dom⇒ₛ ψ m) .↓ ⇒ (cod⇒ₛ ψ m) .↓
-match⇒ₛ ψ m = let _ , _ , m' , _ , _ = ⇒-⊑ (ψ .proof) m in m'
+match⇒ₛ ψ m = let _ , _ , m' , _ , _ = ⊔-⇒-⊑ (ψ .proof) m in m'
 
 fst×ₛ' : ∀ {τ τ₁ τ₂} → ⌊ τ ⌋ → τ ⊔ □ × □ ≡ τ₁ × τ₂ → ⌊ τ₁ ⌋
-fst×ₛ' ψ m = let _ , _ , _ , p , _ = ×-⊑ (ψ .proof) m in ↑ p
+fst×ₛ' ψ m = let _ , _ , _ , p , _ = ⊔-×-⊑ (ψ .proof) m in ↑ p
 
 snd×ₛ : ∀ {τ τ₁ τ₂} → ⌊ τ ⌋ → τ ⊔ □ × □ ≡ τ₁ × τ₂ → ⌊ τ₂ ⌋
-snd×ₛ ψ m = let _ , _ , _ , _ , q = ×-⊑ (ψ .proof) m in ↑ q
+snd×ₛ ψ m = let _ , _ , _ , _ , q = ⊔-×-⊑ (ψ .proof) m in ↑ q
 
 match×ₛ : ∀ {τ τ₁ τ₂} → (ψ : ⌊ τ ⌋) → (m : τ ⊔ □ × □ ≡ τ₁ × τ₂)
          → ψ .↓ ⊔ (□ × □) ≡ ((fst×ₛ' ψ m) .↓) × ((snd×ₛ ψ m) .↓)
-match×ₛ ψ m = let _ , _ , m' , _ , _ = ×-⊑ (ψ .proof) m in m'
+match×ₛ ψ m = let _ , _ , m' , _ , _ = ⊔-×-⊑ (ψ .proof) m in m'
 
 body∀ₛ : ∀ {τ τ'} → ⌊ τ ⌋ → τ ⊔ ∀· □ ≡ ∀· τ' → ⌊ τ' ⌋
-body∀ₛ ψ m = let _ , _ , p = ∀-⊑ (ψ .proof) m in ↑ p
+body∀ₛ ψ m = let _ , _ , p = ⊔-∀-⊑ (ψ .proof) m in ↑ p
 
 match∀ₛ : ∀ {τ τ'} → (ψ : ⌊ τ ⌋) → (m : τ ⊔ ∀· □ ≡ ∀· τ')
          → ψ .↓ ⊔ ∀· □ ≡ ∀· ((body∀ₛ ψ m) .↓)
-match∀ₛ ψ m = let _ , m' , _ = ∀-⊑ (ψ .proof) m in m'
+match∀ₛ ψ m = let _ , m' , _ = ⊔-∀-⊑ (ψ .proof) m in m'
+
+fst+ₛ' : ∀ {τ τ₁ τ₂} → ⌊ τ ⌋ → τ ⊔ □ + □ ≡ τ₁ + τ₂ → ⌊ τ₁ ⌋
+fst+ₛ' ψ m = let _ , _ , _ , p , _ = ⊔-+-⊑ (ψ .proof) m in ↑ p
+
+snd+ₛ' : ∀ {τ τ₁ τ₂} → ⌊ τ ⌋ → τ ⊔ □ + □ ≡ τ₁ + τ₂ → ⌊ τ₂ ⌋
+snd+ₛ' ψ m = let _ , _ , _ , _ , q = ⊔-+-⊑ (ψ .proof) m in ↑ q
+
+match+ₛ : ∀ {τ τ₁ τ₂} → (ψ : ⌊ τ ⌋) → (m : τ ⊔ □ + □ ≡ τ₁ + τ₂)
+         → ψ .↓ ⊔ □ + □ ≡ (fst+ₛ' ψ m) .↓ + (snd+ₛ' ψ m) .↓
+match+ₛ ψ m = let _ , _ , m' , _ , _ = ⊔-+-⊑ (ψ .proof) m in m'
 
 -- Join of slices of consistent types
 _⊔~ₛ_ : ∀ {τ₁ τ₂} → ⌊ τ₁ ⌋ → ⌊ τ₂ ⌋ → {c : τ₁ ~ τ₂} → ⌊ τ₁ ⊔ τ₂ ⌋
