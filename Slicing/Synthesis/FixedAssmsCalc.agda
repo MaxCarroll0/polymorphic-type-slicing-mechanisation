@@ -261,36 +261,52 @@ extract' (mindef {γ₂ = γ₂} _ s-body s-def d-def)
 ... | ((σ₂ ⇑ ϕ₂ ∈ d₂ ⊒ v₂) , ih-body) , ≡refl , ≡refl
     | ((σ₁ ⇑ ϕ₁ ∈ d₁ ⊒ v₁) , ih-def) , ≡refl , ≡refl | d-ctx
   = let ψ₂⊑ψ₂' = syn-precision (⊑∷ v₁ (γ₂ .proof))
-                     (⊑.refl {Exp}) d-def d-ctx
+                               (⊑.refl {Exp}) d-def d-ctx
     in (defₛ σ₁ σ₂
        ⇑ _
        ∈ ↦def d₁ d-def
        ⊒ ⊑.trans {Typ} v₂ ψ₂⊑ψ₂'
        , {!!}) , ≡refl , ≡refl
 
-extract' (minπ₁ {τ = τ} {m = m} _ sub)
+extract' (minπ₁ {τ = τ} {τ₁ = τ₁} {υ = υ} {D = D} {m = m} υ≢□ sub)
   with extract' sub
 ... | ((σ ⇑ ψ₁ ∈ d ⊒ v) , ih-min) , ≡refl , ≡refl
   with ⊔-×-⊑ v (match×ₛ ψ₁ m)
 ... | _ , _ , m'' , υ⊑fst , _
   rewrite ≡sym (unmatch×-≡-fst {τ} m _ ⊥ₛ m'')
-  = (π₁ₛ σ
-    ⇑ fst×ₛ' ψ₁ m
-    ∈ ↦π₁ d (match×ₛ ψ₁ m)
-    ⊒ υ⊑fst
-    , {!!}) , ≡refl , ≡refl
+  = (s , min) , ≡refl , ≡refl
+  where
+    s = π₁ₛ σ ⇑ fst×ₛ' ψ₁ m ∈ ↦π₁ d (match×ₛ ψ₁ m) ⊒ υ⊑fst
+    min : IsMinimal s
+    min s' s'⊑
+      with s' .syn   | s' .valid | s' ↓σ⊑ | s' ↓ϕ⊑ | s'⊑
+    ... | ↦□         | v'        | _      | _      | _
+        = ⊥-elim (υ≢□ (⊑ₛ⊥-inv {υ = υ} v'))
+    ... | ↦π₁ d' m'  | v'        | ⊑π₁ p  | q      | ⊑π₁ e⊑
+      with syn-precision (⊑.refl {Assms}) p D d'
+    ... | τ₃⊑τ
+      with ih-min (↑ p ⇑ ↑ τ₃⊑τ ∈ d' ⊒ unmatch×-mono m υ υ≢□ τ₃⊑τ m' v') e⊑
+    ... | ≡refl = ≡refl
 
-extract' (minπ₂ {τ = τ} {m = m} _ sub)
+extract' (minπ₂ {τ = τ} {τ₂ = τ₂} {υ = υ} {D = D} {m = m} υ≢□ sub)
   with extract' sub
 ... | ((σ ⇑ ψ₁ ∈ d ⊒ v) , ih-min) , ≡refl , ≡refl
   with ⊔-×-⊑ v (match×ₛ ψ₁ m)
 ... | _ , _ , m'' , _ , υ⊑snd
   rewrite ≡sym (unmatch×-≡-snd {τ} m ⊥ₛ _ m'')
-  = (π₂ₛ σ
-    ⇑ snd×ₛ ψ₁ m
-    ∈ ↦π₂ d (match×ₛ ψ₁ m)
-    ⊒ υ⊑snd
-    , {!!}) , ≡refl , ≡refl
+  = (s , min) , ≡refl , ≡refl
+  where
+    s = π₂ₛ σ ⇑ snd×ₛ ψ₁ m ∈ ↦π₂ d (match×ₛ ψ₁ m) ⊒ υ⊑snd
+    min : IsMinimal s
+    min s' s'⊑
+      with s' .syn   | s' .valid | s' ↓σ⊑ | s' ↓ϕ⊑ | s'⊑
+    ... | ↦□         | v'        | _      | _      | _
+        = ⊥-elim (υ≢□ (⊑ₛ⊥-inv {υ = υ} v'))
+    ... | ↦π₂ d' m'  | v'        | ⊑π₂ p  | q      | ⊑π₂ e⊑
+      with syn-precision (⊑.refl {Assms}) p D d'
+    ... | τ₃⊑τ
+      with ih-min (↑ p ⇑ ↑ τ₃⊑τ ∈ d' ⊒ unmatch×-mono-snd m υ υ≢□ τ₃⊑τ m' v') e⊑
+    ... | ≡refl = ≡refl
 
 extract' (mincase {ς₁ = ς₁} {ς₂ = ς₂} {ψ₁' = ψ₁'} {ψ₂' = ψ₂'} {γ₁ = γ₁} {γ₂ = γ₂} {c = c}
                   _ s₁ s₂ s d₁-case d₂-case c' υ⊑)

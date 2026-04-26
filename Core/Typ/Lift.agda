@@ -1,7 +1,7 @@
 module Core.Typ.Lift where
 
 open import Data.Nat using (zero)
-open import Relation.Binary.PropositionalEquality using (_≡_; refl; subst)
+open import Relation.Binary.PropositionalEquality using (_≡_; _≢_; refl; subst)
 open import Data.Empty using (⊥-elim)
 open import Data.Product using (_,_; ∃-syntax) renaming (_×_ to _∧_)
 open import Relation.Nullary using (yes; no)
@@ -205,3 +205,30 @@ postulate
   unmatch∀-≡ : ∀ {τ τ'} (m : τ ⊔ ∀· □ ≡ ∀· τ')
                (s : ⌊ τ' ⌋)
                → ∀ {a} → (unmatch∀ {τ} m s) .↓ ⊔ ∀· □ ≡ ∀· a → s .↓ ≡ a
+
+-- unmatch× is monotonicity
+unmatch×-mono : ∀ {τ τ₁ τ₂ τ'}
+  → (m : τ ⊔ □ × □ ≡ τ₁ × τ₂)
+  → (υ : ⌊ τ₁ ⌋)
+  → υ .↓ ≢ □
+  → τ' ⊑ τ
+  → ∀ {τ₁' τ₂'} → τ' ⊔ □ × □ ≡ τ₁' × τ₂'
+  → υ .↓ ⊑ τ₁'
+  → (unmatch× {τ} m υ (⊥ₛ {a = τ₂})) .↓ ⊑t τ'
+unmatch×-mono _ _ υ≢□ ⊑□ refl ⊑□ = ⊥-elim (υ≢□ refl)
+unmatch×-mono {τ₁' × τ₂'} refl υ _ (⊑× {τ₁ = a} {τ₂ = b} _ _) m' υ⊑
+  rewrite ⊔t-zeroᵣ {τ₁'} | ⊔t-zeroᵣ {τ₂'} | ⊔t-zeroᵣ {a} | ⊔t-zeroᵣ {b}
+  with refl ← m' = ⊑× υ⊑ ⊑□
+
+unmatch×-mono-snd : ∀ {τ τ₁ τ₂ τ'}
+  → (m : τ ⊔ □ × □ ≡ τ₁ × τ₂)
+  → (υ : ⌊ τ₂ ⌋)
+  → υ .↓ ≢ □
+  → τ' ⊑ τ
+  → ∀ {τ₁' τ₂'} → τ' ⊔ □ × □ ≡ τ₁' × τ₂'
+  → υ .↓ ⊑ τ₂'
+  → (unmatch× {τ} m (⊥ₛ {a = τ₁}) υ) .↓ ⊑t τ'
+unmatch×-mono-snd _ _ υ≢□ ⊑□ refl ⊑□ = ⊥-elim (υ≢□ refl)
+unmatch×-mono-snd {τ₁' × τ₂'} refl υ _ (⊑× {τ₁ = a} {τ₂ = b} _ _) m' υ⊑
+  rewrite ⊔t-zeroᵣ {τ₁'} | ⊔t-zeroᵣ {τ₂'} | ⊔t-zeroᵣ {a} | ⊔t-zeroᵣ {b}
+  with refl ← m' = ⊑× ⊑□ υ⊑
