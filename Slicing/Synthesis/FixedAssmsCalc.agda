@@ -352,5 +352,8 @@ extract' (mincase {ς₁ = ς₁} {ς₂ = ς₂} {ψ₁' = ψ₁'} {ψ₂' = ψ
        ⊒ ⊑.trans {Typ} υ⊑ (⊔-mono-⊑ c' (⊑.trans {Typ} v₁ v₁') (⊑.trans {Typ} v₂ v₂'))
        , {!!}) , ≡refl , ≡refl
 
-
-
+-- Used context is minimal
+postulate
+  inject-min : ∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} {σ υ ψ γ}
+    → (c : D ◂ υ ⤳ σ ↦ ψ ⊣ γ)
+    → MinSynSlice D ◂ υ
