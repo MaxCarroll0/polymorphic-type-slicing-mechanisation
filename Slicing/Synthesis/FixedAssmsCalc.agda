@@ -232,17 +232,25 @@ extract' (min& s₁ s₂)
          | ih₂ (↑ p₂ ⇑ ↑ q₂ ∈ d₂' ⊒ v₂') e₂⊑
     ... | ≡refl | ≡refl = ≡refl
   
-extract' (min∘ {τ = τ} {m = m} {υ = υ} _ sub)
+extract' (min∘ {τ = τ} {τ₂ = τ₂} {D₁ = D₁} {m = m} {υ = υ} υ≢□ sub)
   with extract' sub
 ... | ((σ-fn ⇑ ψ₁ ∈ d-fn ⊒ v-fn) , ih-min) , ≡refl , ≡refl
   with ⊔-⇒-⊑ v-fn (match⇒ₛ ψ₁ m)
 ... | _ , _ , m'' , _ , υ⊑cod
   rewrite ≡sym (unmatch⇒-≡-snd {τ} m ⊥ₛ υ m'')
-  = (∘ₛ σ-fn ⊥ₛ
-    ⇑ cod⇒ₛ ψ₁ m
-    ∈ ↦∘ d-fn (match⇒ₛ ψ₁ m) (↤Sub ↦□ ~?₁)
-    ⊒ υ⊑cod
-    , {!!}) , ≡refl , ≡refl
+  = (s , min) , ≡refl , ≡refl
+  where
+    s = ∘ₛ σ-fn ⊥ₛ ⇑ cod⇒ₛ ψ₁ m ∈ ↦∘ d-fn (match⇒ₛ ψ₁ m) (↤Sub ↦□ ~?₁) ⊒ υ⊑cod
+    min : IsMinimal s
+    min s' s'⊑
+      with s' .syn | s' .valid | s' ↓σ⊑ | s' ↓ϕ⊑ | s'⊑
+    ... | ↦□              | v'  | _         | _  | _
+        = ⊥-elim (υ≢□ (⊑ₛ⊥-inv {υ = υ} v'))
+    ... | ↦∘ d₁' m' d₂'  | v'  | ⊑∘ p₁ p₂ | q  | ⊑∘ e₁⊑ ⊑□
+      with syn-precision (⊑.refl {Assms}) p₁ D₁ d₁'
+    ... | τ₃⊑τ
+      with ih-min (↑ p₁ ⇑ ↑ τ₃⊑τ ∈ d₁' ⊒ unmatch⇒-mono-cod m υ υ≢□ τ₃⊑τ m' v') e₁⊑
+    ... | ≡refl = ≡refl
     
 extract' (min<> {τ = τ} {σ = σ} {m = m} {wf = wf} {υ = υ} _ sub)
   with extract' sub
@@ -285,7 +293,7 @@ extract' (minπ₁ {τ = τ} {τ₁ = τ₁} {υ = υ} {D = D} {m = m} υ≢□ 
     ... | ↦π₁ d' m'  | v'        | ⊑π₁ p  | q      | ⊑π₁ e⊑
       with syn-precision (⊑.refl {Assms}) p D d'
     ... | τ₃⊑τ
-      with ih-min (↑ p ⇑ ↑ τ₃⊑τ ∈ d' ⊒ unmatch×-mono m υ υ≢□ τ₃⊑τ m' v') e⊑
+      with ih-min (↑ p ⇑ ↑ τ₃⊑τ ∈ d' ⊒ unmatch×-mono-fst m υ υ≢□ τ₃⊑τ m' v') e⊑
     ... | ≡refl = ≡refl
 
 extract' (minπ₂ {τ = τ} {τ₂ = τ₂} {υ = υ} {D = D} {m = m} υ≢□ sub)

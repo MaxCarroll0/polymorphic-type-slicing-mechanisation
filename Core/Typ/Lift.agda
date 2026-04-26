@@ -206,8 +206,8 @@ postulate
                (s : ⌊ τ' ⌋)
                → ∀ {a} → (unmatch∀ {τ} m s) .↓ ⊔ ∀· □ ≡ ∀· a → s .↓ ≡ a
 
--- unmatch× is monotonicity
-unmatch×-mono : ∀ {τ τ₁ τ₂ τ'}
+-- unmatch monotonicity lemmas
+unmatch×-mono-fst : ∀ {τ τ₁ τ₂ τ'}
   → (m : τ ⊔ □ × □ ≡ τ₁ × τ₂)
   → (υ : ⌊ τ₁ ⌋)
   → υ .↓ ≢ □
@@ -215,8 +215,8 @@ unmatch×-mono : ∀ {τ τ₁ τ₂ τ'}
   → ∀ {τ₁' τ₂'} → τ' ⊔ □ × □ ≡ τ₁' × τ₂'
   → υ .↓ ⊑ τ₁'
   → (unmatch× {τ} m υ (⊥ₛ {a = τ₂})) .↓ ⊑t τ'
-unmatch×-mono _ _ υ≢□ ⊑□ refl ⊑□ = ⊥-elim (υ≢□ refl)
-unmatch×-mono {τ₁' × τ₂'} refl υ _ (⊑× {τ₁ = a} {τ₂ = b} _ _) m' υ⊑
+unmatch×-mono-fst _ _ υ≢□ ⊑□ refl ⊑□ = ⊥-elim (υ≢□ refl)
+unmatch×-mono-fst {τ₁' × τ₂'} refl υ _ (⊑× {τ₁ = a} {τ₂ = b} _ _) m' υ⊑
   rewrite ⊔t-zeroᵣ {τ₁'} | ⊔t-zeroᵣ {τ₂'} | ⊔t-zeroᵣ {a} | ⊔t-zeroᵣ {b}
   with refl ← m' = ⊑× υ⊑ ⊑□
 
@@ -232,3 +232,16 @@ unmatch×-mono-snd _ _ υ≢□ ⊑□ refl ⊑□ = ⊥-elim (υ≢□ refl)
 unmatch×-mono-snd {τ₁' × τ₂'} refl υ _ (⊑× {τ₁ = a} {τ₂ = b} _ _) m' υ⊑
   rewrite ⊔t-zeroᵣ {τ₁'} | ⊔t-zeroᵣ {τ₂'} | ⊔t-zeroᵣ {a} | ⊔t-zeroᵣ {b}
   with refl ← m' = ⊑× ⊑□ υ⊑
+
+unmatch⇒-mono-cod : ∀ {τ τ₁ τ₂ τ'}
+  → (m : τ ⊔ □ ⇒ □ ≡ τ₁ ⇒ τ₂)
+  → (υ : ⌊ τ₂ ⌋)
+  → υ .↓ ≢ □
+  → τ' ⊑ τ
+  → ∀ {τ₁' τ₂'} → τ' ⊔ □ ⇒ □ ≡ τ₁' ⇒ τ₂'
+  → υ .↓ ⊑ τ₂'
+  → (unmatch⇒ {τ} m (⊥ₛ {a = τ₁}) υ) .↓ ⊑t τ'
+unmatch⇒-mono-cod _ _ υ≢□ ⊑□ refl ⊑□ = ⊥-elim (υ≢□ refl)
+unmatch⇒-mono-cod {τ₁' ⇒ τ₂'} refl υ _ (⊑⇒ {τ₁ = a} {τ₂ = b} _ _) m' υ⊑
+  rewrite ⊔t-zeroᵣ {τ₁'} | ⊔t-zeroᵣ {τ₂'} | ⊔t-zeroᵣ {a} | ⊔t-zeroᵣ {b}
+  with refl ← m' = ⊑⇒ ⊑□ υ⊑
