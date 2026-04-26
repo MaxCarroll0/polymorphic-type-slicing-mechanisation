@@ -106,131 +106,6 @@ data _◂_⤳_↦_⊣_ {n : ℕ} {Γ : Assms} : ∀ {e : Exp} {τ : Typ}
              → (↦case D (⊔□+□ {τ₁} {τ₂}) D₁ D₂ c) ◂ υ ⤳ caseₛ σ₀ σ₁ σ₂
                ↦ (ψ₁' ⊔~ₛ ψ₂') {c} ⊣ (γ₀ ⊔ₛ γ₁) ⊔ₛ γ₂
 
--- Extract a FixedAssmsSynSlice from a calculus derivation, with proofs that .type ≡ ψ and .expₛ ≡ σ
-extract'
-  : ∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} {σ υ ψ γ}
-    → D ◂ υ ⤳ σ ↦ ψ ⊣ γ
-    → Σ[ s ∈ FixedAssmsSynSlice D υ ] s .type ≡ ψ ∧ s .expₛ ≡ σ
-
-extract : ∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} {σ υ ψ γ}
-    → D ◂ υ ⤳ σ ↦ ψ ⊣ γ → FixedAssmsSynSlice D υ
-extract c = proj₁ (extract' c)
-
-extract-ψ : ∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} {σ υ ψ γ}
-    → (c : D ◂ υ ⤳ σ ↦ ψ ⊣ γ) → (extract c) .type ≡ ψ
-extract-ψ c = proj₁ (proj₂ (extract' c))
-
-extract-σ : ∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} {σ υ ψ γ}
-    → (c : D ◂ υ ⤳ σ ↦ ψ ⊣ γ) → (extract c) .expₛ ≡ σ
-extract-σ c = proj₂ (proj₂ (extract' c))
-
--- The extracted expression types under the used context γ, synthesising ψ
-postulate
-  extract-ctx
-    : ∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} {σ υ ψ γ}
-      → (c : D ◂ υ ⤳ σ ↦ ψ ⊣ γ)
-      → n ； γ .↓ ⊢ (extract c) ↓σ ↦ ψ .↓
-
-extract' (minVar {τ' = τ'} p {υ = υ} _)
-  = (⊤ₛ ⇑ ⊤ₛ ∈ ↦Var p ⊒ ⊤ₛ-max {a = τ'} υ) , ≡refl , ≡refl
-
-extract' min□
-  = (⊥ₛ ⇑ ⊥ₛ ∈ ↦□ ⊒ ⊑□) , ≡refl , ≡refl
-
-extract' min*
-  = ⊤-fixedassms-syn ↦* , ≡refl , ≡refl
-
-extract' (minλ: {υ₁ = υ₁} {ϕ₁ = ϕ₁} {γ = γ} {wf = wf} sub d-ann)
-  with extract' sub | extract-ctx sub
-...  | (σ₂ ⇑ ψ₂ ∈ d₂ ⊒ v₂) , ≡refl , ≡refl | d-ctx
-  = let ψ₂⊑ψ₂' = syn-precision (⊑∷ (⊑ₛLat.x⊑ₛx⊔ₛy ϕ₁ υ₁) (γ .proof))
-                     (⊑.refl {Exp}) d-ann d-ctx
-    in (λ:ₛ (ϕ₁ ⊔ₛ υ₁) σ₂
-       ⇑ (ϕ₁ ⊔ₛ υ₁) ⇒ₛ _
-       ∈ ↦λ: (wf-⊑ wf ((ϕ₁ ⊔ₛ υ₁) .proof)) d-ann
-       ⊒ ⊑⇒ (⊑ₛLat.y⊑ₛx⊔ₛy ϕ₁ υ₁) (⊑.trans {Typ} v₂ ψ₂⊑ψ₂')) , ≡refl , ≡refl
-    
-extract' (minΛ sub)
-  with extract' sub
-... | (σ-body ⇑ ϕ-body ∈ d-body ⊒ v-body) , ≡refl , ≡refl
-  = (Λₛ σ-body ⇑ ∀·ₛ ϕ-body ∈ ↦Λ d-body ⊒ ⊑∀ v-body) , ≡refl , ≡refl
-
-extract' (min& s₁ s₂)
-  with extract' s₁ | extract' s₂
-... | (σ₁ ⇑ ϕ₁ ∈ d₁ ⊒ v₁) , ≡refl , ≡refl | (σ₂ ⇑ ϕ₂ ∈ d₂ ⊒ v₂) , ≡refl , ≡refl
-  = (σ₁ &ₛ σ₂ ⇑ ϕ₁ ×ₛ ϕ₂ ∈ ↦& d₁ d₂ ⊒ ⊑× v₁ v₂) , ≡refl , ≡refl
-  
-extract' (min∘ {τ = τ} {m = m} {υ = υ} _ sub)
-  with extract' sub
-... | (σ-fn ⇑ ψ₁ ∈ d-fn ⊒ v-fn) , ≡refl , ≡refl
-  with ⊔-⇒-⊑ v-fn (match⇒ₛ ψ₁ m)
-... | _ , _ , m'' , _ , υ⊑cod
-  rewrite ≡sym (unmatch⇒-≡-snd {τ} m ⊥ₛ υ m'')
-  = (∘ₛ σ-fn ⊥ₛ
-    ⇑ cod⇒ₛ ψ₁ m
-    ∈ ↦∘ d-fn (match⇒ₛ ψ₁ m) (↤Sub ↦□ ~?₁)
-    ⊒ υ⊑cod) , ≡refl , ≡refl
-    
-extract' (min<> {τ = τ} {σ = σ} {m = m} {wf = wf} {υ = υ} _ sub)
-  with extract' sub
-... | (σ-e ⇑ ψ₁ ∈ d ⊒ v) , ≡refl , ≡refl
-  with ⊔-∀-⊑ v (match∀ₛ ψ₁ m)
-... | _ , m'' , υ'⊑body
-  rewrite ≡sym (unmatch∀-≡ {τ} m _ m'')
-  = (<>ₛ σ-e (min-sub υ)
-    ⇑ subₛ (min-sub υ) (body∀ₛ ψ₁ m)
-    ∈ ↦<> d (match∀ₛ ψ₁ m) (wf-⊑ wf (min-sub υ .proof))
-    ⊒ ⊑.trans {Typ} (min-sub-valid υ) (sub-⊑ zero (⊑.refl {Typ}) υ'⊑body)) , ≡refl , ≡refl
-
-extract' (mindef {γ₂ = γ₂} _ s-body s-def d-def)
-  with extract' s-body | extract' s-def | extract-ctx s-body
-... | (σ₂ ⇑ ϕ₂ ∈ d₂ ⊒ v₂) , ≡refl , ≡refl | (σ₁ ⇑ ϕ₁ ∈ d₁ ⊒ v₁) , ≡refl , ≡refl | d-ctx
-  = let ψ₂⊑ψ₂' = syn-precision (⊑∷ v₁ (γ₂ .proof))
-                     (⊑.refl {Exp}) d-def d-ctx
-    in (defₛ σ₁ σ₂
-       ⇑ _
-       ∈ ↦def d₁ d-def
-       ⊒ ⊑.trans {Typ} v₂ ψ₂⊑ψ₂') , ≡refl , ≡refl
-
-extract' (minπ₁ {τ = τ} {m = m} _ sub)
-  with extract' sub
-... | (σ ⇑ ψ₁ ∈ d ⊒ v) , ≡refl , ≡refl
-  with ⊔-×-⊑ v (match×ₛ ψ₁ m)
-... | _ , _ , m'' , υ⊑fst , _
-  rewrite ≡sym (unmatch×-≡-fst {τ} m _ ⊥ₛ m'')
-  = (π₁ₛ σ
-    ⇑ fst×ₛ' ψ₁ m
-    ∈ ↦π₁ d (match×ₛ ψ₁ m)
-    ⊒ υ⊑fst) , ≡refl , ≡refl
-
-extract' (minπ₂ {τ = τ} {m = m} _ sub)
-  with extract' sub
-... | (σ ⇑ ψ₁ ∈ d ⊒ v) , ≡refl , ≡refl
-  with ⊔-×-⊑ v (match×ₛ ψ₁ m)
-... | _ , _ , m'' , _ , υ⊑snd
-  rewrite ≡sym (unmatch×-≡-snd {τ} m ⊥ₛ _ m'')
-  = (π₂ₛ σ
-    ⇑ snd×ₛ ψ₁ m
-    ∈ ↦π₂ d (match×ₛ ψ₁ m)
-    ⊒ υ⊑snd) , ≡refl , ≡refl
-
-extract' (mincase {ς₁ = ς₁} {ς₂ = ς₂} {ψ₁' = ψ₁'} {ψ₂' = ψ₂'} {γ₁ = γ₁} {γ₂ = γ₂} {c = c}
-                  _ s₁ s₂ s d₁-case d₂-case c' υ⊑)
-  with extract' s₁ | extract' s₂ | extract' s | extract-ctx s₁ | extract-ctx s₂
-... | (σ₁ ⇑ ψ₁ ∈ d₁ ⊒ v₁) , ≡refl , ≡refl
-    | (σ₂ ⇑ ψ₂ ∈ d₂ ⊒ v₂) , ≡refl , ≡refl
-    | (σ₀ ⇑ ψ₀ ∈ d₀ ⊒ v₀) , ≡refl , ≡refl
-    | d-ctx₁ | d-ctx₂
-  = let ς₁⊑ = fst+ₛ-⊑ {s₁ = ς₁ +ₛ ς₂} v₀
-        ς₂⊑ = snd+ₛ-⊑ {s₁ = ς₁ +ₛ ς₂} v₀
-        v₁' = syn-precision (⊑∷ ς₁⊑ (γ₁ .proof)) (⊑.refl {Exp}) d₁-case d-ctx₁
-        v₂' = syn-precision (⊑∷ ς₂⊑ (γ₂ .proof)) (⊑.refl {Exp}) d₂-case d-ctx₂
-    in (caseₛ σ₀ σ₁ σ₂
-       ⇑ (ψ₁' ⊔~ₛ ψ₂') {c}
-       ∈ ↦case d₀ (diag+ₛ ψ₀) d₁-case d₂-case c'
-       ⊒ ⊑.trans {Typ} υ⊑ (⊔-mono-⊑ c' (⊑.trans {Typ} v₁ v₁') (⊑.trans {Typ} v₂ v₂'))) , ≡refl , ≡refl
-
-
 -- Lemmas for minimality proof
 ⊤⋢⊥ : ∀ {τ : Typ} → τ ≢ □ → (⊤ₛ {a = τ}) ⊑ₛ  (⊥ₛ {a = τ}) → Data.Empty.⊥
 ⊤⋢⊥ {□} τ≢□ _ = τ≢□ ≡refl
@@ -260,39 +135,179 @@ var-non□ {τ' = τ'} {υ = υ} s' υ≢□ v d with s' .expₛ
 ... | ↦□ = ⊥-elim (υ≢□ (⊑ₛ⊥-inv {τ = τ'} {υ = υ} v))
 var-non□ s' υ≢□ v d | ⟨ _ ⟩ isSlice ⊑Var = ⊑Var
 
--- extract produces minimal slices
+-- Extract a MinFixedAssmsSynSlice from a calculus derivation, with proofs that .type ≡ ψ and .expₛ ≡ σ
+extract'
+  : ∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} {σ υ ψ γ}
+    → D ◂ υ ⤳ σ ↦ ψ ⊣ γ
+    → Σ[ (s , _) ∈ MinFixedAssmsSynSlice D υ ] s .type ≡ ψ ∧ s .expₛ ≡ σ
+
+extract : ∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} {σ υ ψ γ}
+    → D ◂ υ ⤳ σ ↦ ψ ⊣ γ → FixedAssmsSynSlice D υ
+extract c = proj₁ (proj₁ (extract' c))
+
 extract-minimal
   : ∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} {σ υ ψ γ}
-    → (c : D ◂ υ ⤳ σ ↦ ψ ⊣ γ)
-    → IsMinimal (extract c)
-extract-minimal min□ s' s'⊑
-  = ⊑.antisym {Exp} (⊑ₛLat.⊥ₛ-min (s' .expₛ)) s'⊑
-extract-minimal min* s' s'⊑
-  = ⊑.antisym {Exp} (*-non□ s' (s' .valid) (s' .syn)) s'⊑
-extract-minimal (minVar p υ≢□) s' s'⊑
-  = ⊑.antisym {Exp} (var-non□ s' υ≢□ (s' .valid) (s' .syn)) s'⊑
-extract-minimal (minλ: sub _) = {!!}
-extract-minimal (minΛ sub) = {!!}
-extract-minimal (min& s₁ s₂) s' s'⊑
-  with extract' s₁ | extract-minimal s₁ | extract' s₂ | extract-minimal s₂
-...  | _ , ≡refl , ≡refl | ih₁ | _ , ≡refl , ≡refl | ih₂
-  with s' .syn     | s' .valid   | s' ↓σ⊑    | s' ↓ϕ⊑
-...  | ↦□          | ()          | _          | _
-...  | ↦& d₁' d₂' | ⊑× v₁' v₂' | ⊑& p₁ p₂  | ⊑× q₁ q₂
-  with s'⊑
-...  | ⊑& e₁⊑ e₂⊑
-  with ih₁ (↑ p₁ ⇑ ↑ q₁ ∈ d₁' ⊒ v₁') e₁⊑
-     | ih₂ (↑ p₂ ⇑ ↑ q₂ ∈ d₂' ⊒ v₂') e₂⊑
-...  | ≡refl | ≡refl = ≡refl
-extract-minimal (min∘ υ≢□ sub) = {!!}
-extract-minimal (min<> υ≢□ sub) = {!!}
-extract-minimal (mindef υ≢□ s-body s-def _) = {!!}
-extract-minimal (minπ₁ υ≢□ sub) = {!!}
-extract-minimal (minπ₂ υ≢□ sub) = {!!}
-extract-minimal (mincase υ≢□ s₁ s₂ s _ _ _ υ⊑) = {!!}
+    → (c : D ◂ υ ⤳ σ ↦ ψ ⊣ γ) → IsMinimal (extract c)
+extract-minimal c = proj₂ (proj₁ (extract' c))
+
+extract-ψ : ∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} {σ υ ψ γ}
+    → (c : D ◂ υ ⤳ σ ↦ ψ ⊣ γ) → (extract c) .type ≡ ψ
+extract-ψ c = proj₁ (proj₂ (extract' c))
+
+extract-σ : ∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} {σ υ ψ γ}
+    → (c : D ◂ υ ⤳ σ ↦ ψ ⊣ γ) → (extract c) .expₛ ≡ σ
+extract-σ c = proj₂ (proj₂ (extract' c))
 
 extract-min
   : ∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} {σ υ ψ γ}
-    → D ◂ υ ⤳ σ ↦ ψ ⊣ γ
-    → MinFixedAssmsSynSlice D υ
-extract-min c = extract c , extract-minimal c
+    → D ◂ υ ⤳ σ ↦ ψ ⊣ γ → MinFixedAssmsSynSlice D υ
+extract-min c = proj₁ (extract' c)
+
+-- The extracted expression types under the used context γ, synthesising ψ
+postulate
+  extract-ctx
+    : ∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} {σ υ ψ γ}
+      → (c : D ◂ υ ⤳ σ ↦ ψ ⊣ γ)
+      → n ； γ .↓ ⊢ (extract c) ↓σ ↦ ψ .↓
+
+extract' (minVar {τ' = τ'} p {υ = υ} υ≢□)
+  = (s , min) , ≡refl , ≡refl
+  where
+    s = ⊤ₛ ⇑ ⊤ₛ ∈ ↦Var p ⊒ ⊤ₛ-max {a = τ'} υ
+    min : IsMinimal s
+    min s' s'⊑ = ⊑.antisym {Exp} (var-non□ s' υ≢□ (s' .valid) (s' .syn)) s'⊑
+
+extract' min□
+  = (s , min) , ≡refl , ≡refl
+  where
+    s = ⊥ₛ ⇑ ⊥ₛ ∈ ↦□ ⊒ ⊑□
+    min : IsMinimal s
+    min s' s'⊑ = ⊑.antisym {Exp} (⊑ₛLat.⊥ₛ-min (s' .expₛ)) s'⊑
+
+extract' min*
+  = (s , min) , ≡refl , ≡refl
+  where
+    s = ⊤-fixedassms-syn ↦*
+    min : IsMinimal s
+    min s' s'⊑ = ⊑.antisym {Exp} (*-non□ s' (s' .valid) (s' .syn)) s'⊑
+
+extract' (minλ: {υ₁ = υ₁} {ϕ₁ = ϕ₁} {γ = γ} {wf = wf} sub d-ann)
+  with extract' sub | extract-ctx sub
+...  | ((σ₂ ⇑ ψ₂ ∈ d₂ ⊒ v₂) , ih-min) , ≡refl , ≡refl | d-ctx
+  = let ψ₂⊑ψ₂' = syn-precision (⊑∷ (⊑ₛLat.x⊑ₛx⊔ₛy ϕ₁ υ₁) (γ .proof))
+                     (⊑.refl {Exp}) d-ann d-ctx
+    in (λ:ₛ (ϕ₁ ⊔ₛ υ₁) σ₂
+       ⇑ (ϕ₁ ⊔ₛ υ₁) ⇒ₛ _
+       ∈ ↦λ: (wf-⊑ wf ((ϕ₁ ⊔ₛ υ₁) .proof)) d-ann
+       ⊒ ⊑⇒ (⊑ₛLat.y⊑ₛx⊔ₛy ϕ₁ υ₁) (⊑.trans {Typ} v₂ ψ₂⊑ψ₂')
+       , {!!}) , ≡refl , ≡refl
+    
+extract' (minΛ sub)
+  with extract' sub
+... | ((σ-body ⇑ ϕ-body ∈ d-body ⊒ v-body) , ih-min) , ≡refl , ≡refl
+  = (s , min) , ≡refl , ≡refl
+  where
+    s = Λₛ σ-body ⇑ ∀·ₛ ϕ-body ∈ ↦Λ d-body ⊒ ⊑∀ v-body
+    min : IsMinimal s
+    min s' s'⊑
+      with s' .syn | s' .valid | s' ↓σ⊑ | s' ↓ϕ⊑ | s'⊑
+    ... | ↦□    | ()     | _     | _     | _
+    ... | ↦Λ d' | ⊑∀ v' | ⊑Λ p | ⊑∀ q | ⊑Λ e⊑
+      with ih-min (↑ p ⇑ ↑ q ∈ d' ⊒ v') e⊑
+    ... | ≡refl = ≡refl
+
+extract' (min& s₁ s₂)
+  with extract' s₁ | extract' s₂
+... | ((σ₁ ⇑ ϕ₁ ∈ d₁ ⊒ v₁) , ih₁) , ≡refl , ≡refl
+    | ((σ₂ ⇑ ϕ₂ ∈ d₂ ⊒ v₂) , ih₂) , ≡refl , ≡refl
+  = (s , min) , ≡refl , ≡refl
+  where
+    s = σ₁ &ₛ σ₂ ⇑ ϕ₁ ×ₛ ϕ₂ ∈ ↦& d₁ d₂ ⊒ ⊑× v₁ v₂
+    min : IsMinimal s
+    min s' s'⊑
+      with s' .syn | s' .valid | s' ↓σ⊑ | s' ↓ϕ⊑ | s'⊑
+    ... | ↦□          | ()          | _          | _          | _
+    ... | ↦& d₁' d₂' | ⊑× v₁' v₂' | ⊑& p₁ p₂  | ⊑× q₁ q₂  | ⊑& e₁⊑ e₂⊑
+      with ih₁ (↑ p₁ ⇑ ↑ q₁ ∈ d₁' ⊒ v₁') e₁⊑
+         | ih₂ (↑ p₂ ⇑ ↑ q₂ ∈ d₂' ⊒ v₂') e₂⊑
+    ... | ≡refl | ≡refl = ≡refl
+  
+extract' (min∘ {τ = τ} {m = m} {υ = υ} _ sub)
+  with extract' sub
+... | ((σ-fn ⇑ ψ₁ ∈ d-fn ⊒ v-fn) , ih-min) , ≡refl , ≡refl
+  with ⊔-⇒-⊑ v-fn (match⇒ₛ ψ₁ m)
+... | _ , _ , m'' , _ , υ⊑cod
+  rewrite ≡sym (unmatch⇒-≡-snd {τ} m ⊥ₛ υ m'')
+  = (∘ₛ σ-fn ⊥ₛ
+    ⇑ cod⇒ₛ ψ₁ m
+    ∈ ↦∘ d-fn (match⇒ₛ ψ₁ m) (↤Sub ↦□ ~?₁)
+    ⊒ υ⊑cod
+    , {!!}) , ≡refl , ≡refl
+    
+extract' (min<> {τ = τ} {σ = σ} {m = m} {wf = wf} {υ = υ} _ sub)
+  with extract' sub
+... | ((σ-e ⇑ ψ₁ ∈ d ⊒ v) , ih-min) , ≡refl , ≡refl
+  with ⊔-∀-⊑ v (match∀ₛ ψ₁ m)
+... | _ , m'' , υ'⊑body
+  rewrite ≡sym (unmatch∀-≡ {τ} m _ m'')
+  = (<>ₛ σ-e (min-sub υ)
+    ⇑ subₛ (min-sub υ) (body∀ₛ ψ₁ m)
+    ∈ ↦<> d (match∀ₛ ψ₁ m) (wf-⊑ wf (min-sub υ .proof))
+    ⊒ ⊑.trans {Typ} (min-sub-valid υ) (sub-⊑ zero (⊑.refl {Typ}) υ'⊑body)
+    , {!!}) , ≡refl , ≡refl
+
+extract' (mindef {γ₂ = γ₂} _ s-body s-def d-def)
+  with extract' s-body | extract' s-def | extract-ctx s-body
+... | ((σ₂ ⇑ ϕ₂ ∈ d₂ ⊒ v₂) , ih-body) , ≡refl , ≡refl
+    | ((σ₁ ⇑ ϕ₁ ∈ d₁ ⊒ v₁) , ih-def) , ≡refl , ≡refl | d-ctx
+  = let ψ₂⊑ψ₂' = syn-precision (⊑∷ v₁ (γ₂ .proof))
+                     (⊑.refl {Exp}) d-def d-ctx
+    in (defₛ σ₁ σ₂
+       ⇑ _
+       ∈ ↦def d₁ d-def
+       ⊒ ⊑.trans {Typ} v₂ ψ₂⊑ψ₂'
+       , {!!}) , ≡refl , ≡refl
+
+extract' (minπ₁ {τ = τ} {m = m} _ sub)
+  with extract' sub
+... | ((σ ⇑ ψ₁ ∈ d ⊒ v) , ih-min) , ≡refl , ≡refl
+  with ⊔-×-⊑ v (match×ₛ ψ₁ m)
+... | _ , _ , m'' , υ⊑fst , _
+  rewrite ≡sym (unmatch×-≡-fst {τ} m _ ⊥ₛ m'')
+  = (π₁ₛ σ
+    ⇑ fst×ₛ' ψ₁ m
+    ∈ ↦π₁ d (match×ₛ ψ₁ m)
+    ⊒ υ⊑fst
+    , {!!}) , ≡refl , ≡refl
+
+extract' (minπ₂ {τ = τ} {m = m} _ sub)
+  with extract' sub
+... | ((σ ⇑ ψ₁ ∈ d ⊒ v) , ih-min) , ≡refl , ≡refl
+  with ⊔-×-⊑ v (match×ₛ ψ₁ m)
+... | _ , _ , m'' , _ , υ⊑snd
+  rewrite ≡sym (unmatch×-≡-snd {τ} m ⊥ₛ _ m'')
+  = (π₂ₛ σ
+    ⇑ snd×ₛ ψ₁ m
+    ∈ ↦π₂ d (match×ₛ ψ₁ m)
+    ⊒ υ⊑snd
+    , {!!}) , ≡refl , ≡refl
+
+extract' (mincase {ς₁ = ς₁} {ς₂ = ς₂} {ψ₁' = ψ₁'} {ψ₂' = ψ₂'} {γ₁ = γ₁} {γ₂ = γ₂} {c = c}
+                  _ s₁ s₂ s d₁-case d₂-case c' υ⊑)
+  with extract' s₁ | extract' s₂ | extract' s | extract-ctx s₁ | extract-ctx s₂
+... | ((σ₁ ⇑ ψ₁ ∈ d₁ ⊒ v₁) , ih₁) , ≡refl , ≡refl
+    | ((σ₂ ⇑ ψ₂ ∈ d₂ ⊒ v₂) , ih₂) , ≡refl , ≡refl
+    | ((σ₀ ⇑ ψ₀ ∈ d₀ ⊒ v₀) , ih₀) , ≡refl , ≡refl
+    | d-ctx₁ | d-ctx₂
+  = let ς₁⊑ = fst+ₛ-⊑ {s₁ = ς₁ +ₛ ς₂} v₀
+        ς₂⊑ = snd+ₛ-⊑ {s₁ = ς₁ +ₛ ς₂} v₀
+        v₁' = syn-precision (⊑∷ ς₁⊑ (γ₁ .proof)) (⊑.refl {Exp}) d₁-case d-ctx₁
+        v₂' = syn-precision (⊑∷ ς₂⊑ (γ₂ .proof)) (⊑.refl {Exp}) d₂-case d-ctx₂
+    in (caseₛ σ₀ σ₁ σ₂
+       ⇑ (ψ₁' ⊔~ₛ ψ₂') {c}
+       ∈ ↦case d₀ (diag+ₛ ψ₀) d₁-case d₂-case c'
+       ⊒ ⊑.trans {Typ} υ⊑ (⊔-mono-⊑ c' (⊑.trans {Typ} v₁ v₁') (⊑.trans {Typ} v₂ v₂'))
+       , {!!}) , ≡refl , ≡refl
+
+
+
