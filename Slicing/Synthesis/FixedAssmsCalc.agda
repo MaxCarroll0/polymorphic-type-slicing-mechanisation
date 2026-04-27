@@ -17,6 +17,12 @@ open import Slicing.Synthesis.FixedAssmsSynthesis
 
 module Slicing.Synthesis.FixedAssmsCalc where
 
+⊔-inlₛ : ∀ {τ₁ τ₂ : Typ} → (c : τ₁ ~ τ₂) → ⌊ τ₁ ⌋ → ⌊ τ₁ ⊔ τ₂ ⌋
+⊔-inlₛ c s = ↑ (⊑.trans {Typ} (s .proof) (~.⊔-ub₁ c))
+
+⊔-inrₛ : ∀ {τ₁ τ₂ : Typ} → (c : τ₁ ~ τ₂) → ⌊ τ₂ ⌋ → ⌊ τ₁ ⊔ τ₂ ⌋
+⊔-inrₛ c s = ↑ (⊑.trans {Typ} (s .proof) (~.⊔-ub₂ c))
+
 -- Fixed-context minimal expression slice calculus
 -- D ◂ υ ⤳ σ ↦ ψ ⊣ γ: derivation D explains type query υ via expression σ,
 -- actually synthesising ψ (where υ ⊑ₛ ψ), actually using context entries γ.
@@ -89,8 +95,9 @@ data _◂_⤳_↦_⊣_ {n : ℕ} {Γ : Assms} : ∀ {e : Exp} {τ : Typ}
              → D ◂ (unmatch× m ⊥ₛ υ) ⤳ σ-e ↦ ψ₁ ⊣ γ
              → (↦π₂ D m) ◂ υ ⤳ π₂ₛ σ-e ↦ snd×ₛ ψ₁ m ⊣ γ
 
-  -- Branches sliced first; their output contexts determine scrutinee query
-  -- ψ is the join of branch realized types
+  -- Branches sliced first; their output contexts determine scrutinee query.
+  -- Branch queries are complements: υ₁ = ¬ₛ ψ₂' and υ₂ = ¬ₛ ψ₁', ensuring
+  -- no redundancy
   mincase  : ∀ {e e₁ e₂ τ₁ τ₂ τ₁' τ₂' ς₁ ς₂ υ₁ υ₂ ψ₀ ψ₁ ψ₂ ψ₁' ψ₂' γ₀ γ₁ γ₂ σ₀ σ₁ σ₂}
                {D : n ； Γ ⊢ e ↦ τ₁ + τ₂}
                {D₁ : n ； (τ₁ ∷ Γ) ⊢ e₁ ↦ τ₁'} {D₂ : n ； (τ₂ ∷ Γ) ⊢ e₂ ↦ τ₂'}
@@ -99,11 +106,13 @@ data _◂_⤳_↦_⊣_ {n : ℕ} {Γ : Assms} : ∀ {e : Exp} {τ : Typ}
              → (υ .↓ ≢ □)
              → D₁ ◂ υ₁ ⤳ σ₁ ↦ ψ₁ ⊣ (ς₁ ∷ₛ γ₁)
              → D₂ ◂ υ₂ ⤳ σ₂ ↦ ψ₂ ⊣ (ς₂ ∷ₛ γ₂)
+             → ⊔-inlₛ c υ₁ ≡ ¬ₛ (⊔-inrₛ c ψ₂) -- No mutual redundancy
+             → ⊔-inrₛ c υ₂ ≡ ¬ₛ (⊔-inlₛ c ψ₁)
              → D ◂ (ς₁ +ₛ ς₂) ⤳ σ₀ ↦ ψ₀ ⊣ γ₀
              → n ； (fst+ₛ ψ₀ .↓ ∷ Γ) ⊢ σ₁ .↓ ↦ ψ₁' .↓
              → n ； (snd+ₛ ψ₀ .↓ ∷ Γ) ⊢ σ₂ .↓ ↦ ψ₂' .↓
              → ψ₁' .↓ ~ ψ₂' .↓
-             → υ .↓ ⊑ υ₁ .↓ ⊔ υ₂ .↓
+             → υ .↓ ⊑ υ₁ .↓ ⊔ υ₂ .↓ -- TODO: derive from boolean properties
              → (↦case D (⊔□+□ {τ₁} {τ₂}) D₁ D₂ c) ◂ υ ⤳ caseₛ σ₀ σ₁ σ₂
                ↦ (ψ₁' ⊔~ₛ ψ₂') {c} ⊣ (γ₀ ⊔ₛ γ₁) ⊔ₛ γ₂
 
@@ -389,7 +398,7 @@ extract' (minπ₂ {τ = τ} {τ₂ = τ₂} {υ = υ} {D = D} {m = m} υ≢□ 
     ... | ≡refl = ≡refl
 
 extract' (mincase {ς₁ = ς₁} {ς₂ = ς₂} {ψ₁' = ψ₁'} {ψ₂' = ψ₂'} {γ₁ = γ₁} {γ₂ = γ₂} {c = c}
-                  _ s₁ s₂ s d₁-case d₂-case c' υ⊑)
+                  _ s₁ s₂ υ₁≡ υ₂≡ s d₁-case d₂-case c' υ⊑)
   with extract' s₁ | extract' s₂ | extract' s | extract-ctx s₁ | extract-ctx s₂
 ... | ((σ₁ ⇑ ψ₁ ∈ d₁ ⊒ v₁) , ih₁) , ≡refl , ≡refl
     | ((σ₂ ⇑ ψ₂ ∈ d₂ ⊒ v₂) , ih₂) , ≡refl , ≡refl
@@ -403,7 +412,7 @@ extract' (mincase {ς₁ = ς₁} {ς₂ = ς₂} {ψ₁' = ψ₁'} {ψ₂' = ψ
        ⇑ (ψ₁' ⊔~ₛ ψ₂') {c}
        ∈ ↦case d₀ (diag+ₛ ψ₀) d₁-case d₂-case c'
        ⊒ ⊑.trans {Typ} υ⊑ (⊔-mono-⊑ c' (⊑.trans {Typ} v₁ v₁') (⊑.trans {Typ} v₂ v₂'))
-       , {!!}) , ≡refl , ≡refl
+       , {!a!}) , ≡refl , ≡refl
 
 soundness : ∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} {σ υ ψ γ}
     → (c : D ◂ υ ⤳ σ ↦ ψ ⊣ γ)
