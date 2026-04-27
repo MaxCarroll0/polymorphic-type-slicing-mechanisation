@@ -47,15 +47,59 @@ slice (↦λ: {τ₁ = τ₁} wf D) ((._ ⇒ ._) isSlice ⊑⇒ p₁ p₂)
         d-ann = proj₁ (proj₂ sgs)
         ψ₂'-⊑ = proj₂ (proj₂ sgs)
     in _ , _ , _ , minλ: {ψ₂' = ↑ ψ₂'-⊑} sub d-ann
-slice (↦Λ D) υ = {!!}
+slice (↦Λ D) (.∀· ._ isSlice ⊑∀ p)
+  with slice D (↑ p)
+... | _ , _ , _ , sub = _ , _ , _ , minΛ sub
 slice (↦& D₁ D₂) ((._ × ._) isSlice ⊑× p₁ p₂)
   with slice D₁ (↑ p₁) | slice D₂ (↑ p₂)
 ... | _ , _ , _ , s₁ | _ , _ , _ , s₂ = _ , _ , _ , min& s₁ s₂
 
 -- Elimination forms
-slice (↦∘ D₁ m D₂) υ = {!!}
-slice (↦<> D m wf) υ = {!!}
-slice (↦π₁ D m) υ = {!!}
-slice (↦π₂ D m) υ = {!!}
-slice (↦def D₁ D₂) υ = {!!}
+slice (↦∘ D₁ m D₂) υ with υ .↓ ≈? □
+... | yes eq = _ , _ , _ , subst (λ υ' → ↦∘ D₁ m D₂ ◂ υ' ⤳ ⊥ₛ ↦ ⊥ₛ ⊣ ⊥ₛ)
+                                 (≡sym (↓□→⊥ₛ υ eq))
+                                 min□
+... | no υ≢□ with slice D₁ (unmatch⇒ m ⊥ₛ υ)
+...   | _ , _ , _ , sub = _ , _ , _ , min∘ υ≢□ sub
+
+slice (↦<> D m wf) υ with υ .↓ ≈? □
+... | yes eq = _ , _ , _ , subst (λ υ' → ↦<> D m wf ◂ υ' ⤳ ⊥ₛ ↦ ⊥ₛ ⊣ ⊥ₛ)
+                                 (≡sym (↓□→⊥ₛ υ eq))
+                                 min□
+... | no υ≢□ with slice D (unmatch∀ m (unsub υ))
+...   | _ , _ , _ , sub = _ , _ , _ , min<> υ≢□ sub
+
+slice (↦π₁ D m) υ with υ .↓ ≈? □
+... | yes eq = _ , _ , _ , subst (λ υ' → ↦π₁ D m ◂ υ' ⤳ ⊥ₛ ↦ ⊥ₛ ⊣ ⊥ₛ)
+                                 (≡sym (↓□→⊥ₛ υ eq))
+                                 min□
+... | no υ≢□ with slice D (unmatch× m υ ⊥ₛ)
+...   | _ , _ , _ , sub = _ , _ , _ , minπ₁ υ≢□ sub
+
+slice (↦π₂ D m) υ with υ .↓ ≈? □
+... | yes eq = _ , _ , _ , subst (λ υ' → ↦π₂ D m ◂ υ' ⤳ ⊥ₛ ↦ ⊥ₛ ⊣ ⊥ₛ)
+                                 (≡sym (↓□→⊥ₛ υ eq))
+                                 min□
+... | no υ≢□ with slice D (unmatch× m ⊥ₛ υ)
+...   | _ , _ , _ , sub = _ , _ , _ , minπ₂ υ≢□ sub
+
+slice (↦def D₁ D₂) υ with υ .↓ ≈? □
+... | yes eq = _ , _ , _ , subst (λ υ' → ↦def D₁ D₂ ◂ υ' ⤳ ⊥ₛ ↦ ⊥ₛ ⊣ ⊥ₛ)
+                                 (≡sym (↓□→⊥ₛ υ eq))
+                                 min□
+... | no υ≢□ with slice D₂ υ
+...   | _ , _ , ((υ₁-↓ ∷ γ₂-↓) isSlice ⊑∷ υ₁-⊑ γ₂-⊑) , s-body
+  with extract s-body | extract-σ s-body
+...   | s₂ | ≡refl
+  with slice D₁ (υ₁-↓ isSlice υ₁-⊑)
+...   | _ , _ , _ , s-def
+  with extract s-def | extract-ψ s-def
+...   | s₁ | ≡refl
+  = let sgs = static-gradual-syn
+                (⊑∷ (s₁ ↓ϕ⊑) (⊑.refl {Assms}))
+                (s₂ .expₛ .proof)
+                D₂
+        d-def = proj₁ (proj₂ sgs)
+        ψ₂'-⊑ = proj₂ (proj₂ sgs)
+    in _ , ↑ ψ₂'-⊑ , _ , mindef {ψ₂' = ↑ ψ₂'-⊑} υ≢□ s-body s-def d-def
 slice (↦case D m D₁ D₂ c) υ = {!!}
