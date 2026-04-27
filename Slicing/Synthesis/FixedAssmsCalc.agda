@@ -397,9 +397,10 @@ extract' (minπ₂ {τ = τ} {τ₂ = τ₂} {υ = υ} {D = D} {m = m} υ≢□ 
       with ih-min (↑ p ⇑ ↑ τ₃⊑τ ∈ d' ⊒ unmatch×-mono-snd m υ υ≢□ τ₃⊑τ m' v') e⊑
     ... | ≡refl = ≡refl
 
-extract' (mincase {ς₁ = ς₁} {ς₂ = ς₂} {ψ₁' = ψ₁'} {ψ₂' = ψ₂'} {γ₁ = γ₁} {γ₂ = γ₂} {c = c}
-                  _ s₁ s₂ υ₁≡ υ₂≡ s d₁-case d₂-case c' υ⊑)
-  with extract' s₁ | extract' s₂ | extract' s | extract-ctx s₁ | extract-ctx s₂
+extract' (mincase {ς₁ = ς₁} {ς₂ = ς₂} {ψ₁' = ψ₁'} {ψ₂' = ψ₂'} {γ₁ = γ₁} {γ₂ = γ₂}
+                  {D = D} {D₁ = D₁} {D₂ = D₂} {c = c} {υ = υ}
+                  υ≢□ s₁ s₂ υ₁≡ υ₂≡ s-scr d₁-case d₂-case c' υ⊑)
+  with extract' s₁ | extract' s₂ | extract' s-scr | extract-ctx s₁ | extract-ctx s₂
 ... | ((σ₁ ⇑ ψ₁ ∈ d₁ ⊒ v₁) , ih₁) , ≡refl , ≡refl
     | ((σ₂ ⇑ ψ₂ ∈ d₂ ⊒ v₂) , ih₂) , ≡refl , ≡refl
     | ((σ₀ ⇑ ψ₀ ∈ d₀ ⊒ v₀) , ih₀) , ≡refl , ≡refl
@@ -408,11 +409,34 @@ extract' (mincase {ς₁ = ς₁} {ς₂ = ς₂} {ψ₁' = ψ₁'} {ψ₂' = ψ
         ς₂⊑ = snd+ₛ-⊑ {s₁ = ς₁ +ₛ ς₂} v₀
         v₁' = syn-precision (⊑∷ ς₁⊑ (γ₁ .proof)) (⊑.refl {Exp}) d₁-case d-ctx₁
         v₂' = syn-precision (⊑∷ ς₂⊑ (γ₂ .proof)) (⊑.refl {Exp}) d₂-case d-ctx₂
-    in (caseₛ σ₀ σ₁ σ₂
+    in (s v₁' v₂' , min v₁' v₂') , ≡refl , ≡refl
+  where
+    s = λ v₁' v₂' → caseₛ σ₀ σ₁ σ₂
        ⇑ (ψ₁' ⊔~ₛ ψ₂') {c}
        ∈ ↦case d₀ (diag+ₛ ψ₀) d₁-case d₂-case c'
        ⊒ ⊑.trans {Typ} υ⊑ (⊔-mono-⊑ c' (⊑.trans {Typ} v₁ v₁') (⊑.trans {Typ} v₂ v₂'))
-       , {!a!}) , ≡refl , ≡refl
+
+    min : ∀ v₁' v₂' → IsMinimal (s v₁' v₂')
+    min v₁' v₂' s' s'⊑
+      with s' .syn | s' .valid | s' ↓σ⊑ | s' ↓ϕ⊑ | s'⊑
+    ... | ↦□ | v' | _ | _ | _
+        = ⊥-elim (υ≢□ (⊑ₛ⊥-inv {υ = υ} v'))
+    ... | ↦case d₀' m' d₁' d₂' c'' | v' | ⊑case p₀ p₁ p₂ | q | ⊑case e₀⊑ e₁⊑ e₂⊑
+      with static-gradual-syn (⊑.refl {Assms}) p₁ D₁
+    ... | _ , d-body₁' , τ-hi₁⊑τ₁'
+      with static-gradual-syn (⊑.refl {Assms}) p₂ D₂
+    ... | _ , d-body₂' , τ-hi₂⊑τ₂'
+      with ih₁ (↑ p₁ ⇑ ↑ τ-hi₁⊑τ₁' ∈ d-body₁'
+                  ⊒ {!!}) e₁⊑
+         | ih₂ (↑ p₂ ⇑ ↑ τ-hi₂⊑τ₂' ∈ d-body₂'
+                  ⊒ {!!}) e₂⊑ 
+    ... | ≡refl | ≡refl
+      with extract-ctx-min s₁ d-body₁' | extract-ctx-min s₂ d-body₂'
+    ... | ⊑∷ ς₁⊑' _ | ⊑∷ ς₂⊑' _
+      with syn-precision (⊑.refl {Assms}) p₀ D d₀'
+    ... | τ₀⊑
+      with ih₀ (↑ p₀ ⇑ ↑ τ₀⊑ ∈ d₀' ⊒ {!!}) e₀⊑  -- scrutinee validity from ς₁⊑', ς₂⊑' probably
+    ... | ≡refl = ≡refl
 
 soundness : ∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} {σ υ ψ γ}
     → (c : D ◂ υ ⤳ σ ↦ ψ ⊣ γ)
