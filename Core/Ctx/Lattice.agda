@@ -313,6 +313,12 @@ private
   ⊓ₛ-distribˡ-⊔ₛ' : ∀ {C : Ctx} (γ₁ γ₂ γ₃ : ⌊ C ⌋) → (γ₁ ⊓ₛ (γ₂ ⊔ₛ γ₃)) ≈ₛ ((γ₁ ⊓ₛ γ₂) ⊔ₛ (γ₁ ⊓ₛ γ₃))
   ⊓ₛ-distribˡ-⊔ₛ' γ₁ γ₂ γ₃ = dist (γ₁ .proof) (γ₂ .proof) (γ₃ .proof)
 
+postulate
+  ctx-¬ₛ : ∀ {C : Ctx} → ⌊ C ⌋ → ⌊ C ⌋
+  ctx-⊔ₛ-complement : ∀ {C : Ctx} (s : ⌊ C ⌋) → (s ⊔ₛ ctx-¬ₛ s) ≈ₛ ⊤ₛ {a = C}
+  ctx-⊓ₛ-complement : ∀ {C : Ctx} (s : ⌊ C ⌋) → (s ⊓ₛ ctx-¬ₛ s) ≈ₛ (⊥ₛ' {C})
+  ctx-¬ₛ-cong : ∀ {C : Ctx} {s₁ s₂ : ⌊ C ⌋} → s₁ ≈ₛ s₂ → ctx-¬ₛ s₁ ≈ₛ ctx-¬ₛ s₂
+
 instance
   ctx-sliceLattice : SliceLattice Ctx
   ctx-sliceLattice = record
@@ -324,4 +330,8 @@ instance
     ; x⊑ₛx⊔ₛy = ⊔ₛ-ub₁
     ; y⊑ₛx⊔ₛy = ⊔ₛ-ub₂
     ; ⊓ₛ-distribˡ-⊔ₛ = ⊓ₛ-distribˡ-⊔ₛ'
+    ; ¬ₛ_ = ctx-¬ₛ
+    ; ⊔ₛ-complement = ctx-⊔ₛ-complement
+    ; ⊓ₛ-complement = ctx-⊓ₛ-complement
+    ; ¬ₛ-cong = ctx-¬ₛ-cong
     }

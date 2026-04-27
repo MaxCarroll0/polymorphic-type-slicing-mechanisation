@@ -222,6 +222,12 @@ private
   ⊓ₛ-distribˡ-⊔ₛ' : ∀ {τ : Typ} (υ₁ υ₂ υ₃ : ⌊ τ ⌋) → _≈ₛ_ (υ₁ ⊓ₛ (υ₂ ⊔ₛ υ₃)) ((υ₁ ⊓ₛ υ₂) ⊔ₛ (υ₁ ⊓ₛ υ₃))
   ⊓ₛ-distribˡ-⊔ₛ' υ₁ υ₂ υ₃ = dist (υ₁ .proof) (υ₂ .proof) (υ₃ .proof)
 
+postulate
+  typ-¬ₛ : ∀ {τ : Typ} → ⌊ τ ⌋ → ⌊ τ ⌋
+  typ-⊔ₛ-complement : ∀ {τ : Typ} (s : ⌊ τ ⌋) → _≈ₛ_ (s ⊔ₛ typ-¬ₛ s) (⊤ₛ {a = τ})
+  typ-⊓ₛ-complement : ∀ {τ : Typ} (s : ⌊ τ ⌋) → _≈ₛ_ (s ⊓ₛ typ-¬ₛ s) (⊥ₛ' {τ})
+  typ-¬ₛ-cong : ∀ {τ : Typ} {s₁ s₂ : ⌊ τ ⌋} → _≈ₛ_ s₁ s₂ → _≈ₛ_ (typ-¬ₛ s₁) (typ-¬ₛ s₂)
+
 instance
   typ-sliceLattice : I.SliceLattice Typ
   typ-sliceLattice = record
@@ -233,4 +239,8 @@ instance
     ; x⊑ₛx⊔ₛy = ⊔ₛ-ub₁
     ; y⊑ₛx⊔ₛy = ⊔ₛ-ub₂
     ; ⊓ₛ-distribˡ-⊔ₛ = ⊓ₛ-distribˡ-⊔ₛ'
+    ; ¬ₛ_ = typ-¬ₛ
+    ; ⊔ₛ-complement = typ-⊔ₛ-complement
+    ; ⊓ₛ-complement = typ-⊓ₛ-complement
+    ; ¬ₛ-cong = typ-¬ₛ-cong
     }

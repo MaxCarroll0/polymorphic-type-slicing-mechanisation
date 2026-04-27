@@ -299,6 +299,12 @@ private
   ⊓ₛ-distribˡ-⊔ₛ' : ∀ {e : Exp} (υ₁ υ₂ υ₃ : ⌊ e ⌋) → (υ₁ ⊓ₛ (υ₂ ⊔ₛ υ₃)) ≈ₛ ((υ₁ ⊓ₛ υ₂) ⊔ₛ (υ₁ ⊓ₛ υ₃))
   ⊓ₛ-distribˡ-⊔ₛ' υ₁ υ₂ υ₃ = dist (υ₁ .proof) (υ₂ .proof) (υ₃ .proof)
 
+postulate
+  exp-¬ₛ : ∀ {e : Exp} → ⌊ e ⌋ → ⌊ e ⌋
+  exp-⊔ₛ-complement : ∀ {e : Exp} (s : ⌊ e ⌋) → (s ⊔ₛ exp-¬ₛ s) ≈ₛ ⊤ₛ {a = e}
+  exp-⊓ₛ-complement : ∀ {e : Exp} (s : ⌊ e ⌋) → (s ⊓ₛ exp-¬ₛ s) ≈ₛ (⊥ₛ' {e})
+  exp-¬ₛ-cong : ∀ {e : Exp} {s₁ s₂ : ⌊ e ⌋} → s₁ ≈ₛ s₂ → exp-¬ₛ s₁ ≈ₛ exp-¬ₛ s₂
+
 instance
   exp-sliceLattice : SliceLattice Exp
   exp-sliceLattice = record
@@ -310,4 +316,8 @@ instance
     ; x⊑ₛx⊔ₛy = ⊔ₛ-ub₁
     ; y⊑ₛx⊔ₛy = ⊔ₛ-ub₂
     ; ⊓ₛ-distribˡ-⊔ₛ = ⊓ₛ-distribˡ-⊔ₛ'
+    ; ¬ₛ_ = exp-¬ₛ
+    ; ⊔ₛ-complement = exp-⊔ₛ-complement
+    ; ⊓ₛ-complement = exp-⊓ₛ-complement
+    ; ¬ₛ-cong = exp-¬ₛ-cong
     }
