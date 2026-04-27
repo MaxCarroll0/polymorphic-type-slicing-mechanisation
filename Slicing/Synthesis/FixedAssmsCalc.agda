@@ -171,6 +171,15 @@ postulate
       → (c : D ◂ υ ⤳ σ ↦ ψ ⊣ γ)
       → n ； γ .↓ ⊢ (extract c) ↓σ ↦ ψ .↓
 
+  -- Context minimality: the extracted context γ is ⊑ any context where
+  -- the extracted expression σ types. Used for mindef to derive υ₁ ⊑ τ₁'.
+  extract-ctx-min
+    : ∀ {n Γ Γ' e τ τ'} {D : n ； Γ ⊢ e ↦ τ} {σ υ ψ γ}
+      → (c : D ◂ υ ⤳ σ ↦ ψ ⊣ γ)
+      → n ； Γ' ⊢ σ .↓ ↦ τ'
+      → γ .↓ ⊑ Γ'
+
+
 extract' (minVar {τ' = τ'} p {υ = υ} υ≢□)
   = (s , min) , ≡refl , ≡refl
   where
@@ -192,17 +201,39 @@ extract' min*
     min : IsMinimal s
     min s' s'⊑ = ⊑.antisym {Exp} (*-non□ s' (s' .valid) (s' .syn)) s'⊑
 
-extract' (minλ: {υ₁ = υ₁} {ϕ₁ = ϕ₁} {γ = γ} {wf = wf} sub d-ann)
+extract' (minλ: {υ₁ = υ₁} {ϕ₁ = ϕ₁} {γ = γ} {wf = wf} {D = D} sub d-ann)
   with extract' sub | extract-ctx sub
 ...  | ((σ₂ ⇑ ψ₂ ∈ d₂ ⊒ v₂) , ih-min) , ≡refl , ≡refl | d-ctx
   = let ψ₂⊑ψ₂' = syn-precision (⊑∷ (⊑ₛLat.x⊑ₛx⊔ₛy ϕ₁ υ₁) (γ .proof))
                      (⊑.refl {Exp}) d-ann d-ctx
-    in (λ:ₛ (ϕ₁ ⊔ₛ υ₁) σ₂
+    in (s ψ₂⊑ψ₂' , min ψ₂⊑ψ₂') , ≡refl , ≡refl
+  where
+    s = λ ψ₂⊑ψ₂' → λ:ₛ (ϕ₁ ⊔ₛ υ₁) σ₂
        ⇑ (ϕ₁ ⊔ₛ υ₁) ⇒ₛ _
        ∈ ↦λ: (wf-⊑ wf ((ϕ₁ ⊔ₛ υ₁) .proof)) d-ann
        ⊒ ⊑⇒ (⊑ₛLat.y⊑ₛx⊔ₛy ϕ₁ υ₁) (⊑.trans {Typ} v₂ ψ₂⊑ψ₂')
-       , {!!}) , ≡refl , ≡refl
-    
+
+    min : ∀ ψ₂⊑ψ₂' → IsMinimal (s ψ₂⊑ψ₂')
+    min ψ₂⊑ψ₂' s' s'⊑
+      with s' .syn | s' .valid | s' ↓σ⊑ | s' ↓ϕ⊑ | s'⊑
+    ... | ↦□ | () | _ | _ | _
+    ... | ↦λ: wf' d' | ⊑⇒ v₁' v₂' | ⊑λ ann-p body-p | _ | ⊑λ ann-s body-s
+      with static-gradual-syn (⊑.refl {Assms}) body-p D
+    ... | _ , d-body' , τ-hi⊑τ₂
+      with ih-min (↑ body-p ⇑ ↑ τ-hi⊑τ₂ ∈ d-body'
+                    ⊒ ⊑.trans {Typ} v₂'
+                        (syn-precision (⊑∷ ann-p (⊑.refl {Assms}))
+                          (⊑.refl {Exp}) d-body' d')) body-s
+    ... | ≡refl
+      with static-gradual-syn (⊑∷ ann-p (⊑.refl {Assms})) (σ₂ .proof) D
+    ... | _ , d-body-lo , _
+      with extract-ctx-min sub d-body-lo
+    ... | ⊑∷ ϕ₁⊑τ₁' _
+      = cong (λ x → λ: x ⇒ σ₂ .↓)
+            (⊑.antisym {Typ}
+              (⊑ₛLat.⊔ₛ-least⦄ {x = ϕ₁} {y = υ₁} {z = ↑ ann-p} ϕ₁⊑τ₁' v₁')
+              ann-s)
+
 extract' (minΛ sub)
   with extract' sub
 ... | ((σ-body ⇑ ϕ-body ∈ d-body ⊒ v-body) , ih-min) , ≡refl , ≡refl
@@ -284,17 +315,38 @@ extract' (min<> {τ = τ} {τ' = τ'} {σ = σ} {D = D} {m = m} {wf = wf} {υ = 
       with ⊑.antisym {Typ} (min-sub-minimal υ (↑ p₂) (↑ τ₃body⊑) v') τ⊑
     ... | ≡refl = ≡refl
 
-extract' (mindef {γ₂ = γ₂} _ s-body s-def d-def)
+extract' (mindef {υ₂ = υ₂} {υ₁ = υ₁} {γ₂ = γ₂} {D₁ = D₁} {D₂ = D₂} υ≢□ s-body s-def d-def)
   with extract' s-body | extract' s-def | extract-ctx s-body
 ... | ((σ₂ ⇑ ϕ₂ ∈ d₂ ⊒ v₂) , ih-body) , ≡refl , ≡refl
     | ((σ₁ ⇑ ϕ₁ ∈ d₁ ⊒ v₁) , ih-def) , ≡refl , ≡refl | d-ctx
   = let ψ₂⊑ψ₂' = syn-precision (⊑∷ v₁ (γ₂ .proof))
                                (⊑.refl {Exp}) d-def d-ctx
-    in (defₛ σ₁ σ₂
-       ⇑ _
-       ∈ ↦def d₁ d-def
-       ⊒ ⊑.trans {Typ} v₂ ψ₂⊑ψ₂'
-       , {!!}) , ≡refl , ≡refl
+    in (s ψ₂⊑ψ₂' , min ψ₂⊑ψ₂') , ≡refl , ≡refl
+  where
+    s = λ ψ₂⊑ψ₂' → defₛ σ₁ σ₂ ⇑ _ ∈ ↦def d₁ d-def ⊒ ⊑.trans {Typ} v₂ ψ₂⊑ψ₂'
+
+    min : ∀ ψ₂⊑ψ₂' → IsMinimal (s ψ₂⊑ψ₂')
+    min ψ₂⊑ψ₂' s' s'⊑
+      with s' .syn | s' .valid | s' ↓σ⊑ | s' ↓ϕ⊑ | s'⊑
+    ... | ↦□       | v'        | _      | _      | _
+        = ⊥-elim (υ≢□ (⊑ₛ⊥-inv {υ = υ₂} v'))
+    ... | ↦def d₁' d₂' | v' | ⊑def p₁ p₂ | q | ⊑def e-def⊑ e-body⊑
+      with syn-precision (⊑.refl {Assms}) p₁ D₁ d₁'
+    ... | τ₁'⊑τ'
+      with static-gradual-syn (⊑.refl {Assms}) p₂ D₂
+    ... | _ , d-body' , τ-hi⊑τ
+      with ih-body (↑ p₂ ⇑ ↑ τ-hi⊑τ ∈ d-body'
+                     ⊒ ⊑.trans {Typ} v'
+                         (syn-precision (⊑∷ τ₁'⊑τ' (⊑.refl {Assms}))
+                           (⊑.refl {Exp}) d-body' d₂')) e-body⊑
+    ... | ≡refl
+      -- def minimality: use context minimality.
+      with static-gradual-syn (⊑∷ τ₁'⊑τ' (⊑.refl {Assms})) (σ₂ .proof) D₂
+    ... | _ , d-body-lo , _
+      with extract-ctx-min s-body d-body-lo
+    ... | ⊑∷ υ₁⊑τ₁' _
+      with ih-def (↑ p₁ ⇑ ↑ τ₁'⊑τ' ∈ d₁' ⊒ υ₁⊑τ₁') e-def⊑
+    ... | ≡refl = ≡refl
 
 extract' (minπ₁ {τ = τ} {τ₁ = τ₁} {υ = υ} {D = D} {m = m} υ≢□ sub)
   with extract' sub
