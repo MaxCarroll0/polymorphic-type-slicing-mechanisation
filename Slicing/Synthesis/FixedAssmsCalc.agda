@@ -10,7 +10,8 @@ open import Core
 open import Semantics.Statics
 open import Semantics.Graduality using (syn-unicity; static-gradual-syn; syn-precision)
 
-open import Slicing.Synthesis.Synthesis using (IsMinimal)
+open import Slicing.Synthesis.Synthesis using (IsMinimal; MinSynSlice_◂_; SynSlice_◂_; _⇑_∈_⊒_; type; valid; syn)
+import Slicing.Synthesis.Synthesis as SS
 open import Slicing.MinSub using (min-sub; min-sub-valid; min-sub-minimal; unsub-non□; unsub-⊑-body)
 open import Slicing.Synthesis.FixedAssmsSynthesis
 
@@ -352,8 +353,24 @@ extract' (mincase {ς₁ = ς₁} {ς₂ = ς₂} {ψ₁' = ψ₁'} {ψ₂' = ψ
        ⊒ ⊑.trans {Typ} υ⊑ (⊔-mono-⊑ c' (⊑.trans {Typ} v₁ v₁') (⊑.trans {Typ} v₂ v₂'))
        , {!!}) , ≡refl , ≡refl
 
--- Used context is minimal
-postulate
-  inject-min : ∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} {σ υ ψ γ}
+soundness : ∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} {σ υ ψ γ}
     → (c : D ◂ υ ⤳ σ ↦ ψ ⊣ γ)
     → MinSynSlice D ◂ υ
+soundness {D = D} {υ = υ} {γ = γ} c
+  with extract' c | extract-ctx c
+... | ((σₛ ⇑ ψₛ ∈ d ⊒ v) , ih-exp) , ≡refl , ≡refl | d-ctx
+  = s , min
+  where
+    s : SynSlice D ◂ υ
+    s = γ ,ₛ σₛ ⇑ ψₛ ∈ d-ctx ⊒ v
+    min : IsMinimal s
+    min s' s'⊑
+      with static-gradual-syn-exp D (SS._↓σₛ s')
+    ... | ψ-s' , d-s'
+      with ih-exp (SS._↓σₛ s' ⇑ ψ-s' ∈ d-s'
+                     ⊒ ⊑.trans {Typ} (s' .valid) (syn-precision (SS._↓γ⊑ s') (⊑.refl {Exp}) d-s' (s' .syn)))
+                  (proj₂ s'⊑)
+    ... | ≡refl
+      with extract-ctx-min c (s' .syn)
+    ... | γ⊑γ' = ⊑.antisym {Assms ∧ Exp}
+        (γ⊑γ' , ⊑.refl {Exp}) s'⊑
