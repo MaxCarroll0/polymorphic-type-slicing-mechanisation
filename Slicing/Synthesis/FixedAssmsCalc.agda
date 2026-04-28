@@ -200,13 +200,13 @@ extract-ctx
     → Σ[ ψ-ctx ∈ ⌊ τ ⌋ ] (n ； γ .↓ ⊢ σ .↓ ↦ ψ-ctx .↓) ∧ (υ ⊑ₛ ψ-ctx)
 
 -- Context minimality
-postulate
-  extract-ctx-min
-    : ∀ {n Γ Γ' e τ τ'} {D : n ； Γ ⊢ e ↦ τ} {σ υ ψ γ}
-      → (c : D ◂ υ ⤳ σ ↦ ψ ⊣ γ)
-      → n ； Γ' ⊢ σ .↓ ↦ τ'
-      → υ .↓ ⊑ τ'
-      → γ .↓ ⊑ Γ'
+extract-ctx-min
+  : ∀ {n Γ Γ' e τ τ'} {D : n ； Γ ⊢ e ↦ τ} {σ υ ψ γ}
+    → (c : D ◂ υ ⤳ σ ↦ ψ ⊣ γ)
+    → n ； Γ' ⊢ σ .↓ ↦ τ'
+    → υ .↓ ⊑ τ'
+    → Γ' ⊑ Γ
+    → γ .↓ ⊑ Γ'
 
 -- Proofs --
 -- Extracting a MinAssmsSynSlice from a derivation
@@ -264,6 +264,7 @@ extract' (minλ: {υ₁ = υ₁} {ϕ₁ = ϕ₁} {γ = γ} {wf = wf} {D = D} sub
       with extract-ctx-min sub d'''
              (⊑.trans {Typ} v₂'
                (syn-precision (⊑.refl {Assms}) (⊑.refl {Exp}) d''' d'))
+             (⊑∷ p₁ (⊑.refl {Assms}))
     ... | ⊑∷ ϕ₁⊑ _
       = cong (λ x → λ: x ⇒ σ₂ .↓)
             (⊑.antisym {Typ}
@@ -383,6 +384,7 @@ extract' (mindef {υ₂ = υ₂} {υ₁ = υ₁} {γ₂ = γ₂} {D₁ = D₁} {
       with extract-ctx-min s-body d₂'''
              (⊑.trans {Typ} v'
                (syn-precision (⊑.refl {Assms}) (⊑.refl {Exp}) d₂''' d₂'))
+             (⊑∷ τ₁'⊑ (⊑.refl {Assms}))
     ... | ⊑∷ υ₁⊑ _
       with ih₁ (↑ p₁ ⇑ ↑ τ₁'⊑ ∈ d₁' ⊒ υ₁⊑) e₁⊑
     ... | ≡refl = ≡refl
@@ -505,6 +507,7 @@ extract' (mincase {τ₁ = τ₁} {τ₂ = τ₂} {τ₁' = τ₁'} {τ₂' = τ
                    (join-project {a = υ} {b = ⊔-inlₛ c (↑ τ₁c⊑)} {c = ⊔-inrₛ c (↑ τ₂c⊑)}
                                  {d = ⊔-inrₛ c ⊤ₛ}
                                  v' τ₂c⊑))
+             (⊑∷ τ₃⊑τ₁ (⊑.refl {Assms}))
          | extract-ctx-min s₂ d₂'
              (let τ₁c⊑ = ⊑.trans {Typ} (syn-precision (⊑∷ τ₃⊑τ₁ (⊑.refl {Assms}))
                             (⊑.refl {Exp}) d-body₁' d₁') τ-hi₁⊑τ₁'
@@ -516,6 +519,7 @@ extract' (mincase {τ₁ = τ₁} {τ₂ = τ₂} {τ₁' = τ₁'} {τ₂' = τ
                                  (subst (υ .↓ ⊑_) (⊑ₛLat.⊔-comm (⊔-inlₛ c (↑ τ₁c⊑))
                                                                 (⊔-inrₛ c (↑ τ₂c⊑))) v')
                                  τ₁c⊑))
+             (⊑∷ τ₄⊑τ₂ (⊑.refl {Assms}))
     ... | ⊑∷ ς₁⊑τ₃' _ | ⊑∷ ς₂⊑τ₄' _
       -- scrutinee
       with ih₀ (↑ p₀ ⇑ ↑ τ₀⊑ ∈ d₀'
@@ -653,6 +657,90 @@ extract-ctx (mincase {ς₁ = ς₁} {ς₂ = ς₂} {γ₀ = γ₀} {γ₁ = γ
      , ⊑.trans {Typ} υ⊑                                        -- υ ⊑ υ₁⊔υ₂ ⊑ τl⊔τr
          (⊔-mono-⊑ c'' (⊑.trans {Typ} v₁ q₁) (⊑.trans {Typ} v₂ q₂))
 
+-- Context minimality proof
+-- Base cases
+extract-ctx-min {Γ = Γ} min□ d' v Γ'⊑ = ⊑ₛLat.⊥ₛ-min {A = Assms} {a = Γ} (↑ Γ'⊑)
+extract-ctx-min {Γ = Γ} min* d' v Γ'⊑ = ⊑ₛLat.⊥ₛ-min {A = Assms} {a = Γ} (↑ Γ'⊑)
+
+extract-ctx-min (minVar {n' = n'} {τ' = τ'} p {υ = υ} υ≢□) (↦Var p') v Γ'⊑
+  = ⊥ₛ-≔-min υ Γ'⊑ p p' v
+  where
+    ⊥ₛ-≔-min : ∀ {Γ Γ' : Assms} {k : ℕ} {τ τ'}
+              → (υ' : ⌊ τ ⌋)
+              → Γ' ⊑ Γ → (p : Γ at k ≡ just τ) → Γ' at k ≡ just τ'
+              → υ' .↓ ⊑ τ'
+              → (⊥ₛ {A = Assms} {a = Γ} [ p ≔ υ' ]ₛ) .↓ ⊑ Γ'
+    ⊥ₛ-≔-min {k = zero} υ' (⊑∷ _ t) ≡refl ≡refl v' = ⊑∷ v' (⊑ₛLat.⊥ₛ-min {A = Assms} (↑ t))
+    ⊥ₛ-≔-min {k = suc _} υ' (⊑∷ _ t) p₁ p₂ v' = ⊑∷ ⊑□ (⊥ₛ-≔-min υ' t p₁ p₂ v')
+
+-- Structural cases
+extract-ctx-min (minΛ {γ = γ} sub) (↦Λ d') (⊑∀ v') Γ'⊑
+  with extract-ctx-min sub d' v' (shiftΓ-⊑ Γ'⊑)
+... | ih = subst (_⊑ _) (unshiftΓ-shiftΓ (γ .↓)) (unshiftΓ-shiftΓ-⊑ ih)
+
+extract-ctx-min (min& {γ₁ = γ₁} {γ₂ = γ₂} s₁ s₂) (↦& d₁' d₂') v Γ'⊑
+  with v
+... | ⊑× v₁ v₂
+  = ⊑ₛLat.⊔ₛ-least {A = Assms} {x = γ₁} {y = γ₂} {z = ↑ Γ'⊑}
+      (extract-ctx-min s₁ d₁' v₁ Γ'⊑)
+      (extract-ctx-min s₂ d₂' v₂ Γ'⊑)
+
+extract-ctx-min (minλ: {υ₁ = υ₁} {ϕ₁ = ϕ₁} {γ = γ} {σ₂ = σ₂} sub d-ann) (↦λ: wf' d-body') (⊑⇒ v₁ v₂) Γ'⊑
+  with extract-ctx-min sub d-body' v₂ (⊑∷ ((ϕ₁ ⊔ₛ υ₁) .proof) Γ'⊑)
+... | ⊑∷ _ γ⊑ = γ⊑
+
+-- Elimination cases
+extract-ctx-min (min∘ {σ-fn = σ-fn} {D₁ = D₁} {m = m} {υ = υ} υ≢□ sub) (↦∘ d₁' m' d₂') v Γ'⊑
+  with syn-precision Γ'⊑ (σ-fn .proof) D₁ d₁'
+... | τ-fn⊑
+  = extract-ctx-min sub d₁' (unmatch⇒-mono-cod m υ υ≢□ τ-fn⊑ m' v) Γ'⊑
+
+extract-ctx-min (minπ₁ {υ = υ} {σ-e = σ-e} {D = D} {m = m} υ≢□ sub) (↦π₁ d' m') v Γ'⊑
+  with syn-precision Γ'⊑ (σ-e .proof) D d'
+... | τ⊑
+  = extract-ctx-min sub d' (unmatch×-mono-fst m υ υ≢□ τ⊑ m' v) Γ'⊑
+
+extract-ctx-min (minπ₂ {υ = υ} {σ-e = σ-e} {D = D} {m = m} υ≢□ sub) (↦π₂ d' m') v Γ'⊑
+  with syn-precision Γ'⊑ (σ-e .proof) D d'
+... | τ⊑
+  = extract-ctx-min sub d' (unmatch×-mono-snd m υ υ≢□ τ⊑ m' v) Γ'⊑
+
+extract-ctx-min (min<> {τ' = τ'} {σ = σ} {σ-e = σ-e} {D = D} {m = m} {υ = υ} υ≢□ sub) (↦<> d' m' wf') v Γ'⊑
+  with syn-precision Γ'⊑ (σ-e .proof) D d'
+... | τ⊑
+  with ⊔-∀-⊑ τ⊑ m
+... | _ , m₃ , τ₃body⊑
+  = extract-ctx-min sub d'
+      (unmatch∀-mono m (unsub {τ'} υ) (unsub-non□ {τ' = τ'} υ υ≢□) τ⊑ m₃ (unsub-⊑-body {τ' = τ'} υ τ⊑ m₃))
+      Γ'⊑
+
+extract-ctx-min (mindef {γ₁ = γ₁} {γ₂ = γ₂} {σ-def = σ-def} {D₁ = D₁} υ≢□ s-body s-def d-def) (↦def d₁' d₂') v Γ'⊑
+  with syn-precision Γ'⊑ (σ-def .proof) D₁ d₁'
+... | τ₁'⊑
+  with extract-ctx-min s-body d₂' v (⊑∷ τ₁'⊑ Γ'⊑)
+... | ⊑∷ υ₁⊑ γ₂⊑
+  with extract-ctx-min s-def d₁' υ₁⊑ Γ'⊑
+... | γ₁⊑
+  = ⊑ₛLat.⊔ₛ-least {A = Assms} {x = γ₁} {y = γ₂} {z = ↑ Γ'⊑} γ₁⊑ γ₂⊑
+
+extract-ctx-min (mincase {ς₁ = ς₁} {ς₂ = ς₂} {γ₀ = γ₀} {γ₁ = γ₁} {γ₂ = γ₂}
+                         {σ₀ = σ₀} {σ₁ = σ₁} {σ₂ = σ₂}
+                         {D = D} {D₁ = D₁} {D₂ = D₂} {c = c} {υ = υ}
+                         υ≢□ cs₁ cs₂ cs₀ dc₁ dc₂ c' υ⊑ z₁ z₂)
+                (↦case d₀' m' db₁' db₂' c'') v Γ'⊑
+  with syn-precision Γ'⊑ (σ₀ .proof) D d₀'
+... | τ₀⊑
+  with ⊔-+-⊑ τ₀⊑ (⊔□+□)
+... | _ , _ , m₃ , τ₃⊑τ₁ , τ₄⊑τ₂
+  with ≡refl ← ≡trans (≡sym m₃) m'
+  with extract-ctx-min cs₁ db₁' {!!} (⊑∷ τ₃⊑τ₁ Γ'⊑)
+     | extract-ctx-min cs₂ db₂' {!!} (⊑∷ τ₄⊑τ₂ Γ'⊑)
+... | ⊑∷ _ γ₁⊑ | ⊑∷ _ γ₂⊑
+  with extract-ctx-min cs₀ d₀' {!!} Γ'⊑
+... | γ₀⊑
+  = ⊑ₛLat.⊔ₛ-least {A = Assms} {x = γ₀ ⊔ₛ γ₁} {y = γ₂} {z = ↑ Γ'⊑}
+      (⊑ₛLat.⊔ₛ-least {A = Assms} {x = γ₀} {y = γ₁} {z = ↑ Γ'⊑} γ₀⊑ γ₁⊑) γ₂⊑
+
 -- Final soundness corollary:
 -- Extract the derivation to a MinFixedAssmsSynSlice,
 -- then use minimality of γ to construct a MinSynSlice
@@ -675,6 +763,6 @@ soundness {D = D} {υ = υ} {γ = γ} c
                      ⊒ ⊑.trans {Typ} (s' .valid) (syn-precision (SS._↓γ⊑ s') (⊑.refl {Exp}) d-s' (s' .syn)))
                   (proj₂ s'⊑)
     ... | ≡refl
-      with extract-ctx-min c (s' .syn) (s' .valid)
+      with extract-ctx-min c (s' .syn) (s' .valid) (SS._↓γ⊑ s')
     ... | γ⊑γ' = ⊑.antisym {Assms ∧ Exp}
         (γ⊑γ' , ⊑.refl {Exp}) s'⊑
