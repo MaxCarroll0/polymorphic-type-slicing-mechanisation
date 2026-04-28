@@ -59,6 +59,76 @@ snd+ₛ-⊑ {s₁ = □ isSlice ⊑□} _ = ⊑□
 snd+ₛ-⊑ {s₁ = (_ + _) isSlice ⊑+ _ _} {□ isSlice ⊑□} ()
 snd+ₛ-⊑ {s₁ = (_ + _) isSlice ⊑+ _ _} {(_ + _) isSlice ⊑+ _ _} (⊑+ _ q) = q
 
+-- +ₛ-min: sum except use ? instead of ? + ?.
+-- For use in minimising scrutinee of case statements
++ₛ-min : ∀ {τ₁ τ₂ : Typ} → ⌊ τ₁ ⌋ → ⌊ τ₂ ⌋ → ⌊ τ₁ + τ₂ ⌋
++ₛ-min (□ isSlice ⊑□) (□ isSlice ⊑□) = ⊥ₛ
++ₛ-min s₁ s₂ = s₁ +ₛ s₂
+
++ₛ-min⊑+ₛ : ∀ {τ₁ τ₂ : Typ} (s₁ : ⌊ τ₁ ⌋) (s₂ : ⌊ τ₂ ⌋) → +ₛ-min s₁ s₂ ⊑ₛ (s₁ +ₛ s₂)
++ₛ-min⊑+ₛ (□ isSlice ⊑□) (□ isSlice ⊑□) = ⊑□
++ₛ-min⊑+ₛ ((_ + _) isSlice ⊑+ _ _) s₂ = ⊑.refl {Typ}
++ₛ-min⊑+ₛ (□ isSlice ⊑□) ((_ + _) isSlice ⊑+ _ _) = ⊑.refl {Typ}
++ₛ-min⊑+ₛ (Typ.* isSlice ⊑*) s₂ = ⊑.refl {Typ}
++ₛ-min⊑+ₛ ((_ ⇒ _) isSlice ⊑⇒ _ _) s₂ = ⊑.refl {Typ}
++ₛ-min⊑+ₛ ((_ × _) isSlice ⊑× _ _) s₂ = ⊑.refl {Typ}
++ₛ-min⊑+ₛ ((∀· _) isSlice ⊑∀ _) s₂ = ⊑.refl {Typ}
++ₛ-min⊑+ₛ (Typ.⟨ _ ⟩ isSlice ⊑Var) s₂ = ⊑.refl {Typ}
++ₛ-min⊑+ₛ (□ isSlice ⊑□) (Typ.* isSlice ⊑*) = ⊑.refl {Typ}
++ₛ-min⊑+ₛ (□ isSlice ⊑□) ((_ ⇒ _) isSlice ⊑⇒ _ _) = ⊑.refl {Typ}
++ₛ-min⊑+ₛ (□ isSlice ⊑□) ((_ × _) isSlice ⊑× _ _) = ⊑.refl {Typ}
++ₛ-min⊑+ₛ (□ isSlice ⊑□) ((∀· _) isSlice ⊑∀ _) = ⊑.refl {Typ}
++ₛ-min⊑+ₛ (□ isSlice ⊑□) (Typ.⟨ _ ⟩ isSlice ⊑Var) = ⊑.refl {Typ}
+
+-- +ₛ-min validity: scrutinee precision through match equation
++ₛ-min-⊑ : ∀ {τ₁ τ₂ τ τ₃' τ₄'} (s₁ : ⌊ τ₁ ⌋) (s₂ : ⌊ τ₂ ⌋)
+  → τ ⊑t τ₁ + τ₂ → τ ⊔ (□ + □) ≡ τ₃' + τ₄'
+  → s₁ .↓ ⊑t τ₃' → s₂ .↓ ⊑t τ₄'
+  → (+ₛ-min s₁ s₂) .↓ ⊑t τ
++ₛ-min-⊑ s₁ s₂ (⊑+ {τ₁ = a} {τ₂ = b} _ _) m-eq p q
+  rewrite ⊔t-zeroᵣ {a} | ⊔t-zeroᵣ {b}
+  with refl ← m-eq = ⊑t-trans (+ₛ-min⊑+ₛ s₁ s₂) (⊑+ p q)
++ₛ-min-⊑ s₁ s₂ ⊑□ m-eq p q
+  rewrite ⊔t-zeroₗ {□ + □}
+  with refl ← m-eq
+  with refl ← ⊑.antisym p ⊑□
+  with refl ← ⊑.antisym q ⊑□
+  with s₁ .proof | s₂ .proof
+... | ⊑□ | ⊑□ = ⊑□
+
+-- delegate most cases to fst+ₛ
+fst-+ₛ-min : ∀ {τ₁ τ₂ : Typ} {s₁ : ⌊ τ₁ ⌋} {s₂ : ⌊ τ₂ ⌋} {t : ⌊ τ₁ + τ₂ ⌋}
+  → +ₛ-min s₁ s₂ ⊑ₛ t → s₁ ⊑ₛ fst+ₛ t
+fst-+ₛ-min {s₁ = □ isSlice ⊑□} {s₂ = □ isSlice ⊑□} _ = ⊑□
+fst-+ₛ-min {s₁ = s₁@(□ isSlice ⊑□)} {s₂ = s₂@(Typ.* isSlice ⊑*)} v = fst+ₛ-⊑ {s₁ = s₁ +ₛ s₂} v
+fst-+ₛ-min {s₁ = s₁@(□ isSlice ⊑□)} {s₂ = s₂@((_ ⇒ _) isSlice ⊑⇒ _ _)} v = fst+ₛ-⊑ {s₁ = s₁ +ₛ s₂} v
+fst-+ₛ-min {s₁ = s₁@(□ isSlice ⊑□)} {s₂ = s₂@((_ × _) isSlice ⊑× _ _)} v = fst+ₛ-⊑ {s₁ = s₁ +ₛ s₂} v
+fst-+ₛ-min {s₁ = s₁@(□ isSlice ⊑□)} {s₂ = s₂@((_ + _) isSlice ⊑+ _ _)} v = fst+ₛ-⊑ {s₁ = s₁ +ₛ s₂} v
+fst-+ₛ-min {s₁ = s₁@(□ isSlice ⊑□)} {s₂ = s₂@((∀· _) isSlice ⊑∀ _)} v = fst+ₛ-⊑ {s₁ = s₁ +ₛ s₂} v
+fst-+ₛ-min {s₁ = s₁@(□ isSlice ⊑□)} {s₂ = s₂@(Typ.⟨ _ ⟩ isSlice ⊑Var)} v = fst+ₛ-⊑ {s₁ = s₁ +ₛ s₂} v
+fst-+ₛ-min {s₁ = s₁@(Typ.* isSlice ⊑*)} {s₂ = s₂} v = fst+ₛ-⊑ {s₁ = s₁ +ₛ s₂} v
+fst-+ₛ-min {s₁ = s₁@((_ ⇒ _) isSlice ⊑⇒ _ _)} {s₂ = s₂} v = fst+ₛ-⊑ {s₁ = s₁ +ₛ s₂} v
+fst-+ₛ-min {s₁ = s₁@((_ × _) isSlice ⊑× _ _)} {s₂ = s₂} v = fst+ₛ-⊑ {s₁ = s₁ +ₛ s₂} v
+fst-+ₛ-min {s₁ = s₁@((_ + _) isSlice ⊑+ _ _)} {s₂ = s₂} v = fst+ₛ-⊑ {s₁ = s₁ +ₛ s₂} v
+fst-+ₛ-min {s₁ = s₁@((∀· _) isSlice ⊑∀ _)} {s₂ = s₂} v = fst+ₛ-⊑ {s₁ = s₁ +ₛ s₂} v
+fst-+ₛ-min {s₁ = s₁@(Typ.⟨ _ ⟩ isSlice ⊑Var)} {s₂ = s₂} v = fst+ₛ-⊑ {s₁ = s₁ +ₛ s₂} v
+
+snd-+ₛ-min : ∀ {τ₁ τ₂ : Typ} {s₁ : ⌊ τ₁ ⌋} {s₂ : ⌊ τ₂ ⌋} {t : ⌊ τ₁ + τ₂ ⌋}
+  → +ₛ-min s₁ s₂ ⊑ₛ t → s₂ ⊑ₛ snd+ₛ t
+snd-+ₛ-min {s₁ = □ isSlice ⊑□} {s₂ = □ isSlice ⊑□} _ = ⊑□
+snd-+ₛ-min {s₁ = s₁@(□ isSlice ⊑□)} {s₂ = s₂@(Typ.* isSlice ⊑*)} v = snd+ₛ-⊑ {s₁ = s₁ +ₛ s₂} v
+snd-+ₛ-min {s₁ = s₁@(□ isSlice ⊑□)} {s₂ = s₂@((_ ⇒ _) isSlice ⊑⇒ _ _)} v = snd+ₛ-⊑ {s₁ = s₁ +ₛ s₂} v
+snd-+ₛ-min {s₁ = s₁@(□ isSlice ⊑□)} {s₂ = s₂@((_ × _) isSlice ⊑× _ _)} v = snd+ₛ-⊑ {s₁ = s₁ +ₛ s₂} v
+snd-+ₛ-min {s₁ = s₁@(□ isSlice ⊑□)} {s₂ = s₂@((_ + _) isSlice ⊑+ _ _)} v = snd+ₛ-⊑ {s₁ = s₁ +ₛ s₂} v
+snd-+ₛ-min {s₁ = s₁@(□ isSlice ⊑□)} {s₂ = s₂@((∀· _) isSlice ⊑∀ _)} v = snd+ₛ-⊑ {s₁ = s₁ +ₛ s₂} v
+snd-+ₛ-min {s₁ = s₁@(□ isSlice ⊑□)} {s₂ = s₂@(Typ.⟨ _ ⟩ isSlice ⊑Var)} v = snd+ₛ-⊑ {s₁ = s₁ +ₛ s₂} v
+snd-+ₛ-min {s₁ = s₁@(Typ.* isSlice ⊑*)} {s₂ = s₂} v = snd+ₛ-⊑ {s₁ = s₁ +ₛ s₂} v
+snd-+ₛ-min {s₁ = s₁@((_ ⇒ _) isSlice ⊑⇒ _ _)} {s₂ = s₂} v = snd+ₛ-⊑ {s₁ = s₁ +ₛ s₂} v
+snd-+ₛ-min {s₁ = s₁@((_ × _) isSlice ⊑× _ _)} {s₂ = s₂} v = snd+ₛ-⊑ {s₁ = s₁ +ₛ s₂} v
+snd-+ₛ-min {s₁ = s₁@((_ + _) isSlice ⊑+ _ _)} {s₂ = s₂} v = snd+ₛ-⊑ {s₁ = s₁ +ₛ s₂} v
+snd-+ₛ-min {s₁ = s₁@((∀· _) isSlice ⊑∀ _)} {s₂ = s₂} v = snd+ₛ-⊑ {s₁ = s₁ +ₛ s₂} v
+snd-+ₛ-min {s₁ = s₁@(Typ.⟨ _ ⟩ isSlice ⊑Var)} {s₂ = s₂} v = snd+ₛ-⊑ {s₁ = s₁ +ₛ s₂} v
+
 -- fst+ₛ/snd+ₛ precision through ⊔-+-⊑ decomposition
 fst+ₛ-⊔ : ∀ {τ₁ τ₂} (s : ⌊ τ₁ + τ₂ ⌋) {τ τ₁ τ₂}
          → s .↓ ⊑t τ → τ ⊔ □ + □ ≡ τ₁ + τ₂ → fst+ₛ s .↓ ⊑t τ₁

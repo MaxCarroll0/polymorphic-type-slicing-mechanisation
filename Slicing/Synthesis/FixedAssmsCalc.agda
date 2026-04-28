@@ -1,4 +1,3 @@
-{-# OPTIONS --allow-unsolved-metas #-}
 open import Data.Nat hiding (_+_; _⊔_; _≟_)
 open import Data.Product using (_,_; proj₁; proj₂; Σ-syntax; ∃-syntax) renaming (_×_ to _∧_)
 open import Relation.Binary.PropositionalEquality using (_≡_; _≢_; subst; cong) renaming (refl to ≡refl; sym to ≡sym; trans to ≡trans)
@@ -14,7 +13,6 @@ open import Slicing.Synthesis.Synthesis using (IsMinimal; MinSynSlice_◂_; SynS
 import Slicing.Synthesis.Synthesis as SS
 open import Slicing.MinSub using (min-sub; min-sub-valid; min-sub-minimal; unsub-non□; unsub-⊑-body)
 open import Slicing.Synthesis.FixedAssmsSynthesis
-open import Core.Assms.Lift using (≔ₛ-↓)
 
 module Slicing.Synthesis.FixedAssmsCalc where
 
@@ -97,8 +95,6 @@ data _◂_⤳_↦_⊣_ {n : ℕ} {Γ : Assms} : ∀ {e : Exp} {τ : Typ}
              → (↦π₂ D m) ◂ υ ⤳ π₂ₛ σ-e ↦ snd×ₛ ψ₁ m ⊣ γ
 
   -- Branches sliced first; their output contexts determine scrutinee query.
-  -- Branch queries are complements: υ₁ = ¬ₛ ψ₂' and υ₂ = ¬ₛ ψ₁', ensuring
-  -- no redundancy
   mincase  : ∀ {e e₁ e₂ τ₁ τ₂ τ₁' τ₂' ς₁ ς₂ υ₁ υ₂ ψ₀ ψ₁ ψ₂ ψ₁' ψ₂' γ₀ γ₁ γ₂ σ₀ σ₁ σ₂}
                {D : n ； Γ ⊢ e ↦ τ₁ + τ₂}
                {D₁ : n ； (τ₁ ∷ Γ) ⊢ e₁ ↦ τ₁'} {D₂ : n ； (τ₂ ∷ Γ) ⊢ e₂ ↦ τ₂'}
@@ -107,15 +103,38 @@ data _◂_⤳_↦_⊣_ {n : ℕ} {Γ : Assms} : ∀ {e : Exp} {τ : Typ}
              → (υ .↓ ≢ □)
              → D₁ ◂ υ₁ ⤳ σ₁ ↦ ψ₁ ⊣ (ς₁ ∷ₛ γ₁)
              → D₂ ◂ υ₂ ⤳ σ₂ ↦ ψ₂ ⊣ (ς₂ ∷ₛ γ₂)
-             → ⊔-inlₛ c υ₁ ≡ ¬ₛ (⊔-inrₛ c ψ₂) -- No mutual redundancy
-             → ⊔-inrₛ c υ₂ ≡ ¬ₛ (⊔-inlₛ c ψ₁)
-             → D ◂ (ς₁ +ₛ ς₂) ⤳ σ₀ ↦ ψ₀ ⊣ γ₀
+             → D ◂ +ₛ-min ς₁ ς₂ ⤳ σ₀ ↦ ψ₀ ⊣ γ₀
              → n ； (fst+ₛ ψ₀ .↓ ∷ Γ) ⊢ σ₁ .↓ ↦ ψ₁' .↓
              → n ； (snd+ₛ ψ₀ .↓ ∷ Γ) ⊢ σ₂ .↓ ↦ ψ₂' .↓
              → ψ₁' .↓ ~ ψ₂' .↓
              → υ .↓ ⊑ υ₁ .↓ ⊔ υ₂ .↓ -- TODO: derive from boolean properties
+             → ⊔-inlₛ c υ₁ ⊑ₛ (υ ⊓ₛ (¬ₛ (⊔-inrₛ c ⊤ₛ))) -- branch 1 query in purely-left zone
+             → ⊔-inrₛ c υ₂ ⊑ₛ (υ ⊓ₛ (¬ₛ (⊔-inlₛ c ⊤ₛ))) -- branch 2 query in purely-right zone
              → (↦case D (⊔□+□ {τ₁} {τ₂}) D₁ D₂ c) ◂ υ ⤳ caseₛ σ₀ σ₁ σ₂
                ↦ (ψ₁' ⊔~ₛ ψ₂') {c} ⊣ (γ₀ ⊔ₛ γ₁) ⊔ₛ γ₂
+
+-- Boolean algebra lemma: project out a join component
+join-project : ∀ {τ : Typ} {a b c d : ⌊ τ ⌋}
+  → a ⊑ₛ (b ⊔ₛ c) → c ⊑ₛ d → (a ⊓ₛ (¬ₛ d)) ⊑ₛ b
+join-project {τ} {a} {b} {c} {d} a⊑bc c⊑d =
+  let open ⊑ₛ {a = τ}
+      open ⊑ₛLat {a = τ}
+      ¬d = ¬ₛ d
+  in begin
+     a ⊓ₛ ¬d                ⊑⟨ ⊓-monotonic {x = b ⊔ₛ c} {y = a} {u = ¬d} {v = ¬d}
+                                           a⊑bc (refl {x = ¬d}) ⟩
+     (b ⊔ₛ c) ⊓ₛ ¬d         ≈⟨ ⊓ₛ-distribʳ-⊔ₛ ¬d b c ⟩
+     (b ⊓ₛ ¬d) ⊔ₛ (c ⊓ₛ ¬d) ⊑⟨ ⊔-monotonic {x = b ⊓ₛ ¬d} {y = b}
+                                          {u = c ⊓ₛ ¬d} {v = ⊑ₛLat.⊥ₛ}
+                                          (x⊓ₛy⊑ₛx b ¬d)
+                                          (begin c ⊓ₛ ¬d ⊑⟨ ⊓-monotonic {x = d} {y = c}
+                                                                        {u = ¬d} {v = ¬d}
+                                                                        c⊑d (refl {x = ¬d}) ⟩
+                                                 d ⊓ₛ ¬d ≈⟨ ¬ₛ-⊓ d ⟩
+                                                 ⊑ₛLat.⊥ₛ ∎) ⟩
+     b ⊔ₛ ⊑ₛLat.⊥ₛ ⊑⟨ ⊔ₛ-least {x = b} {y = ⊑ₛLat.⊥ₛ} {z = b}
+                              (refl {x = b}) (⊥ₛ-min b) ⟩
+     b ∎
 
 -- Lemmas for minimality proof
 ⊤⋢⊥ : ∀ {τ : Typ} → τ ≢ □ → (⊤ₛ {a = τ}) ⊑ₛ  (⊥ₛ {a = τ}) → Data.Empty.⊥
@@ -227,7 +246,6 @@ extract' (minλ: {υ₁ = υ₁} {ϕ₁ = ϕ₁} {γ = γ} {wf = wf} {D = D} sub
        ⇑ (ϕ₁ ⊔ₛ υ₁) ⇒ₛ _
        ∈ ↦λ: (wf-⊑ wf ((ϕ₁ ⊔ₛ υ₁) .proof)) d-ann
        ⊒ ⊑⇒ (⊑ₛLat.y⊑ₛx⊔ₛy ϕ₁ υ₁) (⊑.trans {Typ} v₂' p)
-
     min : ∀ p → IsMinimal (s p)
     min p s' s'⊑
       with s' .syn | s' .valid | s' ↓σ⊑ | s' ↓ϕ⊑ | s'⊑
@@ -265,7 +283,6 @@ extract' (minΛ sub)
     ... | ↦Λ d' | ⊑∀ v' | ⊑Λ p | ⊑∀ q | ⊑Λ e⊑
       with ih-min (↑ p ⇑ ↑ q ∈ d' ⊒ v') e⊑
     ... | ≡refl = ≡refl
-
 extract' (min& s₁ s₂)
   with extract' s₁ | extract' s₂
 ... | ((σ₁ ⇑ ϕ₁ ∈ d₁ ⊒ v₁) , ih₁) , ≡refl , ≡refl
@@ -281,7 +298,6 @@ extract' (min& s₁ s₂)
       with ih₁ (↑ p₁ ⇑ ↑ q₁ ∈ d₁' ⊒ v₁') e₁⊑
          | ih₂ (↑ p₂ ⇑ ↑ q₂ ∈ d₂' ⊒ v₂') e₂⊑
     ... | ≡refl | ≡refl = ≡refl
-  
 -- e₁ e₂ : υ — decompose fn type, extract codomain
 extract' (min∘ {τ = τ} {τ₂ = τ₂} {D₁ = D₁} {m = m} {υ = υ} υ≢□ sub)
   with extract' sub
@@ -346,7 +362,6 @@ extract' (mindef {υ₂ = υ₂} {υ₁ = υ₁} {γ₂ = γ₂} {D₁ = D₁} {
     in (s p , min p) , ≡refl , ≡refl
   where
     s = λ p → defₛ σ₁ σ₂ ⇑ _ ∈ ↦def d₁ d-def ⊒ ⊑.trans {Typ} v₂' p
-
     min : ∀ p → IsMinimal (s p)
     min p s' s'⊑
       with s' .syn | s' .valid | s' ↓σ⊑ | s' ↓ϕ⊑ | s'⊑
@@ -414,16 +429,17 @@ extract' (minπ₂ {τ = τ} {τ₂ = τ₂} {υ = υ} {D = D} {m = m} υ≢□ 
       with ih-min (↑ p ⇑ ↑ τ₃⊑τ ∈ d' ⊒ unmatch×-mono-snd m υ υ≢□ τ₃⊑τ m' v') e⊑
     ... | ≡refl = ≡refl
 
-extract' (mincase {ς₁ = ς₁} {ς₂ = ς₂} {ψ₁' = ψ₁'} {ψ₂' = ψ₂'} {γ₁ = γ₁} {γ₂ = γ₂}
+extract' (mincase {τ₁ = τ₁} {τ₂ = τ₂} {τ₁' = τ₁'} {τ₂' = τ₂'} {ς₁ = ς₁} {ς₂ = ς₂} {υ₁ = υ₁} {υ₂ = υ₂}
+                  {ψ₁' = ψ₁'} {ψ₂' = ψ₂'} {γ₁ = γ₁} {γ₂ = γ₂}
                   {D = D} {D₁ = D₁} {D₂ = D₂} {c = c} {υ = υ}
-                  υ≢□ s₁ s₂ υ₁≡ υ₂≡ s-scr d₁-case d₂-case c' υ⊑)
+                  υ≢□ s₁ s₂ s-scr d₁-case d₂-case c' υ⊑ z₁ z₂)
   with extract' s₁ | extract' s₂ | extract' s-scr | extract-ctx s₁ | extract-ctx s₂
 ... | ((σ₁ ⇑ ψ₁ ∈ d₁ ⊒ v₁) , ih₁) , ≡refl , ≡refl
     | ((σ₂ ⇑ ψ₂ ∈ d₂ ⊒ v₂) , ih₂) , ≡refl , ≡refl
     | ((σ₀ ⇑ ψ₀ ∈ d₀ ⊒ v₀) , ih₀) , ≡refl , ≡refl
     | ψ-ctx₁ , d-ctx₁ , υ₁⊑ctx₁ | ψ-ctx₂ , d-ctx₂ , υ₂⊑ctx₂
-  = let ς₁⊑ = fst+ₛ-⊑ {s₁ = ς₁ +ₛ ς₂} v₀
-        ς₂⊑ = snd+ₛ-⊑ {s₁ = ς₁ +ₛ ς₂} v₀
+  = let ς₁⊑ = fst-+ₛ-min {s₁ = ς₁} {s₂ = ς₂} v₀
+        ς₂⊑ = snd-+ₛ-min {s₁ = ς₁} {s₂ = ς₂} v₀
         v₁' = syn-precision (⊑∷ ς₁⊑ (γ₁ .proof)) (⊑.refl {Exp}) d₁-case d-ctx₁
         v₂' = syn-precision (⊑∷ ς₂⊑ (γ₂ .proof)) (⊑.refl {Exp}) d₂-case d-ctx₂
     in (s v₁' v₂' , min v₁' v₂') , ≡refl , ≡refl
@@ -441,28 +457,69 @@ extract' (mincase {ς₁ = ς₁} {ς₂ = ς₂} {ψ₁' = ψ₁'} {ψ₂' = ψ
     ... | ↦case d₀' m' d₁' d₂' c'' | v' | ⊑case p₀ p₁ p₂ | q | ⊑case e₀⊑ e₁⊑ e₂⊑
       with syn-precision (⊑.refl {Assms}) p₀ D d₀'        -- scr'-type ⊑ τ₁ + τ₂
     ... | τ₀⊑
-      with ⊔-+-⊑ τ₀⊑ ⊔□+□                                    -- decompose scrutinee match
+      with ⊔-+-⊑ τ₀⊑ ⊔□+□
     ... | _ , _ , m₃ , τ₃⊑τ₁ , τ₄⊑τ₂
-      with ≡refl ← ≡trans (≡sym m₃) m'                       -- unify with challenger's match
+      with ≡refl ← ≡trans (≡sym m₃) m'                       
       with static-gradual-syn (⊑.refl {Assms}) p₁ D₁
     ... | _ , d-body₁' , τ-hi₁⊑τ₁'
       with static-gradual-syn (⊑.refl {Assms}) p₂ D₂
     ... | _ , d-body₂' , τ-hi₂⊑τ₂'
-      with ih₁ (↑ p₁ ⇑ ↑ τ-hi₁⊑τ₁' ∈ d-body₁'
-                  ⊒ ⊑.trans {Typ} {!!}
+      with ih₁ (let τ₁c⊑τ₁' = ⊑.trans {Typ}
+                        (syn-precision (⊑∷ τ₃⊑τ₁ (⊑.refl {Assms}))
+                          (⊑.refl {Exp}) d-body₁' d₁') τ-hi₁⊑τ₁'
+                    τ₂c⊑τ₂' = ⊑.trans {Typ}
+                        (syn-precision (⊑∷ τ₄⊑τ₂ (⊑.refl {Assms}))
+                          (⊑.refl {Exp}) d-body₂' d₂') τ-hi₂⊑τ₂'
+                 in ↑ p₁ ⇑ ↑ τ-hi₁⊑τ₁' ∈ d-body₁'
+                  ⊒ ⊑.trans {Typ}
+                      (⊑.trans {Typ} z₁
+                        (join-project {a = υ} {b = ⊔-inlₛ c (↑ τ₁c⊑τ₁')} {c = ⊔-inrₛ c (↑ τ₂c⊑τ₂')}
+                                      {d = ⊔-inrₛ c ⊤ₛ}
+                                      v' τ₂c⊑τ₂'))
                       (syn-precision (⊑∷ τ₃⊑τ₁ (⊑.refl {Assms}))
                         (⊑.refl {Exp}) d-body₁' d₁')) e₁⊑
-         | ih₂ (↑ p₂ ⇑ ↑ τ-hi₂⊑τ₂' ∈ d-body₂'
-                  ⊒ ⊑.trans {Typ} {!!}
+         | ih₂ (let τ₁c⊑τ₁' = ⊑.trans {Typ}
+                        (syn-precision (⊑∷ τ₃⊑τ₁ (⊑.refl {Assms}))
+                          (⊑.refl {Exp}) d-body₁' d₁') τ-hi₁⊑τ₁'
+                    τ₂c⊑τ₂' = ⊑.trans {Typ}
+                        (syn-precision (⊑∷ τ₄⊑τ₂ (⊑.refl {Assms}))
+                          (⊑.refl {Exp}) d-body₂' d₂') τ-hi₂⊑τ₂'
+                 in ↑ p₂ ⇑ ↑ τ-hi₂⊑τ₂' ∈ d-body₂'
+                  ⊒ ⊑.trans {Typ}
+                      (⊑.trans {Typ} z₂
+                        (join-project {a = υ} {b = ⊔-inrₛ c (↑ τ₂c⊑τ₂')} {c = ⊔-inlₛ c (↑ τ₁c⊑τ₁')}
+                                      {d = ⊔-inlₛ c ⊤ₛ}
+                                      (subst (υ .↓ ⊑_) (⊑ₛLat.⊔-comm (⊔-inlₛ c (↑ τ₁c⊑τ₁')) (⊔-inrₛ c (↑ τ₂c⊑τ₂'))) v')
+                                      τ₁c⊑τ₁'))
                       (syn-precision (⊑∷ τ₄⊑τ₂ (⊑.refl {Assms}))
                         (⊑.refl {Exp}) d-body₂' d₂')) e₂⊑
     ... | ≡refl | ≡refl
-      with extract-ctx-min s₁ d-body₁'
-             (subst (_ ⊑_) (≡sym (syn-unicity d-body₁' d₁)) v₁)
-         | extract-ctx-min s₂ d-body₂'
-             (subst (_ ⊑_) (≡sym (syn-unicity d-body₂' d₂)) v₂)
-    ... | ⊑∷ ς₁⊑' _ | ⊑∷ ς₂⊑' _
-      with ih₀ (↑ p₀ ⇑ ↑ τ₀⊑ ∈ d₀' ⊒ {!!}) e₀⊑
+      -- Use derivations d₁'/d₂'
+      -- in contexts τ₃'∷Γ / τ₄'∷Γ to get ς₁ ⊑ τ₃' and ς₂ ⊑ τ₄'
+      with extract-ctx-min s₁ d₁'
+             (let τ₁c⊑ = ⊑.trans {Typ} (syn-precision (⊑∷ τ₃⊑τ₁ (⊑.refl {Assms}))
+                            (⊑.refl {Exp}) d-body₁' d₁') τ-hi₁⊑τ₁'
+                  τ₂c⊑ = ⊑.trans {Typ} (syn-precision (⊑∷ τ₄⊑τ₂ (⊑.refl {Assms}))
+                            (⊑.refl {Exp}) d-body₂' d₂') τ-hi₂⊑τ₂'
+              in ⊑.trans {Typ} z₁
+                   (join-project {a = υ} {b = ⊔-inlₛ c (↑ τ₁c⊑)} {c = ⊔-inrₛ c (↑ τ₂c⊑)}
+                                 {d = ⊔-inrₛ c ⊤ₛ}
+                                 v' τ₂c⊑))
+         | extract-ctx-min s₂ d₂'
+             (let τ₁c⊑ = ⊑.trans {Typ} (syn-precision (⊑∷ τ₃⊑τ₁ (⊑.refl {Assms}))
+                            (⊑.refl {Exp}) d-body₁' d₁') τ-hi₁⊑τ₁'
+                  τ₂c⊑ = ⊑.trans {Typ} (syn-precision (⊑∷ τ₄⊑τ₂ (⊑.refl {Assms}))
+                            (⊑.refl {Exp}) d-body₂' d₂') τ-hi₂⊑τ₂'
+              in ⊑.trans {Typ} z₂
+                   (join-project {a = υ} {b = ⊔-inrₛ c (↑ τ₂c⊑)} {c = ⊔-inlₛ c (↑ τ₁c⊑)}
+                                 {d = ⊔-inlₛ c ⊤ₛ}
+                                 (subst (υ .↓ ⊑_) (⊑ₛLat.⊔-comm (⊔-inlₛ c (↑ τ₁c⊑))
+                                                                (⊔-inrₛ c (↑ τ₂c⊑))) v')
+                                 τ₁c⊑))
+    ... | ⊑∷ ς₁⊑τ₃' _ | ⊑∷ ς₂⊑τ₄' _
+      -- scrutinee
+      with ih₀ (↑ p₀ ⇑ ↑ τ₀⊑ ∈ d₀'
+                  ⊒ +ₛ-min-⊑ ς₁ ς₂ τ₀⊑ m' ς₁⊑τ₃' ς₂⊑τ₄') e₀⊑
     ... | ≡refl = ≡refl
 
 -- Verify the proposed minimal context is a valid context
@@ -529,14 +586,14 @@ extract-ctx (minλ: {υ₁ = υ₁} {ψ₂' = ψ₂'} {ϕ₁ = ϕ₁} {γ = γ} 
 extract-ctx (mindef {γ₁ = γ₁} {γ₂ = γ₂} {σ-body = σ-body} {σ-def = σ-def} {D₁ = D₁} {D₂ = D₂} _ s-body s-def d-def)
   with extract-ctx s-body | extract-ctx s-def
 ... | ψ₂ , d₂ , v₂ | ψ₁ , d₁ , v₁                           -- γ₂ ⊢ σ₂ ↦ ψ₂, γ₁ ⊢ σ₁ ↦ ψ₁
-  with static-gradual-syn ((γ₁ ⊔ₛ γ₂) .proof)                -- γ₁⊔γ₂ ⊢ σ₁ ↦ τ₁'
+  with static-gradual-syn ((γ₁ ⊔ₛ γ₂) .proof)               -- γ₁⊔γ₂ ⊢ σ₁ ↦ τ₁'
          (σ-def .proof) D₁
 ... | _ , d₁' , p₁
   with static-gradual-syn (⊑∷ p₁ ((γ₁ ⊔ₛ γ₂) .proof))       -- (τ₁' ∷ γ₁⊔γ₂) ⊢ σ₂ ↦ τ₂'
          (σ-body .proof) D₂
 ... | _ , d₂' , p₂
   = ↑ p₂ , ↦def d₁' d₂'
-  , ⊑.trans {Typ} v₂                                          -- υ₂ ⊑ ψ₂ ⊑ τ₂'
+  , ⊑.trans {Typ} v₂                                        -- υ₂ ⊑ ψ₂ ⊑ τ₂'
       (syn-precision (⊑∷ (⊑.trans {Typ} v₁
         (syn-precision (⊑ₛLat.x⊑ₛx⊔ₛy γ₁ γ₂)
           (⊑.refl {Exp}) d₁' d₁))
@@ -565,35 +622,35 @@ extract-ctx (minπ₂ {τ = τ} {υ = υ} {m = m} υ≢□ sub)
 extract-ctx (mincase {ς₁ = ς₁} {ς₂ = ς₂} {γ₀ = γ₀} {γ₁ = γ₁} {γ₂ = γ₂}
                     {σ₀ = σ₀} {σ₁ = σ₁} {σ₂ = σ₂}
                     {D = D} {D₁ = D₁} {D₂ = D₂} {c = c} {υ = υ}
-                    _ s₁ s₂ _ _ s-scrut d₁-case d₂-case c' υ⊑)
+                    _ s₁ s₂ s-scrut d₁-case d₂-case c' υ⊑ _ _)
   with extract-ctx s₁ | extract-ctx s₂ | extract-ctx s-scrut
 ... | ψ₁ , d₁ , v₁                                            -- ς₁∷γ₁ ⊢ σ₁ ↦ ψ₁
     | ψ₂ , d₂ , v₂                                            -- ς₂∷γ₂ ⊢ σ₂ ↦ ψ₂
     | ψ₀ , d₀ , v₀                                            -- γ₀ ⊢ σ₀ ↦ ψ₀
-  with static-gradual-syn (((γ₀ ⊔ₛ γ₁) ⊔ₛ γ₂) .proof)       -- γ ⊢ σ₀ ↦ τ₀
+  with static-gradual-syn (((γ₀ ⊔ₛ γ₁) ⊔ₛ γ₂) .proof)          -- γ ⊢ σ₀ ↦ τ₀
          (σ₀ .proof) D
 ... | τ₀ , d₀' , p₀
-  with ⊔-+-⊑ p₀ (⊔□+□ {_} {_})                               -- τ₀ ⊔ □+□ ≡ τa + τb
+  with ⊔-+-⊑ p₀ (⊔□+□ {_} {_})                                -- τ₀ ⊔ □+□ ≡ τa + τb
 ... | τa , τb , m' , pa , pb
   with static-gradual-syn (⊑∷ pa (((γ₀ ⊔ₛ γ₁) ⊔ₛ γ₂) .proof)) (σ₁ .proof) D₁  -- (τa∷γ) ⊢ σ₁ ↦ τl
      | static-gradual-syn (⊑∷ pb (((γ₀ ⊔ₛ γ₁) ⊔ₛ γ₂) .proof)) (σ₂ .proof) D₂  -- (τb∷γ) ⊢ σ₂ ↦ τr
 ... | τl , dl , pl | τr , dr , pr
   = let c'' = ~-⊑-down c pl pr
-        γ₁⊑ = ⊑.trans {Assms} (⊑ₛLat.y⊑ₛx⊔ₛy γ₀ γ₁)        -- γ₁ ⊑ γ
+        γ₁⊑ = ⊑.trans {Assms} (⊑ₛLat.y⊑ₛx⊔ₛy γ₀ γ₁)
               (⊑ₛLat.x⊑ₛx⊔ₛy (γ₀ ⊔ₛ γ₁) γ₂)
-        γ₂⊑ = ⊑ₛLat.y⊑ₛx⊔ₛy (γ₀ ⊔ₛ γ₁) γ₂                 -- γ₂ ⊑ γ
-        γ₀⊑ = ⊑.trans {Assms} (⊑ₛLat.x⊑ₛx⊔ₛy γ₀ γ₁)        -- γ₀ ⊑ γ
+        γ₂⊑ = ⊑ₛLat.y⊑ₛx⊔ₛy (γ₀ ⊔ₛ γ₁) γ₂          
+        γ₀⊑ = ⊑.trans {Assms} (⊑ₛLat.x⊑ₛx⊔ₛy γ₀ γ₁)
               (⊑ₛLat.x⊑ₛx⊔ₛy (γ₀ ⊔ₛ γ₁) γ₂)
-        q₀  = syn-precision γ₀⊑ (⊑.refl {Exp}) d₀' d₀        -- ψ₀ ⊑ τ₀
-        ς₁⊑ = ⊑.trans {Typ} (fst+ₛ-⊑ {s₁ = ς₁ +ₛ ς₂} {s₂ = ψ₀} v₀)
-                (fst+ₛ-⊔ ψ₀ q₀ m')                            -- ς₁ ⊑ τa
-        ς₂⊑ = ⊑.trans {Typ} (snd+ₛ-⊑ {s₁ = ς₁ +ₛ ς₂} {s₂ = ψ₀} v₀)
-                (snd+ₛ-⊔ ψ₀ q₀ m')                            -- ς₂ ⊑ τb
+        q₀  = syn-precision γ₀⊑ (⊑.refl {Exp}) d₀' d₀
+        ς₁⊑ = ⊑.trans {Typ} (fst-+ₛ-min {s₁ = ς₁} {s₂ = ς₂} v₀)
+                (fst+ₛ-⊔ ψ₀ q₀ m')
+        ς₂⊑ = ⊑.trans {Typ} (snd-+ₛ-min {s₁ = ς₁} {s₂ = ς₂} v₀)
+                (snd+ₛ-⊔ ψ₀ q₀ m')
         q₁  = syn-precision (⊑∷ ς₁⊑ γ₁⊑) (⊑.refl {Exp}) dl d₁  -- ψ₁ ⊑ τl
         q₂  = syn-precision (⊑∷ ς₂⊑ γ₂⊑) (⊑.refl {Exp}) dr d₂  -- ψ₂ ⊑ τr
     in ↑ (⊔-mono-⊑ c pl pr)
      , ↦case d₀' m' dl dr c''
-     , ⊑.trans {Typ} υ⊑                                       -- υ ⊑ υ₁⊔υ₂ ⊑ τl⊔τr
+     , ⊑.trans {Typ} υ⊑                                        -- υ ⊑ υ₁⊔υ₂ ⊑ τl⊔τr
          (⊔-mono-⊑ c'' (⊑.trans {Typ} v₁ q₁) (⊑.trans {Typ} v₂ q₂))
 
 -- Final soundness corollary:

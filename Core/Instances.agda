@@ -606,6 +606,12 @@ module ⊑ₛLat {A : Set} ⦃ hp : HasPrecision A ⦄ ⦃ hm : HasMeet A ⦄ �
   ¬ₛ-⊓ : (s : ⌊ a ⌋) → s ⊓ₛ (¬ₛ s) ≈ₛ ⊥'
   ¬ₛ-⊓ = SliceLattice.⊓ₛ-complement sl
 
+  -- Anti-monotonicity: a ⊑ b → ¬b ⊑ ¬a
+  postulate ¬ₛ-anti : ∀ {s₁ s₂ : ⌊ a ⌋} → s₁ ⊑ₛ s₂ → ¬ₛ s₂ ⊑ₛ ¬ₛ s₁
+
+  -- Double negation: ¬¬a ≈ a
+  postulate ¬ₛ-involutive : ∀ (s : ⌊ a ⌋) → ¬ₛ (¬ₛ s) ≈ₛ s
+
 -- Products: A × B with pointwise precision and lattice structure
 
 private
