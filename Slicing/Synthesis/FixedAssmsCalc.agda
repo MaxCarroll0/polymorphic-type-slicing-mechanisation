@@ -439,20 +439,30 @@ extract' (mincase {ς₁ = ς₁} {ς₂ = ς₂} {ψ₁' = ψ₁'} {ψ₂' = ψ
     ... | ↦□ | v' | _ | _ | _
         = ⊥-elim (υ≢□ (⊑ₛ⊥-inv {υ = υ} v'))
     ... | ↦case d₀' m' d₁' d₂' c'' | v' | ⊑case p₀ p₁ p₂ | q | ⊑case e₀⊑ e₁⊑ e₂⊑
+      with syn-precision (⊑.refl {Assms}) p₀ D d₀'        -- scr'-type ⊑ τ₁ + τ₂
+    ... | τ₀⊑
+      with ⊔-+-⊑ τ₀⊑ ⊔□+□                                    -- decompose scrutinee match
+    ... | _ , _ , m₃ , τ₃⊑τ₁ , τ₄⊑τ₂
+      with ≡refl ← ≡trans (≡sym m₃) m'                       -- unify with challenger's match
       with static-gradual-syn (⊑.refl {Assms}) p₁ D₁
     ... | _ , d-body₁' , τ-hi₁⊑τ₁'
       with static-gradual-syn (⊑.refl {Assms}) p₂ D₂
     ... | _ , d-body₂' , τ-hi₂⊑τ₂'
       with ih₁ (↑ p₁ ⇑ ↑ τ-hi₁⊑τ₁' ∈ d-body₁'
-                  ⊒ {!!}) e₁⊑
+                  ⊒ ⊑.trans {Typ} {!!}
+                      (syn-precision (⊑∷ τ₃⊑τ₁ (⊑.refl {Assms}))
+                        (⊑.refl {Exp}) d-body₁' d₁')) e₁⊑
          | ih₂ (↑ p₂ ⇑ ↑ τ-hi₂⊑τ₂' ∈ d-body₂'
-                  ⊒ {!!}) e₂⊑ 
+                  ⊒ ⊑.trans {Typ} {!!}
+                      (syn-precision (⊑∷ τ₄⊑τ₂ (⊑.refl {Assms}))
+                        (⊑.refl {Exp}) d-body₂' d₂')) e₂⊑
     ... | ≡refl | ≡refl
-      with extract-ctx-min s₁ d-body₁' {!!} | extract-ctx-min s₂ d-body₂' {!!}
+      with extract-ctx-min s₁ d-body₁'
+             (subst (_ ⊑_) (≡sym (syn-unicity d-body₁' d₁)) v₁)
+         | extract-ctx-min s₂ d-body₂'
+             (subst (_ ⊑_) (≡sym (syn-unicity d-body₂' d₂)) v₂)
     ... | ⊑∷ ς₁⊑' _ | ⊑∷ ς₂⊑' _
-      with syn-precision (⊑.refl {Assms}) p₀ D d₀'
-    ... | τ₀⊑
-      with ih₀ (↑ p₀ ⇑ ↑ τ₀⊑ ∈ d₀' ⊒ {!!}) e₀⊑  -- scrutinee validity from ς₁⊑', ς₂⊑' probably
+      with ih₀ (↑ p₀ ⇑ ↑ τ₀⊑ ∈ d₀' ⊒ {!!}) e₀⊑
     ... | ≡refl = ≡refl
 
 -- Verify the proposed minimal context is a valid context
