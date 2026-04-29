@@ -18,6 +18,23 @@ module Slicing.Synthesis.FixedAssmsSlicing where
 ↓□→⊥ₛ : ∀ {τ : Typ} (υ : ⌊ τ ⌋) → υ .↓ ≡ □ → υ ≡ ⊥ₛ {a = τ}
 ↓□→⊥ₛ (□ isSlice ⊑□) ≡refl = ≡refl
 
+-- Postulate: fixed-point computation for case zones
+-- The zones define υ₁ = L⁻¹(υ ⊓ ¬R(ψ₂)) and υ₂ = R⁻¹(υ ⊓ ¬L(ψ₁)),
+-- creating a mutual dependency resolved by iteration on the finite type lattice.
+postulate
+  case-fixed-point
+    : ∀ {n Γ e₁ e₂ τ₁ τ₂ τ₁' τ₂'}
+    → (D₁ : n ； (τ₁ ∷ Γ) ⊢ e₁ ↦ τ₁') → (D₂ : n ； (τ₂ ∷ Γ) ⊢ e₂ ↦ τ₂')
+    → (c : τ₁' ~ τ₂') → (υ : ⌊ τ₁' ⊔ τ₂' ⌋) → υ .↓ ≢ □
+    → (slice₁ : ∀ (q : ⌊ τ₁' ⌋) → ∃[ σ ] ∃[ ψ ] ∃[ γ ] D₁ ◂ q ⤳ σ ↦ ψ ⊣ γ)
+    → (slice₂ : ∀ (q : ⌊ τ₂' ⌋) → ∃[ σ ] ∃[ ψ ] ∃[ γ ] D₂ ◂ q ⤳ σ ↦ ψ ⊣ γ)
+    → ∃[ υ₁ ] ∃[ υ₂ ] ∃[ σ₁ ] ∃[ ψ₁ ] ∃[ γ₁ ] ∃[ σ₂ ] ∃[ ψ₂ ] ∃[ γ₂ ]
+      (D₁ ◂ υ₁ ⤳ σ₁ ↦ ψ₁ ⊣ γ₁)
+      ∧ (D₂ ◂ υ₂ ⤳ σ₂ ↦ ψ₂ ⊣ γ₂)
+      ∧ (υ .↓ ⊑ υ₁ .↓ ⊔ υ₂ .↓)
+      ∧ (⊔-inlₛ c υ₁ ≡ (υ ⊓ₛ (¬ₛ (⊔-inrₛ c ψ₂))))
+      ∧ (⊔-inrₛ c υ₂ ≡ (υ ⊓ₛ (¬ₛ (⊔-inlₛ c ψ₁))))
+
 -- Construct a calculus derivation from a typing derivation and type query
 slice
   : ∀ {n Γ e τ} → (D : n ； Γ ⊢ e ↦ τ) → (υ : ⌊ τ ⌋)
@@ -102,4 +119,34 @@ slice (↦def D₁ D₂) υ with υ .↓ ≈? □
         d-def = proj₁ (proj₂ sgs)
         ψ₂'-⊑ = proj₂ (proj₂ sgs)
     in _ , ↑ ψ₂'-⊑ , _ , mindef {ψ₂' = ↑ ψ₂'-⊑} υ≢□ s-body s-def d-def
-slice (↦case D m D₁ D₂ c) υ = {!!}
+slice (↦case D m D₁ D₂ c) υ with υ .↓ ≈? □
+... | yes eq = _ , _ , _ , subst (λ υ' → ↦case D m D₁ D₂ c ◂ υ' ⤳ ⊥ₛ ↦ ⊥ₛ ⊣ ⊥ₛ)
+                                 (≡sym (↓□→⊥ₛ υ eq))
+                                 min□
+... | no υ≢□
+  with case-fixed-point D₁ D₂ c υ υ≢□ (slice D₁) (slice D₂)
+... | υ₁ , υ₂ , _ , _ , ((ς₁-↓ ∷ γ₁-↓) isSlice ⊑∷ ς₁-⊑ γ₁-⊑) , _ , _ ,
+      ((ς₂-↓ ∷ γ₂-↓) isSlice ⊑∷ ς₂-⊑ γ₂-⊑) , s₁ , s₂ , υ⊑ , z₁ , z₂
+  with extract s₁ | extract-σ s₁ | extract-ψ s₁
+     | extract s₂ | extract-σ s₂ | extract-ψ s₂
+... | ec₁ | ≡refl | ≡refl | ec₂ | ≡refl | ≡refl
+  with slice D (+ₛ-min (ς₁-↓ isSlice ς₁-⊑) (ς₂-↓ isSlice ς₂-⊑))
+... | _ , _ , _ , s-scr
+  with extract s-scr | extract-σ s-scr | extract-ψ s-scr
+... | ec₀ | ≡refl | ≡refl
+  = let ψ₀ = ec₀ .type
+        sgs₁ = static-gradual-syn
+                 (⊑∷ (fst+ₛ-⊑ (ec₀ .valid)) (⊑.refl {Assms}))
+                 (ec₁ .expₛ .proof)
+                 D₁
+        sgs₂ = static-gradual-syn
+                 (⊑∷ (snd+ₛ-⊑ (ec₀ .valid)) (⊑.refl {Assms}))
+                 (ec₂ .expₛ .proof)
+                 D₂
+        d₁-case = proj₁ (proj₂ sgs₁)
+        ψ₁'-⊑  = proj₂ (proj₂ sgs₁)
+        d₂-case = proj₁ (proj₂ sgs₂)
+        ψ₂'-⊑  = proj₂ (proj₂ sgs₂)
+        c' = ~-⊑-down c ψ₁'-⊑ ψ₂'-⊑
+    in _ , _ , _ , mincase {ψ₁' = ↑ ψ₁'-⊑} {ψ₂' = ↑ ψ₂'-⊑}
+         υ≢□ s₁ s₂ s-scr d₁-case d₂-case c' υ⊑ z₁ z₂
