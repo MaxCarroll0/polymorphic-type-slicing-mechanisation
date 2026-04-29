@@ -222,11 +222,37 @@ private
   ⊓ₛ-distribˡ-⊔ₛ' : ∀ {τ : Typ} (υ₁ υ₂ υ₃ : ⌊ τ ⌋) → _≈ₛ_ (υ₁ ⊓ₛ (υ₂ ⊔ₛ υ₃)) ((υ₁ ⊓ₛ υ₂) ⊔ₛ (υ₁ ⊓ₛ υ₃))
   ⊓ₛ-distribˡ-⊔ₛ' υ₁ υ₂ υ₃ = dist (υ₁ .proof) (υ₂ .proof) (υ₃ .proof)
 
+-- Componentwise complement for type slices
+typ-¬ₛ : ∀ {τ : Typ} → ⌊ τ ⌋ → ⌊ τ ⌋
+typ-¬ₛ {□}       _                             = □ isSlice ⊑□
+typ-¬ₛ {*}       (□ isSlice ⊑□)                = * isSlice ⊑*
+typ-¬ₛ {*}       (* isSlice ⊑*)                = □ isSlice ⊑□
+typ-¬ₛ {⟨ _ ⟩}   (□ isSlice ⊑□)                = ⟨ _ ⟩ isSlice ⊑Var
+typ-¬ₛ {⟨ _ ⟩}   (._ isSlice ⊑Var)             = □ isSlice ⊑□
+typ-¬ₛ {τ₁ + τ₂} (□ isSlice ⊑□)                = (τ₁ + τ₂) isSlice ⊑+ ⊑.refl ⊑.refl
+typ-¬ₛ {τ₁ + τ₂} ((_ + _) isSlice ⊑+ p₁ p₂)   =
+  let ¬s₁ = typ-¬ₛ (_ isSlice p₁)
+      ¬s₂ = typ-¬ₛ (_ isSlice p₂)
+  in (¬s₁ .↓ + ¬s₂ .↓) isSlice ⊑+ (¬s₁ .proof) (¬s₂ .proof)
+typ-¬ₛ {τ₁ × τ₂} (□ isSlice ⊑□)                = (τ₁ × τ₂) isSlice ⊑× ⊑.refl ⊑.refl
+typ-¬ₛ {τ₁ × τ₂} ((_ × _) isSlice ⊑× p₁ p₂)   =
+  let ¬s₁ = typ-¬ₛ (_ isSlice p₁)
+      ¬s₂ = typ-¬ₛ (_ isSlice p₂)
+  in (¬s₁ .↓ × ¬s₂ .↓) isSlice ⊑× (¬s₁ .proof) (¬s₂ .proof)
+typ-¬ₛ {τ₁ ⇒ τ₂} (□ isSlice ⊑□)                = (τ₁ ⇒ τ₂) isSlice ⊑⇒ ⊑.refl ⊑.refl
+typ-¬ₛ {τ₁ ⇒ τ₂} ((_ ⇒ _) isSlice ⊑⇒ p₁ p₂)   =
+  let ¬s₁ = typ-¬ₛ (_ isSlice p₁)
+      ¬s₂ = typ-¬ₛ (_ isSlice p₂)
+  in (¬s₁ .↓ ⇒ ¬s₂ .↓) isSlice ⊑⇒ (¬s₁ .proof) (¬s₂ .proof)
+typ-¬ₛ {∀· τ}    (□ isSlice ⊑□)                = (∀· τ) isSlice ⊑∀ ⊑.refl
+typ-¬ₛ {∀· τ}    ((∀· s) isSlice ⊑∀ p)         =
+  let ¬s = typ-¬ₛ (s isSlice p)
+  in (∀· (¬s .↓)) isSlice ⊑∀ (¬s .proof)
+
 postulate
-  typ-¬ₛ : ∀ {τ : Typ} → ⌊ τ ⌋ → ⌊ τ ⌋
   typ-⊔ₛ-complement : ∀ {τ : Typ} (s : ⌊ τ ⌋) → _≈ₛ_ (s ⊔ₛ typ-¬ₛ s) (⊤ₛ {a = τ})
   typ-⊓ₛ-complement : ∀ {τ : Typ} (s : ⌊ τ ⌋) → _≈ₛ_ (s ⊓ₛ typ-¬ₛ s) (⊥ₛ' {τ})
-  typ-¬ₛ-cong : ∀ {τ : Typ} {s₁ s₂ : ⌊ τ ⌋} → _≈ₛ_ s₁ s₂ → _≈ₛ_ (typ-¬ₛ s₁) (typ-¬ₛ s₂)
+  typ-¬ₛ-cong : ∀ {τ : Typ} {s₁ s₂ : ⌊ τ ⌋} → _≈ₛ_ {a = τ} s₁ s₂ → _≈ₛ_ {a = τ} (typ-¬ₛ {τ} s₁) (typ-¬ₛ {τ} s₂)
 
 instance
   typ-sliceLattice : I.SliceLattice Typ
@@ -242,5 +268,5 @@ instance
     ; ¬ₛ_ = typ-¬ₛ
     ; ⊔ₛ-complement = typ-⊔ₛ-complement
     ; ⊓ₛ-complement = typ-⊓ₛ-complement
-    ; ¬ₛ-cong = typ-¬ₛ-cong
+    ; ¬ₛ-cong = λ {a} {s₁} {s₂} → typ-¬ₛ-cong {a} {s₁} {s₂}
     }
