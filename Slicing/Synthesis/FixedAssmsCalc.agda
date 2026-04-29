@@ -108,8 +108,8 @@ data _◂_⤳_↦_⊣_ {n : ℕ} {Γ : Assms} : ∀ {e : Exp} {τ : Typ}
              → n ； (snd+ₛ ψ₀ .↓ ∷ Γ) ⊢ σ₂ .↓ ↦ ψ₂' .↓
              → ψ₁' .↓ ~ ψ₂' .↓
              → υ .↓ ⊑ υ₁ .↓ ⊔ υ₂ .↓ -- TODO: derive from boolean properties
-             → ⊔-inlₛ c υ₁ ⊑ₛ (υ ⊓ₛ (¬ₛ (⊔-inrₛ c ⊤ₛ))) -- branch 1 query in purely-left zone
-             → ⊔-inrₛ c υ₂ ⊑ₛ (υ ⊓ₛ (¬ₛ (⊔-inlₛ c ⊤ₛ))) -- branch 2 query in purely-right zone
+             → ⊔-inlₛ c υ₁ ≡ (υ ⊓ₛ (¬ₛ (⊔-inrₛ c ψ₂))) -- branch 1 zone (ψ₂-complement)
+             → ⊔-inrₛ c υ₂ ≡ (υ ⊓ₛ (¬ₛ (⊔-inlₛ c ψ₁))) -- branch 2 zone (ψ₁-complement)
              → (↦case D (⊔□+□ {τ₁} {τ₂}) D₁ D₂ c) ◂ υ ⤳ caseₛ σ₀ σ₁ σ₂
                ↦ (ψ₁' ⊔~ₛ ψ₂') {c} ⊣ (γ₀ ⊔ₛ γ₁) ⊔ₛ γ₂
 
@@ -466,59 +466,68 @@ extract' (mincase {τ₁ = τ₁} {τ₂ = τ₂} {τ₁' = τ₁'} {τ₂' = τ
     ... | _ , d-body₁' , τ-hi₁⊑τ₁'
       with static-gradual-syn (⊑.refl {Assms}) p₂ D₂
     ... | _ , d-body₂' , τ-hi₂⊑τ₂'
+      -- TODO: add commend explaining this...
       with ih₁ (let τ₁c⊑τ₁' = ⊑.trans {Typ}
                         (syn-precision (⊑∷ τ₃⊑τ₁ (⊑.refl {Assms}))
                           (⊑.refl {Exp}) d-body₁' d₁') τ-hi₁⊑τ₁'
                     τ₂c⊑τ₂' = ⊑.trans {Typ}
                         (syn-precision (⊑∷ τ₄⊑τ₂ (⊑.refl {Assms}))
                           (⊑.refl {Exp}) d-body₂' d₂') τ-hi₂⊑τ₂'
+                    τ₂c⊑ψ₂ = syn-precision (⊑∷ τ₄⊑τ₂ (⊑.refl {Assms}))
+                                e₂⊑ d₂ d₂'
                  in ↑ p₁ ⇑ ↑ τ-hi₁⊑τ₁' ∈ d-body₁'
                   ⊒ ⊑.trans {Typ}
-                      (⊑.trans {Typ} z₁
+                      (subst (_⊑ _) (≡sym (cong (λ x → x .↓) z₁))
                         (join-project {a = υ} {b = ⊔-inlₛ c (↑ τ₁c⊑τ₁')} {c = ⊔-inrₛ c (↑ τ₂c⊑τ₂')}
-                                      {d = ⊔-inrₛ c ⊤ₛ}
-                                      v' τ₂c⊑τ₂'))
+                                      {d = ⊔-inrₛ c ψ₂}
+                                      v' τ₂c⊑ψ₂))
                       (syn-precision (⊑∷ τ₃⊑τ₁ (⊑.refl {Assms}))
                         (⊑.refl {Exp}) d-body₁' d₁')) e₁⊑
+         -- ih₂: analogous, using τ₁c⊑ψ₁ from graduality on branch-1
          | ih₂ (let τ₁c⊑τ₁' = ⊑.trans {Typ}
                         (syn-precision (⊑∷ τ₃⊑τ₁ (⊑.refl {Assms}))
                           (⊑.refl {Exp}) d-body₁' d₁') τ-hi₁⊑τ₁'
                     τ₂c⊑τ₂' = ⊑.trans {Typ}
                         (syn-precision (⊑∷ τ₄⊑τ₂ (⊑.refl {Assms}))
                           (⊑.refl {Exp}) d-body₂' d₂') τ-hi₂⊑τ₂'
+                    τ₁c⊑ψ₁ = syn-precision (⊑∷ τ₃⊑τ₁ (⊑.refl {Assms}))
+                                e₁⊑ d₁ d₁'
                  in ↑ p₂ ⇑ ↑ τ-hi₂⊑τ₂' ∈ d-body₂'
                   ⊒ ⊑.trans {Typ}
-                      (⊑.trans {Typ} z₂
+                      (subst (_⊑ _) (≡sym (cong (λ x → x .↓) z₂))
                         (join-project {a = υ} {b = ⊔-inrₛ c (↑ τ₂c⊑τ₂')} {c = ⊔-inlₛ c (↑ τ₁c⊑τ₁')}
-                                      {d = ⊔-inlₛ c ⊤ₛ}
+                                      {d = ⊔-inlₛ c ψ₁}
                                       (subst (υ .↓ ⊑_) (⊑ₛLat.⊔-comm (⊔-inlₛ c (↑ τ₁c⊑τ₁')) (⊔-inrₛ c (↑ τ₂c⊑τ₂'))) v')
-                                      τ₁c⊑τ₁'))
+                                      τ₁c⊑ψ₁))
                       (syn-precision (⊑∷ τ₄⊑τ₂ (⊑.refl {Assms}))
                         (⊑.refl {Exp}) d-body₂' d₂')) e₂⊑
     ... | ≡refl | ≡refl
-      -- Use derivations d₁'/d₂'
-      -- in contexts τ₃'∷Γ / τ₄'∷Γ to get ς₁ ⊑ τ₃' and ς₂ ⊑ τ₄'
+      -- extract-ctx-min: same validity proofs for context minimality
       with extract-ctx-min s₁ d₁'
              (let τ₁c⊑ = ⊑.trans {Typ} (syn-precision (⊑∷ τ₃⊑τ₁ (⊑.refl {Assms}))
                             (⊑.refl {Exp}) d-body₁' d₁') τ-hi₁⊑τ₁'
                   τ₂c⊑ = ⊑.trans {Typ} (syn-precision (⊑∷ τ₄⊑τ₂ (⊑.refl {Assms}))
                             (⊑.refl {Exp}) d-body₂' d₂') τ-hi₂⊑τ₂'
-              in ⊑.trans {Typ} z₁
+                  τ₂c⊑ψ₂ = syn-precision (⊑∷ τ₄⊑τ₂ (⊑.refl {Assms}))
+                              e₂⊑ d₂ d₂'
+              in subst (_⊑ _) (≡sym (cong (λ x → x .↓) z₁))
                    (join-project {a = υ} {b = ⊔-inlₛ c (↑ τ₁c⊑)} {c = ⊔-inrₛ c (↑ τ₂c⊑)}
-                                 {d = ⊔-inrₛ c ⊤ₛ}
-                                 v' τ₂c⊑))
+                                 {d = ⊔-inrₛ c ψ₂}
+                                 v' τ₂c⊑ψ₂))
              (⊑∷ τ₃⊑τ₁ (⊑.refl {Assms}))
          | extract-ctx-min s₂ d₂'
              (let τ₁c⊑ = ⊑.trans {Typ} (syn-precision (⊑∷ τ₃⊑τ₁ (⊑.refl {Assms}))
                             (⊑.refl {Exp}) d-body₁' d₁') τ-hi₁⊑τ₁'
                   τ₂c⊑ = ⊑.trans {Typ} (syn-precision (⊑∷ τ₄⊑τ₂ (⊑.refl {Assms}))
                             (⊑.refl {Exp}) d-body₂' d₂') τ-hi₂⊑τ₂'
-              in ⊑.trans {Typ} z₂
+                  τ₁c⊑ψ₁ = syn-precision (⊑∷ τ₃⊑τ₁ (⊑.refl {Assms}))
+                              e₁⊑ d₁ d₁'
+              in subst (_⊑ _) (≡sym (cong (λ x → x .↓) z₂))
                    (join-project {a = υ} {b = ⊔-inrₛ c (↑ τ₂c⊑)} {c = ⊔-inlₛ c (↑ τ₁c⊑)}
-                                 {d = ⊔-inlₛ c ⊤ₛ}
+                                 {d = ⊔-inlₛ c ψ₁}
                                  (subst (υ .↓ ⊑_) (⊑ₛLat.⊔-comm (⊔-inlₛ c (↑ τ₁c⊑))
                                                                 (⊔-inrₛ c (↑ τ₂c⊑))) v')
-                                 τ₁c⊑))
+                                 τ₁c⊑ψ₁))
              (⊑∷ τ₄⊑τ₂ (⊑.refl {Assms}))
     ... | ⊑∷ ς₁⊑τ₃' _ | ⊑∷ ς₂⊑τ₄' _
       -- scrutinee
@@ -740,24 +749,31 @@ extract-ctx-min (mincase {ς₁ = ς₁} {ς₂ = ς₂} {γ₀ = γ₀} {γ₁ 
   with ⊔-+-⊑ τ₀⊑ (⊔□+□)
 ... | _ , _ , m₃ , τ₃⊑τ₁ , τ₄⊑τ₂
   with ≡refl ← ≡trans (≡sym m₃) m'
-  -- Branch/scrutinee validity: analogous to extract' mincase
+  with extract cs₁ | extract-ψ cs₁ | extract-σ cs₁
+     | extract cs₂ | extract-ψ cs₂ | extract-σ cs₂
+... | ec₁ | ≡refl | ≡refl | ec₂ | ≡refl | ≡refl
+  -- Branch validity: same structure as extract' mincase (see comments there)
   with extract-ctx-min cs₁ db₁'
          (let τ₁c⊑ = syn-precision (⊑∷ τ₃⊑τ₁ Γ'⊑) (σ₁ .proof) D₁ db₁'
               τ₂c⊑ = syn-precision (⊑∷ τ₄⊑τ₂ Γ'⊑) (σ₂ .proof) D₂ db₂'
-          in ⊑.trans {Typ} z₁
+              τ₂c⊑ψ₂ = syn-precision (⊑∷ τ₄⊑τ₂ Γ'⊑)
+                          (⊑.refl {Exp}) (ec₂ .syn) db₂'
+          in subst (_⊑ _) (≡sym (cong (λ x → x .↓) z₁))
                (join-project {a = υ} {b = ⊔-inlₛ c (↑ τ₁c⊑)} {c = ⊔-inrₛ c (↑ τ₂c⊑)}
-                             {d = ⊔-inrₛ c ⊤ₛ}
-                             v τ₂c⊑))
+                             {d = ⊔-inrₛ c (ec₂ .type)}
+                             v τ₂c⊑ψ₂))
          (⊑∷ τ₃⊑τ₁ Γ'⊑)
      | extract-ctx-min cs₂ db₂'
          (let τ₁c⊑ = syn-precision (⊑∷ τ₃⊑τ₁ Γ'⊑) (σ₁ .proof) D₁ db₁'
               τ₂c⊑ = syn-precision (⊑∷ τ₄⊑τ₂ Γ'⊑) (σ₂ .proof) D₂ db₂'
-          in ⊑.trans {Typ} z₂
+              τ₁c⊑ψ₁ = syn-precision (⊑∷ τ₃⊑τ₁ Γ'⊑)
+                          (⊑.refl {Exp}) (ec₁ .syn) db₁'
+          in subst (_⊑ _) (≡sym (cong (λ x → x .↓) z₂))
                (join-project {a = υ} {b = ⊔-inrₛ c (↑ τ₂c⊑)} {c = ⊔-inlₛ c (↑ τ₁c⊑)}
-                             {d = ⊔-inlₛ c ⊤ₛ}
+                             {d = ⊔-inlₛ c (ec₁ .type)}
                              (subst (υ .↓ ⊑_) (⊑ₛLat.⊔-comm (⊔-inlₛ c (↑ τ₁c⊑))
                                                             (⊔-inrₛ c (↑ τ₂c⊑))) v)
-                             τ₁c⊑))
+                             τ₁c⊑ψ₁))
          (⊑∷ τ₄⊑τ₂ Γ'⊑)
 ... | ⊑∷ ς₁⊑ γ₁⊑ | ⊑∷ ς₂⊑ γ₂⊑
   with extract-ctx-min cs₀ d₀' (+ₛ-min-⊑ ς₁ ς₂ τ₀⊑ m' ς₁⊑ ς₂⊑) Γ'⊑
