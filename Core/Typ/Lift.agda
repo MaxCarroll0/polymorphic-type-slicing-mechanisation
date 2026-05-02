@@ -185,6 +185,12 @@ unmatch+ {τ} eq   s₁ s₂ | diff with τ ≟t □
 ...                                | yes refl = ⊥ₛ
 unmatch+      ()   _  _  | diff    | no _
 
+-- unmatch+-min: like +ₛ-min but works with general match equation τ ⊔ □+□ ≡ τ₁+τ₂
+-- Returns ⊥ₛ when both components are ⊥ₛ (minimality), otherwise unmatch+
+unmatch+-min : ∀ {τ τ₁ τ₂} → τ ⊔ □ + □ ≡ τ₁ + τ₂ → ⌊ τ₁ ⌋ → ⌊ τ₂ ⌋ → ⌊ τ ⌋
+unmatch+-min m (□ isSlice ⊑□) (□ isSlice ⊑□) = ⊥ₛ
+unmatch+-min m s₁ s₂ = unmatch+ m s₁ s₂
+
 dom⇒ₛ : ∀ {τ τ₁ τ₂} → ⌊ τ ⌋ → τ ⊔ □ ⇒ □ ≡ τ₁ ⇒ τ₂ → ⌊ τ₁ ⌋
 dom⇒ₛ ψ m = let _ , _ , _ , p , _ = ⊔-⇒-⊑ (ψ .proof) m in ↑ p
 
@@ -221,6 +227,26 @@ snd+ₛ' ψ m = let _ , _ , _ , _ , q = ⊔-+-⊑ (ψ .proof) m in ↑ q
 match+ₛ : ∀ {τ τ₁ τ₂} → (ψ : ⌊ τ ⌋) → (m : τ ⊔ □ + □ ≡ τ₁ + τ₂)
          → ψ .↓ ⊔ □ + □ ≡ (fst+ₛ' ψ m) .↓ + (snd+ₛ' ψ m) .↓
 match+ₛ ψ m = let _ , _ , m' , _ , _ = ⊔-+-⊑ (ψ .proof) m in m'
+
+-- unmatch+-min lemmas (analogues of +ₛ-min lemmas, adapted for match equation)
+postulate
+  fst-unmatch+-min : ∀ (τ : Typ) {τ₁ τ₂} (m : τ ⊔ □ + □ ≡ τ₁ + τ₂)
+    (s₁ : ⌊ τ₁ ⌋) (s₂ : ⌊ τ₂ ⌋) (t : ⌊ τ ⌋)
+    → (unmatch+-min {τ} m s₁ s₂) .↓ ⊑t t .↓ → s₁ .↓ ⊑t (fst+ₛ' t m) .↓
+  snd-unmatch+-min : ∀ (τ : Typ) {τ₁ τ₂} (m : τ ⊔ □ + □ ≡ τ₁ + τ₂)
+    (s₁ : ⌊ τ₁ ⌋) (s₂ : ⌊ τ₂ ⌋) (t : ⌊ τ ⌋)
+    → (unmatch+-min {τ} m s₁ s₂) .↓ ⊑t t .↓ → s₂ .↓ ⊑t (snd+ₛ' t m) .↓
+  unmatch+-min-⊑ : ∀ (τ : Typ) {τ₁ τ₂ τ' τ₃' τ₄'} (m : τ ⊔ □ + □ ≡ τ₁ + τ₂)
+    (s₁ : ⌊ τ₁ ⌋) (s₂ : ⌊ τ₂ ⌋)
+    → τ' ⊑t τ → τ' ⊔ (□ + □) ≡ τ₃' + τ₄'
+    → s₁ .↓ ⊑t τ₃' → s₂ .↓ ⊑t τ₄'
+    → (unmatch+-min {τ} m s₁ s₂) .↓ ⊑t τ'
+  fst+ₛ'-⊔ : ∀ {τ τ₁ τ₂} (s : ⌊ τ ⌋) (m : τ ⊔ □ + □ ≡ τ₁ + τ₂)
+    {τ' τ₁' τ₂'} → s .↓ ⊑t τ' → τ' ⊔ □ + □ ≡ τ₁' + τ₂'
+    → (fst+ₛ' s m) .↓ ⊑t τ₁'
+  snd+ₛ'-⊔ : ∀ {τ τ₁ τ₂} (s : ⌊ τ ⌋) (m : τ ⊔ □ + □ ≡ τ₁ + τ₂)
+    {τ' τ₁' τ₂'} → s .↓ ⊑t τ' → τ' ⊔ □ + □ ≡ τ₁' + τ₂'
+    → (snd+ₛ' s m) .↓ ⊑t τ₂'
 
 -- Join of slices of consistent types
 _⊔~ₛ_ : ∀ {τ₁ τ₂} → ⌊ τ₁ ⌋ → ⌊ τ₂ ⌋ → {c : τ₁ ~ τ₂} → ⌊ τ₁ ⊔ τ₂ ⌋
