@@ -2,6 +2,8 @@ open import Data.Nat hiding (_+_; _⊔_)
 open import Data.Product using (_,_; proj₁; proj₂; Σ-syntax; ∃-syntax) renaming (_×_ to _∧_)
 open import Relation.Binary.PropositionalEquality as Eq using (_≡_; _≢_; refl; subst)
 import Relation.Binary.Construct.On as On
+open import Induction.WellFounded using (WellFounded; Acc; acc)
+open import Data.Sum using (_⊎_; inj₁; inj₂)
 open import Function using (_on_)
 open import Core
 open import Semantics.Statics
@@ -99,9 +101,32 @@ _⊔fixsyn_ {τ = τ} {D = D} {υ₁} {υ₂}
                                         υ₁⊑ϕ⊔ υ₂⊑ϕ⊔
 
 
+-- Well-foundedness of strict precision on FixedAssmsSynSlices (finite lattice)
+private
+  _⊏ᶠ_ : ∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} {υ : ⌊ τ ⌋}
+        → FixedAssmsSynSlice D υ → FixedAssmsSynSlice D υ → Set
+  _⊏ᶠ_ = ⊑._⊏_ ⦃ fixedassms-syn-slice-precision ⦄
+
 postulate
-  minFixedAssmsExists
-    : ∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} {υ : ⌊ τ ⌋}
-      (s : FixedAssmsSynSlice D υ)
-      → Σ[ (m , _) ∈ MinFixedAssmsSynSlice D υ ]
-           m ⊑ s
+  ⊏-wf-fixedassms : ∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} {υ : ⌊ τ ⌋}
+    → WellFounded (_⊏ᶠ_ {D = D} {υ = υ})
+  minimal?-fixedassms : ∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} {υ : ⌊ τ ⌋}
+    → (s : FixedAssmsSynSlice D υ)
+    → IsMinimal s ⊎ (Σ[ s' ∈ FixedAssmsSynSlice D υ ] s' ⊏ᶠ s)
+
+-- Every FixedAssmsSynSlice has a minimal element below it.
+-- By well-founded recursion on strict expression precision.
+minFixedAssmsExists
+  : ∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} {υ : ⌊ τ ⌋}
+    (s : FixedAssmsSynSlice D υ)
+    → Σ[ (m , _) ∈ MinFixedAssmsSynSlice D υ ]
+         m ⊑ s
+minFixedAssmsExists {D = D} {υ = υ} s = go s (⊏-wf-fixedassms s)
+  where
+  go : (s : FixedAssmsSynSlice D υ) → Acc _⊏ᶠ_ s
+     → Σ[ (m , _) ∈ MinFixedAssmsSynSlice D υ ] m ⊑ s
+  go s a with minimal?-fixedassms s
+  go s _        | inj₁ min-s       = (s , min-s) , ⊑.refl {Exp}
+  go s (acc rs) | inj₂ (s' , s'⊏s) =
+    let ((m , min-m) , m⊑s') = go s' (rs s'⊏s)
+    in (m , min-m) , ⊑.trans {Exp} m⊑s' (proj₁ s'⊏s)

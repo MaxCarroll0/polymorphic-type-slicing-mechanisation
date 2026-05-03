@@ -212,12 +212,34 @@ _⊔syn_ {τ = τ} {D = D} {υ₁} {υ₂}
 --                                                      υ ⊔ₛ υ ≈⟨ ⊑ₛLat.⊔-idempotent υ ⟩
 --                                                      υ ∎!})
 
--- Theorem 4: Every SynSlice has a minimal SynSlice below it
+-- Well-foundedness of strict precision on SynSlices (finite lattice)
+private
+  _⊏ˢ_ : ∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} {υ : ⌊ τ ⌋}
+        → SynSlice D ◂ υ → SynSlice D ◂ υ → Set
+  _⊏ˢ_ = ⊑._⊏_ ⦃ syn-slice-precision ⦄
+
 postulate
-  minExists : ∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} {υ : ⌊ τ ⌋}
-              (s : SynSlice D ◂ υ)
-              → Σ[ (m , _) ∈ MinSynSlice D ◂ υ ]
-                   m ⊑ s
+  ⊏-wf-syn : ∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} {υ : ⌊ τ ⌋}
+            → WellFounded (_⊏ˢ_ {D = D} {υ = υ})
+  minimal? : ∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} {υ : ⌊ τ ⌋}
+           → (s : SynSlice D ◂ υ)
+           → IsMinimal s ⊎ (Σ[ s' ∈ SynSlice D ◂ υ ] s' ⊏ˢ s)
+
+-- Theorem 4: Every SynSlice has a minimal SynSlice below it.
+-- By well-founded recursion on strict precision.
+minExists : ∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} {υ : ⌊ τ ⌋}
+            (s : SynSlice D ◂ υ)
+            → Σ[ (m , _) ∈ MinSynSlice D ◂ υ ]
+                 m ⊑ s
+minExists {D = D} {υ = υ} s = go s (⊏-wf-syn s)
+  where
+  go : (s : SynSlice D ◂ υ) → Acc _⊏ˢ_ s
+     → Σ[ (m , _) ∈ MinSynSlice D ◂ υ ] m ⊑ s
+  go s a with minimal? s
+  go s _        | inj₁ min-s       = (s , min-s) , ⊑.refl {A = Assms ∧ Exp}
+  go s (acc rs) | inj₂ (s' , s'⊏s) =
+    let ((m , min-m) , m⊑s') = go s' (rs s'⊏s)
+    in (m , min-m) , ⊑.trans {A = Assms ∧ Exp} m⊑s' (proj₁ s'⊏s)
 
 -- Postulate 5: Monotonicity: more precise type slice → more precise minimal slice
 postulate
