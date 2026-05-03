@@ -97,7 +97,6 @@ data _◂_⤳_↦_⊣_ {n : ℕ} {Γ : Assms} : ∀ {e : Exp} {τ : Typ}
   -- Take branch slices satisfying irredundancy constraints
   -- Slice scrutinee to provide the required assumptions to branches
   mincase  : ∀ {e e₁ e₂ τ τ₁ τ₂ τ₁' τ₂' υ₁ υ₂ ς₁ ς₂ ψ₀ ψ₁ ψ₂ γ₀ γ₁ γ₂ γ₁' γ₂' σ₀ σ₁ σ₂}
-               {ψ₁' : ⌊ τ₁' ⌋} {ψ₂' : ⌊ τ₂' ⌋}
                {D : n ； Γ ⊢ e ↦ τ} {m : τ ⊔ □ + □ ≡ τ₁ + τ₂}
                {D₁ : n ； (τ₁ ∷ Γ) ⊢ e₁ ↦ τ₁'} {D₂ : n ； (τ₂ ∷ Γ) ⊢ e₂ ↦ τ₂'}
                {c : τ₁' ~ τ₂'}
@@ -114,8 +113,6 @@ data _◂_⤳_↦_⊣_ {n : ℕ} {Γ : Assms} : ∀ {e : Exp} {τ : Typ}
              → D₂ ◂ ψ₂ ⤳ σ₂ ↦ ψ₂ ⊣ (ς₂ ∷ₛ γ₂')
              -- Scrutinee slice to provide ςᵢ
              → D ◂ unmatch+-min m ς₁ ς₂ ⤳ σ₀ ↦ ψ₀ ⊣ γ₀
-             → n ； (fst+ₛ' ψ₀ m .↓ ∷ Γ) ⊢ σ₁ .↓ ↦ ψ₁ .↓ -- (derivable from weakened slice)
-             → n ； (snd+ₛ' ψ₀ m .↓ ∷ Γ) ⊢ σ₂ .↓ ↦ ψ₂ .↓
              → (↦case D m D₁ D₂ c) ◂ υ ⤳ caseₛ σ₀ σ₁ σ₂
                ↦ (ψ₁ ⊔~ₛ ψ₂) {c} ⊣ (γ₀ ⊔ₛ γ₁') ⊔ₛ γ₂'
 
@@ -443,14 +440,44 @@ extract' (minπ₂ {τ = τ} {τ₂ = τ₂} {υ = υ} {D = D} {m = m} υ≢□ 
 extract' (mincase {τ = τ} {τ₁' = τ₁'} {τ₂' = τ₂'} {ς₁ = ς₁} {ς₂ = ς₂}
                   {ψ₁ = ψ₁} {ψ₂ = ψ₂} {γ₁ = γ₁} {γ₂ = γ₂} {γ₁' = γ₁'}  {γ₂' = γ₂'}
                   {D = D} {m = m} {D₁ = D₁} {D₂ = D₂} {c = c} {υ = υ}
-                  υ≢□ s₁ s₂ υ⊑ z₁ z₂ s₁' s₂' s-scr d₁-case d₂-case)
+                  υ≢□ s₁ s₂ υ⊑ z₁ z₂ s₁' s₂' s-scr)
   with extract' s₁ | extract' s₂ | extract' s-scr
 ... | ((σ₁ ⇑ ψ₁e ∈ d₁ ⊒ v₁) , ih₁) , ≡refl , ≡refl
     | ((σ₂ ⇑ ψ₂e ∈ d₂ ⊒ v₂) , ih₂) , ≡refl , ≡refl
     | ((σ₀ ⇑ ψ₀ ∈ d₀ ⊒ v₀) , ih₀) , ≡refl , ≡refl
+  with extract s₁' | extract-σ s₁' | extract-ψ s₁' | extract-ctx s₁'
+     | extract s₂' | extract-σ s₂' | extract-ψ s₂' | extract-ctx s₂'
+... | ec₁' | ≡refl | ≡refl | ψ-ctx₁ , d-ctx₁ , ψ₁⊑ctx₁
+    | ec₂' | ≡refl | ≡refl | ψ-ctx₂ , d-ctx₂ , ψ₂⊑ctx₂
+  -- Branch re-synthesis: σᵢ under (fst/snd ψ₀ ∷ Γ) synthesises ψᵢ.
+  -- graduality gives ψᵢ' ⊑ τᵢ'; syn-precision against (τᵢ ∷ Γ) gives ψᵢ' ⊑ ψᵢ;
+  -- extract-ctx of weakened slice + syn-precision gives ψᵢ ⊑ ψᵢ'; ψᵢ = ψᵢ' by antisym.
+  with ψ₁≡ψ₁' | ψ₂≡ψ₂'
+  where
+    fst⊑ = (fst+ₛ' ψ₀ m) .proof
+    sgs₁ = static-gradual-syn (⊑∷ fst⊑ (⊑.refl {Assms})) (σ₁ .proof) D₁
+    d₁'  = proj₁ (proj₂ sgs₁)
+    ψ₁'⊑ψ₁ = syn-precision (⊑∷ fst⊑ (⊑.refl {Assms})) (⊑.refl {Exp}) (ec₁' .syn) d₁'
+    ψ₁⊑ψ₁' = ⊑.trans {Typ} ψ₁⊑ctx₁
+                (syn-precision (⊑∷ (fst-unmatch+-min _ m ς₁ ς₂ ψ₀ v₀) (γ₁' .proof))
+                  (⊑.refl {Exp}) d₁' d-ctx₁)
+    ψ₁≡ψ₁' = ⊑.antisym {Typ} ψ₁⊑ψ₁' ψ₁'⊑ψ₁
+
+    snd⊑ = (snd+ₛ' ψ₀ m) .proof
+    sgs₂ = static-gradual-syn (⊑∷ snd⊑ (⊑.refl {Assms})) (σ₂ .proof) D₂
+    d₂'  = proj₁ (proj₂ sgs₂)
+    ψ₂'⊑ψ₂ = syn-precision (⊑∷ snd⊑ (⊑.refl {Assms})) (⊑.refl {Exp}) (ec₂' .syn) d₂'
+    ψ₂⊑ψ₂' = ⊑.trans {Typ} ψ₂⊑ctx₂
+                (syn-precision (⊑∷ (snd-unmatch+-min _ m ς₁ ς₂ ψ₀ v₀) (γ₂' .proof))
+                  (⊑.refl {Exp}) d₂' d-ctx₂)
+    ψ₂≡ψ₂' = ⊑.antisym {Typ} ψ₂⊑ψ₂' ψ₂'⊑ψ₂
+... | ≡refl | ≡refl
   = (s , min) , ≡refl , ≡refl
   where
     c' = ~-⊑-down c (ψ₁ .proof) (ψ₂ .proof)
+    d₁-case = proj₁ (proj₂ (static-gradual-syn (⊑∷ ((fst+ₛ' ψ₀ m) .proof) (⊑.refl {Assms})) (σ₁ .proof) D₁))
+    d₂-case = proj₁ (proj₂ (static-gradual-syn (⊑∷ ((snd+ₛ' ψ₀ m) .proof) (⊑.refl {Assms})) (σ₂ .proof) D₂))
+
     s = caseₛ σ₀ σ₁ σ₂
        ⇑ (ψ₁ ⊔~ₛ ψ₂) {c}
        ∈ ↦case d₀ (match+ₛ ψ₀ m) d₁-case d₂-case c'
@@ -640,7 +667,7 @@ extract-ctx (mincase {τ = τ} {ς₁ = ς₁} {ς₂ = ς₂}
                     {γ₀ = γ₀} {γ₁' = γ₁'} {γ₂' = γ₂'}
                     {σ₀ = σ₀} {σ₁ = σ₁} {σ₂ = σ₂}
                     {D = D} {m = m} {D₁ = D₁} {D₂ = D₂} {c = c} {υ = υ}
-                    _ s₁ s₂ υ⊑ _ _ s₁' s₂' s-scrut d₁-case d₂-case)
+                    _ s₁ s₂ υ⊑ _ _ s₁' s₂' s-scrut)
   with extract-ctx s₁' | extract-ctx s₂' | extract-ctx s-scrut
 ... | ψ₁c , d₁ , v₁                                            -- ς₁∷γ₁' ⊢ σ₁ ↦ ψ₁c
     | ψ₂c , d₂ , v₂                                            -- ς₂∷γ₂' ⊢ σ₂ ↦ ψ₂c
@@ -745,7 +772,7 @@ extract-ctx-min (mindef {γ₁ = γ₁} {γ₂ = γ₂} {σ-def = σ-def} {D₁ 
 extract-ctx-min (mincase {τ = τ} {ς₁ = ς₁} {ς₂ = ς₂} {γ₀ = γ₀} {γ₁' = γ₁'} {γ₂' = γ₂'}
                          {σ₀ = σ₀} {σ₁ = σ₁} {σ₂ = σ₂}
                          {D = D} {m = m} {D₁ = D₁} {D₂ = D₂} {c = c} {υ = υ}
-                         υ≢□ cs₁ cs₂ υ⊑ z₁ z₂ cs₁' cs₂' cs₀ dc₁ dc₂)
+                         υ≢□ cs₁ cs₂ υ⊑ z₁ z₂ cs₁' cs₂' cs₀)
                 (↦case d₀' m' db₁' db₂' c'') v Γ'⊑
   with syn-precision Γ'⊑ (σ₀ .proof) D d₀'
 ... | τ₀⊑
