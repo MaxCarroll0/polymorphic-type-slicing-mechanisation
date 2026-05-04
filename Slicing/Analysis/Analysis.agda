@@ -10,43 +10,44 @@ module Slicing.Analysis.Analysis where
 
 -- Analysis slice: sliced context and assumptions that still enforce
 -- analysis against a type slice υ. Indexed by a context classification
-record AnaSlice {n : ℕ} {Γ₀ : Assms} {C : Ctx} {Γ : Assms} {τ : Typ} {p : Position}
-                (_ : n ； Γ₀ ⊢ C at p ▷ Γ [ ⇐mode τ ]) (υ : ⌊ τ ⌋) : Set where
+record AnaSlice {n : ℕ} {Γ₀ : Assms} {C : Ctx} {n' : ℕ} {Γ : Assms} {τ : Typ} {p : Position}
+                (_ : n ； Γ₀ ⊢ C at p ▷ n' ； Γ [ ⇐mode τ ]) (υ : ⌊ τ ⌋) : Set where
   field
     κ     : ⌊ C ⌋
     γ     : ⌊ Γ₀ ⌋
-    valid : ∃[ Γ' ] n ； γ .↓ ⊢ κ .↓ at p ▷ Γ' [ ⇐mode (υ .↓) ]
+    -- Position and focus depth are existentially quantified: sliced context may differ
+    valid : Σ[ p' ∈ Position ] ∃[ n'' ] ∃[ Γ' ] n ； γ .↓ ⊢ κ .↓ at p' ▷ n'' ； Γ' [ ⇐mode (υ .↓) ]
 open AnaSlice public
 
 private
 -- Precision polymorphic in υ
-  _⊑ana_ : ∀ {n Γ₀ C Γ τ p} {Cls : n ； Γ₀ ⊢ C at p ▷ Γ [ ⇐mode τ ]} {υ₁ υ₂} →
+  _⊑ana_ : ∀ {n Γ₀ C n' Γ τ p} {Cls : n ； Γ₀ ⊢ C at p ▷ n' ； Γ [ ⇐mode τ ]} {υ₁ υ₂} →
              AnaSlice Cls υ₁ → AnaSlice Cls υ₂ → Set
   _⊑ana_ s₁ s₂ =
       s₁ .κ ⊑ₛ s₂ .κ
     ∧ s₁ .γ ⊑ₛ s₂ .γ
 
-  _≈ana_ : ∀ {n Γ₀ C Γ τ p} {Cls : n ； Γ₀ ⊢ C at p ▷ Γ [ ⇐mode τ ]} {υ₁ υ₂} →
+  _≈ana_ : ∀ {n Γ₀ C n' Γ τ p} {Cls : n ； Γ₀ ⊢ C at p ▷ n' ； Γ [ ⇐mode τ ]} {υ₁ υ₂} →
               AnaSlice Cls υ₁ → AnaSlice Cls υ₂ → Set
   _≈ana_ s₁ s₂ =
       s₁ .κ ≈ₛ s₂ .κ
     ∧ s₁ .γ ≈ₛ s₂ .γ
 
-  _≈ana?_ : ∀ {n Γ₀ C Γ τ p} {Cls : n ； Γ₀ ⊢ C at p ▷ Γ [ ⇐mode τ ]} {υ}
+  _≈ana?_ : ∀ {n Γ₀ C n' Γ τ p} {Cls : n ； Γ₀ ⊢ C at p ▷ n' ； Γ [ ⇐mode τ ]} {υ}
             → (s₁ s₂ : AnaSlice Cls υ) → Relation.Nullary.Dec (s₁ ≈ana s₂)
   s₁ ≈ana? s₂ with s₁ .κ ≈ₛ? s₂ .κ | s₁ .γ ≈ₛ? s₂ .γ
   ...            | yes p          | yes q = yes (p , q)
   ...            | no ¬p          | _     = no λ where (p , _) → ¬p p
   ...            | _              | no ¬q = no λ where (_ , q) → ¬q q
 
-  _⊑ana?_ : ∀ {n Γ₀ C Γ τ p} {Cls : n ； Γ₀ ⊢ C at p ▷ Γ [ ⇐mode τ ]} {υ}
+  _⊑ana?_ : ∀ {n Γ₀ C n' Γ τ p} {Cls : n ； Γ₀ ⊢ C at p ▷ n' ； Γ [ ⇐mode τ ]} {υ}
             → (s₁ s₂ : AnaSlice Cls υ) → Relation.Nullary.Dec (s₁ ⊑ana s₂)
   s₁ ⊑ana? s₂ with s₁ .κ ⊑ₛ? s₂ .κ | s₁ .γ ⊑ₛ? s₂ .γ
   ...            | yes p          | yes q = yes (p , q)
   ...            | no ¬p          | _     = no λ where (p , _) → ¬p p
   ...            | _              | no ¬q = no λ where (_ , q) → ¬q q
 
-  ⊑ana-isDecPartialOrder : ∀ {n Γ₀ C Γ τ p} {Cls : n ； Γ₀ ⊢ C at p ▷ Γ [ ⇐mode τ ]} {υ} →
+  ⊑ana-isDecPartialOrder : ∀ {n Γ₀ C n' Γ τ p} {Cls : n ； Γ₀ ⊢ C at p ▷ n' ； Γ [ ⇐mode τ ]} {υ} →
                               IsDecPartialOrder (_≈ana_ {Cls = Cls} {υ₁ = υ} {υ₂ = υ}) _⊑ana_
   ⊑ana-isDecPartialOrder = record
                            { isPartialOrder = record
@@ -67,7 +68,7 @@ private
                        }
 
 instance
-  anaSlice-precision : ∀ {n Γ₀ C Γ τ p} {Cls : n ； Γ₀ ⊢ C at p ▷ Γ [ ⇐mode τ ]} {υ} →
+  anaSlice-precision : ∀ {n Γ₀ C n' Γ τ p} {Cls : n ； Γ₀ ⊢ C at p ▷ n' ； Γ [ ⇐mode τ ]} {υ} →
                          HasPrecision (AnaSlice Cls υ)
   anaSlice-precision = record
     { _≈_               = _≈ana_
@@ -76,32 +77,32 @@ instance
     }
 
 postulate
-  ⊥-ana-valid : ∀ {n Γ₀ C Γ τ p} (Cls : n ； Γ₀ ⊢ C at p ▷ Γ [ ⇐mode τ ])
-              → ∃[ Γ' ] n ； (⊥ₛ {a = Γ₀}) .↓ ⊢ (⊥ₛ {a = C}) .↓ at p ▷ Γ' [ ⇐mode ((⊥ₛ {a = τ}) .↓) ]
+  ⊥-ana-valid : ∀ {n Γ₀ C n' Γ τ p} (Cls : n ； Γ₀ ⊢ C at p ▷ n' ； Γ [ ⇐mode τ ])
+              → Σ[ p' ∈ Position ] ∃[ n'' ] ∃[ Γ' ] n ； (⊥ₛ {a = Γ₀}) .↓ ⊢ (⊥ₛ {a = C}) .↓ at p' ▷ n'' ； Γ' [ ⇐mode ((⊥ₛ {a = τ}) .↓) ]
 
-⊥-ana : ∀ {n Γ₀ C Γ τ p} {Cls : n ； Γ₀ ⊢ C at p ▷ Γ [ ⇐mode τ ]} → AnaSlice Cls ⊥ₛ
+⊥-ana : ∀ {n Γ₀ C n' Γ τ p} {Cls : n ； Γ₀ ⊢ C at p ▷ n' ； Γ [ ⇐mode τ ]} → AnaSlice Cls ⊥ₛ
 ⊥-ana {Cls = Cls} = record { κ = ⊥ₛ ; γ = ⊥ₛ ; valid = ⊥-ana-valid Cls }
 
-⊤-ana : ∀ {n Γ₀ C Γ τ p} (Cls : n ； Γ₀ ⊢ C at p ▷ Γ [ ⇐mode τ ]) → AnaSlice Cls ⊤ₛ
-⊤-ana Cls = record { κ = ⊤ₛ ; γ = ⊤ₛ ; valid = _ , Cls }
+⊤-ana : ∀ {n Γ₀ C n' Γ τ p} (Cls : n ； Γ₀ ⊢ C at p ▷ n' ； Γ [ ⇐mode τ ]) → AnaSlice Cls ⊤ₛ
+⊤-ana Cls = record { κ = ⊤ₛ ; γ = ⊤ₛ ; valid = _ , _ , _ , Cls }
 
 -- Minimality
-IsMinimal : ∀ {n Γ₀ C Γ τ p} {Cls : n ； Γ₀ ⊢ C at p ▷ Γ [ ⇐mode τ ]} {υ} → AnaSlice Cls υ → Set
+IsMinimal : ∀ {n Γ₀ C n' Γ τ p} {Cls : n ； Γ₀ ⊢ C at p ▷ n' ； Γ [ ⇐mode τ ]} {υ} → AnaSlice Cls υ → Set
 IsMinimal {Cls = Cls} {υ = υ} s = ∀ (s' : AnaSlice Cls υ) → s' ⊑ana s → s ⊑ana s'
 
-MinAnaSlice : ∀ {n Γ₀ C Γ τ p} → (Cls : n ； Γ₀ ⊢ C at p ▷ Γ [ ⇐mode τ ]) → ⌊ τ ⌋ → Set
+MinAnaSlice : ∀ {n Γ₀ C n' Γ τ p} → (Cls : n ； Γ₀ ⊢ C at p ▷ n' ； Γ [ ⇐mode τ ]) → ⌊ τ ⌋ → Set
 MinAnaSlice Cls υ = Σ[ s ∈ AnaSlice Cls υ ] IsMinimal s
 
 -- Join closure (of minimal analysis slices)
 private
   postulate
-    ⊔ana-valid : ∀ {n Γ₀ C Γ τ p} {Cls : n ； Γ₀ ⊢ C at p ▷ Γ [ ⇐mode τ ]} {υ}
+    ⊔ana-valid : ∀ {n Γ₀ C n' Γ τ p} {Cls : n ； Γ₀ ⊢ C at p ▷ n' ； Γ [ ⇐mode τ ]} {υ}
                  → (s₁ s₂ : AnaSlice Cls υ)
                  → IsMinimal s₁ → IsMinimal s₂
-                 → ∃[ Γ' ] n ； (AnaSlice.γ s₁ ⊔ₛ AnaSlice.γ s₂) .↓
-                              ⊢ (AnaSlice.κ s₁ ⊔ₛ AnaSlice.κ s₂) .↓ at p ▷ Γ' [ ⇐mode (υ .↓) ]
+                 → Σ[ p' ∈ Position ] ∃[ n'' ] ∃[ Γ' ] n ； (AnaSlice.γ s₁ ⊔ₛ AnaSlice.γ s₂) .↓
+                              ⊢ (AnaSlice.κ s₁ ⊔ₛ AnaSlice.κ s₂) .↓ at p' ▷ n'' ； Γ' [ ⇐mode (υ .↓) ]
 
-  _⊔ana_ : ∀ {n Γ₀ C Γ τ p} {Cls : n ； Γ₀ ⊢ C at p ▷ Γ [ ⇐mode τ ]} {υ} →
+  _⊔ana_ : ∀ {n Γ₀ C n' Γ τ p} {Cls : n ； Γ₀ ⊢ C at p ▷ n' ； Γ [ ⇐mode τ ]} {υ} →
              (s₁ s₂ : AnaSlice Cls υ) → IsMinimal s₁ → IsMinimal s₂ → AnaSlice Cls υ
   (s₁ ⊔ana s₂) m₁ m₂ = record
     { κ = AnaSlice.κ s₁ ⊔ₛ AnaSlice.κ s₂
@@ -109,19 +110,19 @@ private
     ; valid = ⊔ana-valid s₁ s₂ m₁ m₂
     }
 
-⊔ana-ub₁ : ∀ {n Γ₀ C Γ τ p} {Cls : n ； Γ₀ ⊢ C at p ▷ Γ [ ⇐mode τ ]} {υ}
+⊔ana-ub₁ : ∀ {n Γ₀ C n' Γ τ p} {Cls : n ； Γ₀ ⊢ C at p ▷ n' ； Γ [ ⇐mode τ ]} {υ}
             → (s₁ s₂ : AnaSlice Cls υ) → (m₁ : IsMinimal s₁) → (m₂ : IsMinimal s₂)
             → s₁ ⊑ana ((s₁ ⊔ana s₂) m₁ m₂)
 ⊔ana-ub₁ s₁ s₂ _ _ = ⊑ₛLat.x⊑ₛx⊔ₛy (AnaSlice.κ s₁) (AnaSlice.κ s₂)
                      , ⊑ₛLat.x⊑ₛx⊔ₛy (AnaSlice.γ s₁) (AnaSlice.γ s₂)
 
-⊔ana-ub₂ : ∀ {n Γ₀ C Γ τ p} {Cls : n ； Γ₀ ⊢ C at p ▷ Γ [ ⇐mode τ ]} {υ}
+⊔ana-ub₂ : ∀ {n Γ₀ C n' Γ τ p} {Cls : n ； Γ₀ ⊢ C at p ▷ n' ； Γ [ ⇐mode τ ]} {υ}
             → (s₁ s₂ : AnaSlice Cls υ) → (m₁ : IsMinimal s₁) → (m₂ : IsMinimal s₂)
             → s₂ ⊑ana ((s₁ ⊔ana s₂) m₁ m₂)
 ⊔ana-ub₂ s₁ s₂ _ _ = ⊑ₛLat.y⊑ₛx⊔ₛy (AnaSlice.κ s₁) (AnaSlice.κ s₂)
                      , ⊑ₛLat.y⊑ₛx⊔ₛy (AnaSlice.γ s₁) (AnaSlice.γ s₂)
 
-⊔ana-lub : ∀ {n Γ₀ C Γ τ p} {Cls : n ； Γ₀ ⊢ C at p ▷ Γ [ ⇐mode τ ]} {υ}
+⊔ana-lub : ∀ {n Γ₀ C n' Γ τ p} {Cls : n ； Γ₀ ⊢ C at p ▷ n' ； Γ [ ⇐mode τ ]} {υ}
             → {s : AnaSlice Cls υ} (s₁ s₂ : AnaSlice Cls υ)
             → (m₁ : IsMinimal s₁) → (m₂ : IsMinimal s₂)
             → s₁ ⊑ana s → s₂ ⊑ana s
@@ -136,12 +137,12 @@ private
 
 -- Every checking context has a minimal AnaSlice
 postulate
-  minExists : ∀ {n Γ₀ C Γ τ p} (Cls : n ； Γ₀ ⊢ C at p ▷ Γ [ ⇐mode τ ]) υ
+  minExists : ∀ {n Γ₀ C n' Γ τ p} (Cls : n ； Γ₀ ⊢ C at p ▷ n' ； Γ [ ⇐mode τ ]) υ
              → ∃[ m ] IsMinimal {Cls = Cls} {υ = υ} m
 
 -- Monotonicity: more precise type slice → more precise minimal slice
 postulate
-  mono : ∀ {n Γ₀ C Γ τ p} {Cls : n ； Γ₀ ⊢ C at p ▷ Γ [ ⇐mode τ ]} {υ₁ υ₂ : ⌊ τ ⌋}
+  mono : ∀ {n Γ₀ C n' Γ τ p} {Cls : n ； Γ₀ ⊢ C at p ▷ n' ； Γ [ ⇐mode τ ]} {υ₁ υ₂ : ⌊ τ ⌋}
          → υ₁ ⊑ₛ υ₂
          → (m₂ : AnaSlice Cls υ₂) → IsMinimal m₂
          → Σ[ m₁ ∈ AnaSlice Cls υ₁ ] IsMinimal m₁ ∧ m₁ ⊑ana m₂
