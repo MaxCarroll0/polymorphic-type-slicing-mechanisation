@@ -316,8 +316,6 @@ private
 postulate
   ctx-¬ₛ : ∀ {C : Ctx} → ⌊ C ⌋ → ⌊ C ⌋
   ctx-⊔ₛ-complement : ∀ {C : Ctx} (s : ⌊ C ⌋) → (s ⊔ₛ ctx-¬ₛ s) ≈ₛ ⊤ₛ {a = C}
-  ctx-⊓ₛ-complement : ∀ {C : Ctx} (s : ⌊ C ⌋) → (s ⊓ₛ ctx-¬ₛ s) ≈ₛ (⊥ₛ' {C})
-  ctx-¬ₛ-cong : ∀ {C : Ctx} {s₁ s₂ : ⌊ C ⌋} → s₁ ≈ₛ s₂ → ctx-¬ₛ s₁ ≈ₛ ctx-¬ₛ s₂
 
 instance
   ctx-sliceLattice : SliceLattice Ctx
@@ -332,6 +330,4 @@ instance
     ; ⊓ₛ-distribˡ-⊔ₛ = ⊓ₛ-distribˡ-⊔ₛ'
     ; ¬ₛ_ = ctx-¬ₛ
     ; ⊔ₛ-complement = ctx-⊔ₛ-complement
-    ; ⊓ₛ-complement = ctx-⊓ₛ-complement
-    ; ¬ₛ-cong = ctx-¬ₛ-cong
     }

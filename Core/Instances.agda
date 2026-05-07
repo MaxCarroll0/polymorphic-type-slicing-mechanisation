@@ -24,12 +24,15 @@ import Relation.Binary.Lattice.Properties.DistributiveLattice as DLatProps
 open import Relation.Binary.Definitions using (Minimum)
 open import Relation.Binary.Lattice
   using ( IsMeetSemilattice; IsJoinSemilattice; IsBoundedLattice; IsDistributiveLattice
-        ; IsBoundedMeetSemilattice; IsLattice; Infimum; Supremum)
+        ; IsBoundedMeetSemilattice; IsLattice; Infimum; Supremum; IsHeytingAlgebra)
+open import Relation.Binary.Lattice.Definitions using (Exponential)
 open import Relation.Binary.Lattice.Bundles as LatBundles
-  using (MeetSemilattice; JoinSemilattice)
+  using (MeetSemilattice; JoinSemilattice; HeytingAlgebra)
   renaming (Lattice to LatBundle; BoundedLattice to BLatBundle; DistributiveLattice to DLatBundle)
+import Relation.Binary.Lattice.Properties.HeytingAlgebra as HAProps
 open import Relation.Binary.PropositionalEquality as Eq using (_≡_; refl)
-open import Function using (_on_)
+open import Level using (0ℓ)
+open import Function using (_on_; flip)
 
 -- For overloading of ⊓, ⊑, ⌊_⌋ etc. operators and types.
 record HasDecEq (A : Set) : Set where
@@ -515,11 +518,9 @@ record SliceLattice (A : Set) ⦃ hp : HasPrecision A ⦄ ⦃ hm : HasMeet A ⦄
     x⊑ₛx⊔ₛy        : ∀ {a} (s₁ s₂ : ⌊ a ⌋) → s₁ ⊑ₛ _⊔ₛ_ {A} {a} s₁ s₂
     y⊑ₛx⊔ₛy        : ∀ {a} (s₁ s₂ : ⌊ a ⌋) → s₂ ⊑ₛ _⊔ₛ_ {A} {a} s₁ s₂
     ⊓ₛ-distribˡ-⊔ₛ  : ∀ {a} (s₁ s₂ s₃ : ⌊ a ⌋) → _⊓ₛ_ {A} {a} s₁ (_⊔ₛ_ {A} {a} s₂ s₃) ≈ₛ _⊔ₛ_ {A} {a} (_⊓ₛ_ {A} {a} s₁ s₂) (_⊓ₛ_ {A} {a} s₁ s₃)
-    -- Boolean algebra complement
+    -- Complement (join with complement = top)
     ¬ₛ_            : ∀ {a} → ⌊ a ⌋ → ⌊ a ⌋
     ⊔ₛ-complement  : ∀ {a} (s : ⌊ a ⌋) → _⊔ₛ_ {A} {a} s (¬ₛ s) ≈ₛ ⊤ₛ {A} ⦃ hp ⦄ {a}
-    ⊓ₛ-complement  : ∀ {a} (s : ⌊ a ⌋) → _⊓ₛ_ {A} {a} s (¬ₛ s) ≈ₛ ⊥ₛ {a}
-    ¬ₛ-cong        : ∀ {a} {s₁ s₂ : ⌊ a ⌋} → _≈ₛ_ {a = a} s₁ s₂ → _≈ₛ_ {a = a} (¬ₛ s₁) (¬ₛ s₂)
 open SliceLattice ⦃...⦄ public using (⊥ₛ; ¬ₛ_)
 
 module ⊑ₛLat {A : Set} ⦃ hp : HasPrecision A ⦄ ⦃ hm : HasMeet A ⦄ ⦃ hj : HasJoin A ⦄ ⦃ sl : SliceLattice A ⦄ {a : A} where
@@ -603,14 +604,115 @@ module ⊑ₛLat {A : Set} ⦃ hp : HasPrecision A ⦄ ⦃ hm : HasMeet A ⦄ �
   ¬ₛ-⊔ : (s : ⌊ a ⌋) → s ⊔ₛ (¬ₛ s) ≈ₛ ⊤'
   ¬ₛ-⊔ = SliceLattice.⊔ₛ-complement sl
 
-  ¬ₛ-⊓ : (s : ⌊ a ⌋) → s ⊓ₛ (¬ₛ s) ≈ₛ ⊥'
-  ¬ₛ-⊓ = SliceLattice.⊓ₛ-complement sl
+-- Bi-Heyting algebra on slices: implication + subtraction
+record SliceBiHeyting (A : Set) ⦃ hp : HasPrecision A ⦄ ⦃ hm : HasMeet A ⦄ ⦃ hj : HasJoin A ⦄ ⦃ sl : SliceLattice A ⦄ : Set₁ where
+  field
+    -- Heyting implication
+    _⇨ₛ_ : ∀ {a} → ⌊ a ⌋ → ⌊ a ⌋ → ⌊ a ⌋
+    ⇨-exponential : ∀ {a} → Exponential (_⊑ₛ_ {A} ⦃ hp ⦄ {a} {a}) (_⊓ₛ_ {A} {a}) _⇨ₛ_
+    -- Co-Heyting subtraction
+    _\\ₛ_ : ∀ {a} → ⌊ a ⌋ → ⌊ a ⌋ → ⌊ a ⌋
+    \\-exponential : ∀ {a} → Exponential (λ x y → _⊑ₛ_ {A} ⦃ hp ⦄ {a} {a} y x) (_⊔ₛ_ {A} {a}) (flip (_\\ₛ_ {a = a}))
+open SliceBiHeyting ⦃...⦄ public using (_⇨ₛ_; _\\ₛ_)
 
-  -- Anti-monotonicity: a ⊑ b → ¬b ⊑ ¬a
-  postulate ¬ₛ-anti : ∀ {s₁ s₂ : ⌊ a ⌋} → s₁ ⊑ₛ s₂ → ¬ₛ s₂ ⊑ₛ ¬ₛ s₁
+module ⊑ₛHeyting {A : Set} ⦃ hp : HasPrecision A ⦄ ⦃ hm : HasMeet A ⦄ ⦃ hj : HasJoin A ⦄
+                  ⦃ sl : SliceLattice A ⦄ ⦃ bh : SliceBiHeyting A ⦄ {a : A} where
 
-  -- Double negation: ¬¬a ≈ a
-  postulate ¬ₛ-involutive : ∀ (s : ⌊ a ⌋) → ¬ₛ (¬ₛ s) ≈ₛ s
+  private module L = ⊑ₛLat {A} {a = a}
+
+  -- Heyting algebra bundle (normal order)
+  heytingAlgebra : HeytingAlgebra 0ℓ 0ℓ 0ℓ
+  heytingAlgebra = record
+    { Carrier = ⌊ a ⌋
+    ; _≈_ = _≈ₛ_
+    ; _≤_ = _⊑ₛ_
+    ; _∨_ = _⊔ₛ_
+    ; _∧_ = _⊓ₛ_
+    ; _⇨_ = SliceBiHeyting._⇨ₛ_ bh
+    ; ⊤   = ⊤ₛ
+    ; ⊥   = ⊥ₛ
+    ; isHeytingAlgebra = record
+      { isBoundedLattice = L.isBoundedLattice
+      ; exponential = SliceBiHeyting.⇨-exponential bh
+      }
+    }
+
+  -- Heyting algebra properties
+  module H where
+    open HAProps heytingAlgebra public
+      renaming ( ⇨-eval  to ⇨ₛ-eval
+               ; ⇨-unit  to ⇨ₛ-unit
+               ; ⇨-cong  to ⇨ₛ-cong
+               ; ⇨-curry to ⇨ₛ-curry
+               ; ⇨ʳ-covariant     to ⇨ₛʳ-covariant
+               ; ⇨ˡ-contravariant to ⇨ₛˡ-contravariant
+               ; ⇨-relax   to ⇨ₛ-relax
+               ; ⇨-applyˡ  to ⇨ₛ-applyˡ
+               ; ⇨-applyʳ  to ⇨ₛ-applyʳ
+               ; ⇨-distribˡ-∧  to ⇨ₛ-distribˡ-⊓ₛ
+               ; ⇨-distribˡ-∨-∧ to ⇨ₛ-distribˡ-⊔ₛ-⊓ₛ
+               ; ¬_ to h-¬ₛ_
+               ; x≤¬¬x to x⊑h-¬¬x
+               ; de-morgan₁ to h-de-morgan₁
+               ; de-morgan₂ to h-de-morgan₂
+               ; weak-lem    to h-weak-lem
+               )
+
+  -- Dual bounded lattice (flipped order) for co-Heyting algebra
+  private
+    blatBundle' : BLatBundle 0ℓ 0ℓ 0ℓ
+    blatBundle' = record { isBoundedLattice = L.isBoundedLattice }
+    open import Relation.Binary.Properties.Poset (BLatBundle.poset blatBundle')
+      using (≥-isPartialOrder)
+
+    dualIsBoundedLattice : IsBoundedLattice _≈ₛ_ (flip _⊑ₛ_) _⊓ₛ_ _⊔ₛ_ L.⊥ₛ L.⊤ₛ
+    dualIsBoundedLattice = record
+      { isLattice = record
+        { isPartialOrder = ≥-isPartialOrder
+        ; supremum = λ s₁ s₂ → let (p , q , g) = L.infimum s₁ s₂ in p , q , λ z zp zq → g z zp zq
+        ; infimum  = λ s₁ s₂ → let (p , q , l) = L.supremum s₁ s₂ in p , q , λ z zp zq → l z zp zq
+        }
+      ; maximum = L.⊥ₛ-min
+      ; minimum = L.⊤ₛ-max
+      }
+
+  -- Co-Heyting algebra bundle (flipped order)
+  coHeytingAlgebra : HeytingAlgebra 0ℓ 0ℓ 0ℓ
+  coHeytingAlgebra = record
+    { Carrier = ⌊ a ⌋
+    ; _≈_ = _≈ₛ_
+    ; _≤_ = flip _⊑ₛ_
+    ; _∨_ = _⊓ₛ_
+    ; _∧_ = _⊔ₛ_
+    ; _⇨_ = flip (SliceBiHeyting._\\ₛ_ bh)
+    ; ⊤   = ⊥ₛ
+    ; ⊥   = ⊤ₛ
+    ; isHeytingAlgebra = record
+      { isBoundedLattice = dualIsBoundedLattice
+      ; exponential = SliceBiHeyting.\\-exponential bh
+      }
+    }
+
+  -- Co-Heyting algebra properties
+  module CoH where
+    open HAProps coHeytingAlgebra public
+      renaming ( ⇨-eval  to \\ₛ-coclosure
+               ; ⇨-unit  to \\ₛ-self
+               ; ⇨-cong  to \\ₛ-cong
+               ; ⇨-curry to \\ₛ-curry
+               ; ⇨ʳ-covariant     to \\ₛʳ-covariant
+               ; ⇨ˡ-contravariant to \\ₛˡ-contravariant
+               ; ⇨-relax   to \\ₛ-relax
+               ; ⇨-applyˡ  to \\ₛ-applyˡ
+               ; ⇨-applyʳ  to \\ₛ-applyʳ
+               ; ⇨-distribˡ-∧  to \\ₛ-distribˡ-⊔ₛ
+               ; ⇨-distribˡ-∨-∧ to \\ₛ-distribˡ-⊓ₛ-⊔ₛ
+               ; ¬_ to co-¬ₛ_
+               ; x≤¬¬x to co-¬¬x⊑x
+               ; de-morgan₁ to co-de-morgan₁
+               ; de-morgan₂ to co-de-morgan₂
+               ; weak-lem    to co-weak-lem
+               )
 
 -- Products: A × B with pointwise precision and lattice structure
 
@@ -708,9 +810,6 @@ instance
                               isSlice (SliceLattice.¬ₛ_ slA (fstₛ s) .proof , SliceLattice.¬ₛ_ slB (sndₛ s) .proof)
     ; ⊔ₛ-complement  = λ s → SliceLattice.⊔ₛ-complement slA (fstₛ s)
                             , SliceLattice.⊔ₛ-complement slB (sndₛ s)
-    ; ⊓ₛ-complement  = λ {a} s → SliceLattice.⊓ₛ-complement slA {proj₁ a} (fstₛ s)
-                            , SliceLattice.⊓ₛ-complement slB {proj₂ a} (sndₛ s)
-    ; ¬ₛ-cong        = λ (p , q) → SliceLattice.¬ₛ-cong slA p , SliceLattice.¬ₛ-cong slB q
     }
     where
       instance pp = prod-precision {A} {B}

@@ -2,15 +2,15 @@ module Core.Typ.Lattice where
 
 open import Data.Nat using (ℕ) renaming (_≟_ to _≟ℕ_)
 open import Data.Empty using (⊥-elim)
-open import Data.Product using (_,_; proj₁; proj₂)
+open import Data.Product using (_,_; proj₁; proj₂) renaming (_×_ to _∧_)
 open import Relation.Binary using (IsPartialOrder)
 open import Relation.Binary.Definitions using (Reflexive; Transitive; Antisymmetric; Maximum; Minimum)
 open import Relation.Binary.PropositionalEquality as Eq using (_≡_; _≢_; refl; trans; cong; cong₂)
 open Eq.≡-Reasoning
 open import Relation.Binary.Lattice.Structures using (IsMeetSemilattice; IsJoinSemilattice; IsLattice; IsBoundedLattice; IsDistributiveLattice)
-open import Relation.Binary.Lattice.Definitions using (Infimum; Supremum)
+open import Relation.Binary.Lattice.Definitions using (Infimum; Supremum; Exponential)
 open import Relation.Nullary using (yes; no)
-open import Function using (_on_)
+open import Function using (_on_; case_of_; flip)
 
 open import Core.Typ.Base
 open import Core.Typ.Equality
@@ -52,6 +52,276 @@ private
   ...                 | no  _  | no  _  = □
 
   infixl 6 _⊔t_
+
+  -- Collapse helpers: combine results, returning □ if all are □
+  c+ : Typ → Typ → Typ
+  c+ □ □ = □
+  c+ a b = a + b
+
+  c× : Typ → Typ → Typ
+  c× □ □ = □
+  c× a b = a × b
+
+  c⇒ : Typ → Typ → Typ
+  c⇒ □ □ = □
+  c⇒ a b = a ⇒ b
+
+  c∀ : Typ → Typ
+  c∀ □ = □
+  c∀ a = ∀· a
+
+  -- Co-Heyting subtraction: componentwise removal with collapse
+  _\\t_ : Typ → Typ → Typ
+  τ \\t τ' with diag τ τ'
+  ...       | kind□  = □
+  ...       | kind* = □
+  ...       | kindVar {m} {n} with m ≟ℕ n
+  ...                         | yes _ = □
+  ...                         | no  _ = ⟨ m ⟩
+  (τ₁ + τ₂) \\t (τ₁' + τ₂') | kind+ = c+ (τ₁ \\t τ₁') (τ₂ \\t τ₂')
+  (τ₁ × τ₂) \\t (τ₁' × τ₂') | kind× = c× (τ₁ \\t τ₁') (τ₂ \\t τ₂')
+  (τ₁ ⇒ τ₂) \\t (τ₁' ⇒ τ₂') | kind⇒ = c⇒ (τ₁ \\t τ₁') (τ₂ \\t τ₂')
+  (∀· τ)    \\t (∀· τ')      | kind∀ = c∀ (τ \\t τ')
+  τ \\t τ'    | diff with τ ≟ □
+  ...                 | yes _ = □
+  ...                 | no  _ = τ
+
+  -- Closure lemmas for collapse helpers
+  c+-⊑ : ∀ {τ₁ τ₂} (a b : Typ) → a ⊑ τ₁ → b ⊑ τ₂ → c+ a b ⊑ τ₁ + τ₂
+  c+-⊑ □       □       _   _  = ⊑□
+  c+-⊑ □       *       p   q  = ⊑+ p q
+  c+-⊑ □       ⟨ _ ⟩   p   q  = ⊑+ p q
+  c+-⊑ □       (_ + _) p   q  = ⊑+ p q
+  c+-⊑ □       (_ × _) p   q  = ⊑+ p q
+  c+-⊑ □       (_ ⇒ _) p   q  = ⊑+ p q
+  c+-⊑ □       (∀· _)  p   q  = ⊑+ p q
+  c+-⊑ *       _       p   q  = ⊑+ p q
+  c+-⊑ ⟨ _ ⟩   _       p   q  = ⊑+ p q
+  c+-⊑ (_ + _) _       p   q  = ⊑+ p q
+  c+-⊑ (_ × _) _       p   q  = ⊑+ p q
+  c+-⊑ (_ ⇒ _) _       p   q  = ⊑+ p q
+  c+-⊑ (∀· _)  _       p   q  = ⊑+ p q
+
+  c×-⊑ : ∀ {τ₁ τ₂} (a b : Typ) → a ⊑ τ₁ → b ⊑ τ₂ → c× a b ⊑ τ₁ × τ₂
+  c×-⊑ □       □       _   _  = ⊑□
+  c×-⊑ □       *       p   q  = ⊑× p q
+  c×-⊑ □       ⟨ _ ⟩   p   q  = ⊑× p q
+  c×-⊑ □       (_ + _) p   q  = ⊑× p q
+  c×-⊑ □       (_ × _) p   q  = ⊑× p q
+  c×-⊑ □       (_ ⇒ _) p   q  = ⊑× p q
+  c×-⊑ □       (∀· _)  p   q  = ⊑× p q
+  c×-⊑ *       _       p   q  = ⊑× p q
+  c×-⊑ ⟨ _ ⟩   _       p   q  = ⊑× p q
+  c×-⊑ (_ + _) _       p   q  = ⊑× p q
+  c×-⊑ (_ × _) _       p   q  = ⊑× p q
+  c×-⊑ (_ ⇒ _) _       p   q  = ⊑× p q
+  c×-⊑ (∀· _)  _       p   q  = ⊑× p q
+
+  c⇒-⊑ : ∀ {τ₁ τ₂} (a b : Typ) → a ⊑ τ₁ → b ⊑ τ₂ → c⇒ a b ⊑ τ₁ ⇒ τ₂
+  c⇒-⊑ □       □       _   _  = ⊑□
+  c⇒-⊑ □       *       p   q  = ⊑⇒ p q
+  c⇒-⊑ □       ⟨ _ ⟩   p   q  = ⊑⇒ p q
+  c⇒-⊑ □       (_ + _) p   q  = ⊑⇒ p q
+  c⇒-⊑ □       (_ × _) p   q  = ⊑⇒ p q
+  c⇒-⊑ □       (_ ⇒ _) p   q  = ⊑⇒ p q
+  c⇒-⊑ □       (∀· _)  p   q  = ⊑⇒ p q
+  c⇒-⊑ *       _       p   q  = ⊑⇒ p q
+  c⇒-⊑ ⟨ _ ⟩   _       p   q  = ⊑⇒ p q
+  c⇒-⊑ (_ + _) _       p   q  = ⊑⇒ p q
+  c⇒-⊑ (_ × _) _       p   q  = ⊑⇒ p q
+  c⇒-⊑ (_ ⇒ _) _       p   q  = ⊑⇒ p q
+  c⇒-⊑ (∀· _)  _       p   q  = ⊑⇒ p q
+
+  c∀-⊑ : ∀ {τ} (a : Typ) → a ⊑ τ → c∀ a ⊑ ∀· τ
+  c∀-⊑ □       _ = ⊑□
+  c∀-⊑ *       p = ⊑∀ p
+  c∀-⊑ ⟨ _ ⟩   p = ⊑∀ p
+  c∀-⊑ (_ + _) p = ⊑∀ p
+  c∀-⊑ (_ × _) p = ⊑∀ p
+  c∀-⊑ (_ ⇒ _) p = ⊑∀ p
+  c∀-⊑ (∀· _)  p = ⊑∀ p
+
+  -- Inverse closure: c+ a b ⊑ τ₁ + τ₂ implies a ⊑ τ₁ ∧ b ⊑ τ₂ (similar for ×, ⇒, ∀)
+  c+-⊑-inv : ∀ {τ₁ τ₂} (a b : Typ) → c+ a b ⊑ τ₁ + τ₂ → a ⊑ τ₁ ∧ b ⊑ τ₂
+  c+-⊑-inv □       □       ⊑□            = ⊑□ , ⊑□
+  c+-⊑-inv □       *       (⊑+ p q)      = p , q
+  c+-⊑-inv □       ⟨ _ ⟩   (⊑+ p q)      = p , q
+  c+-⊑-inv □       (_ + _) (⊑+ p q)      = p , q
+  c+-⊑-inv □       (_ × _) (⊑+ p q)      = p , q
+  c+-⊑-inv □       (_ ⇒ _) (⊑+ p q)      = p , q
+  c+-⊑-inv □       (∀· _)  (⊑+ p q)      = p , q
+  c+-⊑-inv *       _       (⊑+ p q)      = p , q
+  c+-⊑-inv ⟨ _ ⟩   _       (⊑+ p q)      = p , q
+  c+-⊑-inv (_ + _) _       (⊑+ p q)      = p , q
+  c+-⊑-inv (_ × _) _       (⊑+ p q)      = p , q
+  c+-⊑-inv (_ ⇒ _) _       (⊑+ p q)      = p , q
+  c+-⊑-inv (∀· _)  _       (⊑+ p q)      = p , q
+
+  c×-⊑-inv : ∀ {τ₁ τ₂} (a b : Typ) → c× a b ⊑ τ₁ × τ₂ → a ⊑ τ₁ ∧ b ⊑ τ₂
+  c×-⊑-inv □       □       ⊑□            = ⊑□ , ⊑□
+  c×-⊑-inv □       *       (⊑× p q)      = p , q
+  c×-⊑-inv □       ⟨ _ ⟩   (⊑× p q)      = p , q
+  c×-⊑-inv □       (_ + _) (⊑× p q)      = p , q
+  c×-⊑-inv □       (_ × _) (⊑× p q)      = p , q
+  c×-⊑-inv □       (_ ⇒ _) (⊑× p q)      = p , q
+  c×-⊑-inv □       (∀· _)  (⊑× p q)      = p , q
+  c×-⊑-inv *       _       (⊑× p q)      = p , q
+  c×-⊑-inv ⟨ _ ⟩   _       (⊑× p q)      = p , q
+  c×-⊑-inv (_ + _) _       (⊑× p q)      = p , q
+  c×-⊑-inv (_ × _) _       (⊑× p q)      = p , q
+  c×-⊑-inv (_ ⇒ _) _       (⊑× p q)      = p , q
+  c×-⊑-inv (∀· _)  _       (⊑× p q)      = p , q
+
+  c⇒-⊑-inv : ∀ {τ₁ τ₂} (a b : Typ) → c⇒ a b ⊑ τ₁ ⇒ τ₂ → a ⊑ τ₁ ∧ b ⊑ τ₂
+  c⇒-⊑-inv □       □       ⊑□            = ⊑□ , ⊑□
+  c⇒-⊑-inv □       *       (⊑⇒ p q)      = p , q
+  c⇒-⊑-inv □       ⟨ _ ⟩   (⊑⇒ p q)      = p , q
+  c⇒-⊑-inv □       (_ + _) (⊑⇒ p q)      = p , q
+  c⇒-⊑-inv □       (_ × _) (⊑⇒ p q)      = p , q
+  c⇒-⊑-inv □       (_ ⇒ _) (⊑⇒ p q)      = p , q
+  c⇒-⊑-inv □       (∀· _)  (⊑⇒ p q)      = p , q
+  c⇒-⊑-inv *       _       (⊑⇒ p q)      = p , q
+  c⇒-⊑-inv ⟨ _ ⟩   _       (⊑⇒ p q)      = p , q
+  c⇒-⊑-inv (_ + _) _       (⊑⇒ p q)      = p , q
+  c⇒-⊑-inv (_ × _) _       (⊑⇒ p q)      = p , q
+  c⇒-⊑-inv (_ ⇒ _) _       (⊑⇒ p q)      = p , q
+  c⇒-⊑-inv (∀· _)  _       (⊑⇒ p q)      = p , q
+
+  c∀-⊑-inv : ∀ {τ} (a : Typ) → c∀ a ⊑ ∀· τ → a ⊑ τ
+  c∀-⊑-inv □       ⊑□      = ⊑□
+  c∀-⊑-inv *       (⊑∀ p)  = p
+  c∀-⊑-inv ⟨ _ ⟩   (⊑∀ p)  = p
+  c∀-⊑-inv (_ + _) (⊑∀ p)  = p
+  c∀-⊑-inv (_ × _) (⊑∀ p)  = p
+  c∀-⊑-inv (_ ⇒ _) (⊑∀ p)  = p
+  c∀-⊑-inv (∀· _)  (⊑∀ p)  = p
+
+  infixl 7 _\\t_
+
+  -- Subtraction is below first argument: τ₁ \\t τ₂ ⊑ τ₁
+  \\t-⊑₁ : ∀ τ₁ τ₂ → τ₁ \\t τ₂ ⊑ τ₁
+  \\t-⊑₁ τ₁         τ₂          with diag τ₁ τ₂
+  \\t-⊑₁ □          □           | kind□ = ⊑□
+  \\t-⊑₁ *          *           | kind* = ⊑□
+  \\t-⊑₁ ⟨ m ⟩      ⟨ n ⟩       | kindVar with m ≟ℕ n
+  ...                                       | yes _ = ⊑□
+  ...                                       | no  _ = ⊑Var
+  \\t-⊑₁ (τ₁ + τ₂)  (τ₁' + τ₂') | kind+ = c+-⊑ (τ₁ \\t τ₁') (τ₂ \\t τ₂') (\\t-⊑₁ τ₁ τ₁') (\\t-⊑₁ τ₂ τ₂')
+  \\t-⊑₁ (τ₁ × τ₂)  (τ₁' × τ₂') | kind× = c×-⊑ (τ₁ \\t τ₁') (τ₂ \\t τ₂') (\\t-⊑₁ τ₁ τ₁') (\\t-⊑₁ τ₂ τ₂')
+  \\t-⊑₁ (τ₁ ⇒ τ₂)  (τ₁' ⇒ τ₂') | kind⇒ = c⇒-⊑ (τ₁ \\t τ₁') (τ₂ \\t τ₂') (\\t-⊑₁ τ₁ τ₁') (\\t-⊑₁ τ₂ τ₂')
+  \\t-⊑₁ (∀· τ)     (∀· τ')     | kind∀ = c∀-⊑ (τ \\t τ') (\\t-⊑₁ τ τ')
+  \\t-⊑₁ τ₁         τ₂          | diff with τ₁ ≟ □
+  ...                                       | yes refl = ⊑□
+  ...                                       | no  _    = ⊑.refl
+
+  -- Closure: subtraction of slices stays in the slice lattice
+  \\t-closure : ∀ {τ₁ τ₂ τ} → τ₁ ⊑ τ → τ₂ ⊑ τ → τ₁ \\t τ₂ ⊑ τ
+  \\t-closure p _ = ⊑.trans (\\t-⊑₁ _ _) p
+
+  -- Inversions of collapse helpers: c+ a b ≡ □ implies a ≡ □ ∧ b ≡ □
+  c+-≡-□ : ∀ a b → c+ a b ≡ □ → a ≡ □ ∧ b ≡ □
+  c+-≡-□ □ □ refl    = refl , refl
+  c+-≡-□ □ *       ()
+  c+-≡-□ □ ⟨ _ ⟩    ()
+  c+-≡-□ □ (_ + _)  ()
+  c+-≡-□ □ (_ × _)  ()
+  c+-≡-□ □ (_ ⇒ _)  ()
+  c+-≡-□ □ (∀· _)   ()
+  c+-≡-□ * _        ()
+  c+-≡-□ ⟨ _ ⟩ _    ()
+  c+-≡-□ (_ + _) _  ()
+  c+-≡-□ (_ × _) _  ()
+  c+-≡-□ (_ ⇒ _) _  ()
+  c+-≡-□ (∀· _) _   ()
+
+  c×-≡-□ : ∀ a b → c× a b ≡ □ → a ≡ □ ∧ b ≡ □
+  c×-≡-□ □ □ refl    = refl , refl
+  c×-≡-□ □ *       ()
+  c×-≡-□ □ ⟨ _ ⟩    ()
+  c×-≡-□ □ (_ + _)  ()
+  c×-≡-□ □ (_ × _)  ()
+  c×-≡-□ □ (_ ⇒ _)  ()
+  c×-≡-□ □ (∀· _)   ()
+  c×-≡-□ * _        ()
+  c×-≡-□ ⟨ _ ⟩ _    ()
+  c×-≡-□ (_ + _) _  ()
+  c×-≡-□ (_ × _) _  ()
+  c×-≡-□ (_ ⇒ _) _  ()
+  c×-≡-□ (∀· _) _   ()
+
+  c⇒-≡-□ : ∀ a b → c⇒ a b ≡ □ → a ≡ □ ∧ b ≡ □
+  c⇒-≡-□ □ □ refl    = refl , refl
+  c⇒-≡-□ □ *       ()
+  c⇒-≡-□ □ ⟨ _ ⟩    ()
+  c⇒-≡-□ □ (_ + _)  ()
+  c⇒-≡-□ □ (_ × _)  ()
+  c⇒-≡-□ □ (_ ⇒ _)  ()
+  c⇒-≡-□ □ (∀· _)   ()
+  c⇒-≡-□ * _        ()
+  c⇒-≡-□ ⟨ _ ⟩ _    ()
+  c⇒-≡-□ (_ + _) _  ()
+  c⇒-≡-□ (_ × _) _  ()
+  c⇒-≡-□ (_ ⇒ _) _  ()
+  c⇒-≡-□ (∀· _) _   ()
+
+  c∀-≡-□ : ∀ a → c∀ a ≡ □ → a ≡ □
+  c∀-≡-□ □ refl    = refl
+  c∀-≡-□ *       ()
+  c∀-≡-□ ⟨ _ ⟩    ()
+  c∀-≡-□ (_ + _)  ()
+  c∀-≡-□ (_ × _)  ()
+  c∀-≡-□ (_ ⇒ _)  ()
+  c∀-≡-□ (∀· _)   ()
+
+  -- Bottom-absorption for subtraction
+  \\t-□ₗ : ∀ τ → □ \\t τ ≡ □
+  \\t-□ₗ τ with diag □ τ
+  ... | kind□ = refl
+  ... | diff  = refl
+
+  \\t-□ᵣ : ∀ τ → τ ≢ □ → τ \\t □ ≡ τ
+  \\t-□ᵣ □       neq = ⊥-elim (neq refl)
+  \\t-□ᵣ *       _   = refl
+  \\t-□ᵣ ⟨ _ ⟩   _   = refl
+  \\t-□ᵣ (_ + _) _   = refl
+  \\t-□ᵣ (_ × _) _   = refl
+  \\t-□ᵣ (_ ⇒ _) _   = refl
+  \\t-□ᵣ (∀· _)  _   = refl
+
+  -- Subtraction trivializes exactly when first ⊑ second
+  ⊑⇒\\t-≡-□ : ∀ {τ τ'} → τ ⊑ τ' → τ \\t τ' ≡ □
+  ⊑⇒\\t-≡-□ {τ' = τ'} ⊑□ = \\t-□ₗ τ'
+  ⊑⇒\\t-≡-□ ⊑*           = refl
+  ⊑⇒\\t-≡-□ (⊑Var {n}) with n ≟ℕ n
+  ... | yes _     = refl
+  ... | no contra = ⊥-elim (contra refl)
+  ⊑⇒\\t-≡-□ (⊑+ p₁ p₂) rewrite ⊑⇒\\t-≡-□ p₁ | ⊑⇒\\t-≡-□ p₂ = refl
+  ⊑⇒\\t-≡-□ (⊑× p₁ p₂) rewrite ⊑⇒\\t-≡-□ p₁ | ⊑⇒\\t-≡-□ p₂ = refl
+  ⊑⇒\\t-≡-□ (⊑⇒ p₁ p₂) rewrite ⊑⇒\\t-≡-□ p₁ | ⊑⇒\\t-≡-□ p₂ = refl
+  ⊑⇒\\t-≡-□ (⊑∀ p)     rewrite ⊑⇒\\t-≡-□ p              = refl
+
+  \\t-≡-□⇒⊑ : ∀ τ τ' → τ \\t τ' ≡ □ → τ ⊑ τ'
+  \\t-≡-□⇒⊑ τ τ' h with diag τ τ'
+  \\t-≡-□⇒⊑ □ □ refl | kind□ = ⊑□
+  \\t-≡-□⇒⊑ * * refl | kind* = ⊑*
+  \\t-≡-□⇒⊑ ⟨ m ⟩ ⟨ n ⟩ h | kindVar with m ≟ℕ n
+  ... | yes refl = ⊑Var
+  ... | no  _    = case h of λ ()
+    where open import Function using (case_of_)
+  \\t-≡-□⇒⊑ (τ₁ + τ₂) (τ₁' + τ₂') h | kind+
+    with c+-≡-□ (τ₁ \\t τ₁') (τ₂ \\t τ₂') h
+  ... | eq₁ , eq₂ = ⊑+ (\\t-≡-□⇒⊑ τ₁ τ₁' eq₁) (\\t-≡-□⇒⊑ τ₂ τ₂' eq₂)
+  \\t-≡-□⇒⊑ (τ₁ × τ₂) (τ₁' × τ₂') h | kind×
+    with c×-≡-□ (τ₁ \\t τ₁') (τ₂ \\t τ₂') h
+  ... | eq₁ , eq₂ = ⊑× (\\t-≡-□⇒⊑ τ₁ τ₁' eq₁) (\\t-≡-□⇒⊑ τ₂ τ₂' eq₂)
+  \\t-≡-□⇒⊑ (τ₁ ⇒ τ₂) (τ₁' ⇒ τ₂') h | kind⇒
+    with c⇒-≡-□ (τ₁ \\t τ₁') (τ₂ \\t τ₂') h
+  ... | eq₁ , eq₂ = ⊑⇒ (\\t-≡-□⇒⊑ τ₁ τ₁' eq₁) (\\t-≡-□⇒⊑ τ₂ τ₂' eq₂)
+  \\t-≡-□⇒⊑ (∀· τ) (∀· τ') h | kind∀ =
+    ⊑∀ (\\t-≡-□⇒⊑ τ τ' (c∀-≡-□ (τ \\t τ') h))
+  \\t-≡-□⇒⊑ τ τ' h | diff with τ ≟ □
+  ... | yes refl = ⊑□
+  ... | no  neq  = ⊥-elim (neq h)
 
   -- Meet lower bounds
   ⊓-lb₁ : ∀ τ₁ τ₂ → τ₁ ⊓t τ₂ ⊑ τ₁
@@ -249,10 +519,66 @@ typ-¬ₛ {∀· τ}    ((∀· s) isSlice ⊑∀ p)         =
   let ¬s = typ-¬ₛ (s isSlice p)
   in (∀· (¬s .↓)) isSlice ⊑∀ (¬s .proof)
 
-postulate
-  typ-⊔ₛ-complement : ∀ {τ : Typ} (s : ⌊ τ ⌋) → _≈ₛ_ (s ⊔ₛ typ-¬ₛ s) (⊤ₛ {a = τ})
-  typ-⊓ₛ-complement : ∀ {τ : Typ} (s : ⌊ τ ⌋) → _≈ₛ_ (s ⊓ₛ typ-¬ₛ s) (⊥ₛ' {τ})
-  typ-¬ₛ-cong : ∀ {τ : Typ} {s₁ s₂ : ⌊ τ ⌋} → _≈ₛ_ {a = τ} s₁ s₂ → _≈ₛ_ {a = τ} (typ-¬ₛ {τ} s₁) (typ-¬ₛ {τ} s₂)
+typ-⊔ₛ-complement : ∀ {τ : Typ} (s : ⌊ τ ⌋) → _≈ₛ_ (s ⊔ₛ typ-¬ₛ s) (⊤ₛ {a = τ})
+typ-⊔ₛ-complement {□}       (□ isSlice ⊑□)              = refl
+typ-⊔ₛ-complement {*}       (□ isSlice ⊑□)              = refl
+typ-⊔ₛ-complement {*}       (* isSlice ⊑*)              = refl
+typ-⊔ₛ-complement {⟨ _ ⟩}   (□ isSlice ⊑□)              = refl
+typ-⊔ₛ-complement {⟨ _ ⟩}   (._ isSlice ⊑Var)           = refl
+typ-⊔ₛ-complement {τ₁ + τ₂} (□ isSlice ⊑□)              = refl
+typ-⊔ₛ-complement {τ₁ + τ₂} ((τ₁' + τ₂') isSlice ⊑+ p₁ p₂) =
+  let ¬s₁ = typ-¬ₛ (τ₁' isSlice p₁)
+      ¬s₂ = typ-¬ₛ (τ₂' isSlice p₂)
+  in cong₂ _+_ (typ-⊔ₛ-complement (τ₁' isSlice p₁)) (typ-⊔ₛ-complement (τ₂' isSlice p₂))
+typ-⊔ₛ-complement {τ₁ × τ₂} (□ isSlice ⊑□)              = refl
+typ-⊔ₛ-complement {τ₁ × τ₂} ((τ₁' × τ₂') isSlice ⊑× p₁ p₂) =
+  let ¬s₁ = typ-¬ₛ (τ₁' isSlice p₁)
+      ¬s₂ = typ-¬ₛ (τ₂' isSlice p₂)
+  in cong₂ _×_ (typ-⊔ₛ-complement (τ₁' isSlice p₁)) (typ-⊔ₛ-complement (τ₂' isSlice p₂))
+typ-⊔ₛ-complement {τ₁ ⇒ τ₂} (□ isSlice ⊑□)              = refl
+typ-⊔ₛ-complement {τ₁ ⇒ τ₂} ((τ₁' ⇒ τ₂') isSlice ⊑⇒ p₁ p₂) =
+  let ¬s₁ = typ-¬ₛ (τ₁' isSlice p₁)
+      ¬s₂ = typ-¬ₛ (τ₂' isSlice p₂)
+  in cong₂ _⇒_ (typ-⊔ₛ-complement (τ₁' isSlice p₁)) (typ-⊔ₛ-complement (τ₂' isSlice p₂))
+typ-⊔ₛ-complement {∀· τ}    (□ isSlice ⊑□)              = refl
+typ-⊔ₛ-complement {∀· τ}    ((∀· τ') isSlice ⊑∀ p)       =
+  cong ∀· (typ-⊔ₛ-complement (τ' isSlice p))
+
+typ-¬ₛ-anti : ∀ {τ : Typ} {s₁ s₂ : ⌊ τ ⌋} → s₁ ⊑ₛ s₂ → typ-¬ₛ s₂ ⊑ₛ typ-¬ₛ s₁
+typ-¬ₛ-anti {□}       {□ isSlice ⊑□}                {□ isSlice ⊑□}                ⊑□ = ⊑□
+typ-¬ₛ-anti {*}       {□ isSlice ⊑□}                {□ isSlice ⊑□}                ⊑□ = ⊑*
+typ-¬ₛ-anti {*}       {□ isSlice ⊑□}                {* isSlice ⊑*}                ⊑□ = ⊑□
+typ-¬ₛ-anti {*}       {* isSlice ⊑*}                {* isSlice ⊑*}                ⊑* = ⊑□
+typ-¬ₛ-anti {⟨ _ ⟩}   {□ isSlice ⊑□}                {□ isSlice ⊑□}                ⊑□ = ⊑Var
+typ-¬ₛ-anti {⟨ _ ⟩}   {□ isSlice ⊑□}                {._ isSlice ⊑Var}             ⊑□ = ⊑□
+typ-¬ₛ-anti {⟨ _ ⟩}   {._ isSlice ⊑Var}             {._ isSlice ⊑Var}             ⊑Var = ⊑□
+typ-¬ₛ-anti {τ₁ + τ₂} {□ isSlice ⊑□}                {□ isSlice ⊑□}                ⊑□ =
+  ⊑+ ⊑.refl ⊑.refl
+typ-¬ₛ-anti {τ₁ + τ₂} {□ isSlice ⊑□}                {(_ + _) isSlice ⊑+ q₁ q₂}   ⊑□ =
+  ⊑+ (typ-¬ₛ (_ isSlice q₁) .proof) (typ-¬ₛ (_ isSlice q₂) .proof)
+typ-¬ₛ-anti {τ₁ + τ₂} {(_ + _) isSlice ⊑+ p₁ p₂}   {(_ + _) isSlice ⊑+ q₁ q₂}   (⊑+ h₁ h₂) =
+  ⊑+ (typ-¬ₛ-anti {s₁ = _ isSlice p₁} {_ isSlice q₁} h₁)
+     (typ-¬ₛ-anti {s₁ = _ isSlice p₂} {_ isSlice q₂} h₂)
+typ-¬ₛ-anti {τ₁ × τ₂} {□ isSlice ⊑□}                {□ isSlice ⊑□}                ⊑□ =
+  ⊑× ⊑.refl ⊑.refl
+typ-¬ₛ-anti {τ₁ × τ₂} {□ isSlice ⊑□}                {(_ × _) isSlice ⊑× q₁ q₂}   ⊑□ =
+  ⊑× (typ-¬ₛ (_ isSlice q₁) .proof) (typ-¬ₛ (_ isSlice q₂) .proof)
+typ-¬ₛ-anti {τ₁ × τ₂} {(_ × _) isSlice ⊑× p₁ p₂}   {(_ × _) isSlice ⊑× q₁ q₂}   (⊑× h₁ h₂) =
+  ⊑× (typ-¬ₛ-anti {s₁ = _ isSlice p₁} {_ isSlice q₁} h₁)
+     (typ-¬ₛ-anti {s₁ = _ isSlice p₂} {_ isSlice q₂} h₂)
+typ-¬ₛ-anti {τ₁ ⇒ τ₂} {□ isSlice ⊑□}                {□ isSlice ⊑□}                ⊑□ =
+  ⊑⇒ ⊑.refl ⊑.refl
+typ-¬ₛ-anti {τ₁ ⇒ τ₂} {□ isSlice ⊑□}                {(_ ⇒ _) isSlice ⊑⇒ q₁ q₂}   ⊑□ =
+  ⊑⇒ (typ-¬ₛ (_ isSlice q₁) .proof) (typ-¬ₛ (_ isSlice q₂) .proof)
+typ-¬ₛ-anti {τ₁ ⇒ τ₂} {(_ ⇒ _) isSlice ⊑⇒ p₁ p₂}   {(_ ⇒ _) isSlice ⊑⇒ q₁ q₂}   (⊑⇒ h₁ h₂) =
+  ⊑⇒ (typ-¬ₛ-anti {s₁ = _ isSlice p₁} {_ isSlice q₁} h₁)
+     (typ-¬ₛ-anti {s₁ = _ isSlice p₂} {_ isSlice q₂} h₂)
+typ-¬ₛ-anti {∀· τ}    {□ isSlice ⊑□}                {□ isSlice ⊑□}                ⊑□ =
+  ⊑∀ ⊑.refl
+typ-¬ₛ-anti {∀· τ}    {□ isSlice ⊑□}                {(∀· _) isSlice ⊑∀ q}         ⊑□ =
+  ⊑∀ (typ-¬ₛ (_ isSlice q) .proof)
+typ-¬ₛ-anti {∀· τ}    {(∀· _) isSlice ⊑∀ p}         {(∀· _) isSlice ⊑∀ q}         (⊑∀ h) =
+  ⊑∀ (typ-¬ₛ-anti {s₁ = _ isSlice p} {_ isSlice q} h)
 
 instance
   typ-sliceLattice : I.SliceLattice Typ
@@ -267,6 +593,181 @@ instance
     ; ⊓ₛ-distribˡ-⊔ₛ = ⊓ₛ-distribˡ-⊔ₛ'
     ; ¬ₛ_ = typ-¬ₛ
     ; ⊔ₛ-complement = typ-⊔ₛ-complement
-    ; ⊓ₛ-complement = typ-⊓ₛ-complement
-    ; ¬ₛ-cong = λ {a} {s₁} {s₂} → typ-¬ₛ-cong {a} {s₁} {s₂}
+    }
+
+-- Heyting implication on type slices
+typ-⇨ₛ : ∀ {τ : Typ} → ⌊ τ ⌋ → ⌊ τ ⌋ → ⌊ τ ⌋
+typ-⇨ₛ               (□ isSlice ⊑□)     _                   = ⊤ₛ
+typ-⇨ₛ               _                  (□ isSlice ⊑□)      = ↑ ⊑□
+typ-⇨ₛ {*}           (* isSlice ⊑*)     (* isSlice ⊑*)      = ⊤ₛ
+typ-⇨ₛ {⟨ _ ⟩}       (_ isSlice ⊑Var)   (_ isSlice ⊑Var)    = ⊤ₛ
+typ-⇨ₛ {τ₁ + τ₂}     (_ isSlice ⊑+ p₁ p₂) (_ isSlice ⊑+ q₁ q₂) =
+  let r₁ = typ-⇨ₛ (↑ p₁) (↑ q₁)
+      r₂ = typ-⇨ₛ (↑ p₂) (↑ q₂)
+  in ↑ (⊑+ (r₁ .proof) (r₂ .proof))
+typ-⇨ₛ {τ₁ × τ₂}     (_ isSlice ⊑× p₁ p₂) (_ isSlice ⊑× q₁ q₂) =
+  let r₁ = typ-⇨ₛ (↑ p₁) (↑ q₁)
+      r₂ = typ-⇨ₛ (↑ p₂) (↑ q₂)
+  in ↑ (⊑× (r₁ .proof) (r₂ .proof))
+typ-⇨ₛ {τ₁ ⇒ τ₂}     (_ isSlice ⊑⇒ p₁ p₂) (_ isSlice ⊑⇒ q₁ q₂) =
+  let r₁ = typ-⇨ₛ (↑ p₁) (↑ q₁)
+      r₂ = typ-⇨ₛ (↑ p₂) (↑ q₂)
+  in ↑ (⊑⇒ (r₁ .proof) (r₂ .proof))
+typ-⇨ₛ {∀· τ}        (_ isSlice ⊑∀ p) (_ isSlice ⊑∀ q) =
+  let r = typ-⇨ₛ (↑ p) (↑ q)
+  in ↑ (⊑∀ (r .proof))
+
+-- Co-Heyting subtraction on type slices (lifted from _\\t_)
+typ-\\ₛ : ∀ {τ : Typ} → ⌊ τ ⌋ → ⌊ τ ⌋ → ⌊ τ ⌋
+typ-\\ₛ s₁ s₂ = s₁ .↓ \\t s₂ .↓ isSlice \\t-closure (s₁ .proof) (s₂ .proof)
+
+-- Exponential adjunctions for the bi-Heyting structure on type slices
+private
+  -- Heyting adjunction: forward direction (curry)
+  ⇨-curry : ∀ {τ} (w x y : ⌊ τ ⌋) → w ⊓ₛ x ⊑ₛ y → w ⊑ₛ (typ-⇨ₛ x y)
+  ⇨-curry (□ isSlice ⊑□) _ _ _ = ⊑□
+  ⇨-curry w (□ isSlice ⊑□) _ _ = ⊤ₛ-max w
+  ⇨-curry {*} (* isSlice ⊑*) (* isSlice ⊑*) (* isSlice ⊑*) _ = ⊑*
+  ⇨-curry {⟨ n ⟩} (_ isSlice ⊑Var) (_ isSlice ⊑Var) (_ isSlice ⊑Var) _ = ⊑Var
+  ⇨-curry {⟨ n ⟩} (_ isSlice ⊑Var) (_ isSlice ⊑Var) (□ isSlice ⊑□) h with n ≟ℕ n
+  ... | yes refl  = case h of λ ()
+  ... | no contra = ⊥-elim (contra refl)
+  ⇨-curry {_ + _} (_ isSlice ⊑+ p₁ p₂) (_ isSlice ⊑+ q₁ q₂) (_ isSlice ⊑+ r₁ r₂) (⊑+ h₁ h₂) =
+    ⊑+ (⇨-curry (_ isSlice p₁) (_ isSlice q₁) (_ isSlice r₁) h₁)
+       (⇨-curry (_ isSlice p₂) (_ isSlice q₂) (_ isSlice r₂) h₂)
+  ⇨-curry {_ × _} (_ isSlice ⊑× p₁ p₂) (_ isSlice ⊑× q₁ q₂) (_ isSlice ⊑× r₁ r₂) (⊑× h₁ h₂) =
+    ⊑× (⇨-curry (_ isSlice p₁) (_ isSlice q₁) (_ isSlice r₁) h₁)
+       (⇨-curry (_ isSlice p₂) (_ isSlice q₂) (_ isSlice r₂) h₂)
+  ⇨-curry {_ ⇒ _} (_ isSlice ⊑⇒ p₁ p₂) (_ isSlice ⊑⇒ q₁ q₂) (_ isSlice ⊑⇒ r₁ r₂) (⊑⇒ h₁ h₂) =
+    ⊑⇒ (⇨-curry (_ isSlice p₁) (_ isSlice q₁) (_ isSlice r₁) h₁)
+       (⇨-curry (_ isSlice p₂) (_ isSlice q₂) (_ isSlice r₂) h₂)
+  ⇨-curry {∀· _} (_ isSlice ⊑∀ p) (_ isSlice ⊑∀ q) (_ isSlice ⊑∀ r) (⊑∀ h) =
+    ⊑∀ (⇨-curry (_ isSlice p) (_ isSlice q) (_ isSlice r) h)
+
+  -- Heyting adjunction: reverse direction (uncurry)
+  ⇨-uncurry : ∀ {τ} (w x y : ⌊ τ ⌋) → w ⊑ₛ (typ-⇨ₛ x y) → w ⊓ₛ x ⊑ₛ y
+  ⇨-uncurry (□ isSlice ⊑□) x y _ rewrite □⊓-absorb (x .↓) = ⊑□
+  ⇨-uncurry w (□ isSlice ⊑□) y _ rewrite ⊓□-absorb (w .↓) = ⊑□
+  ⇨-uncurry {*} (* isSlice ⊑*) (* isSlice ⊑*) (* isSlice ⊑*) _ = ⊑*
+  ⇨-uncurry {⟨ n ⟩} (_ isSlice ⊑Var) (_ isSlice ⊑Var) (_ isSlice ⊑Var) _ with n ≟ℕ n
+  ... | yes refl  = ⊑Var
+  ... | no contra = ⊥-elim (contra refl)
+  ⇨-uncurry {_ + _} (_ isSlice ⊑+ p₁ p₂) (_ isSlice ⊑+ q₁ q₂) (_ isSlice ⊑+ r₁ r₂) (⊑+ h₁ h₂) =
+    ⊑+ (⇨-uncurry (_ isSlice p₁) (_ isSlice q₁) (_ isSlice r₁) h₁)
+       (⇨-uncurry (_ isSlice p₂) (_ isSlice q₂) (_ isSlice r₂) h₂)
+  ⇨-uncurry {_ × _} (_ isSlice ⊑× p₁ p₂) (_ isSlice ⊑× q₁ q₂) (_ isSlice ⊑× r₁ r₂) (⊑× h₁ h₂) =
+    ⊑× (⇨-uncurry (_ isSlice p₁) (_ isSlice q₁) (_ isSlice r₁) h₁)
+       (⇨-uncurry (_ isSlice p₂) (_ isSlice q₂) (_ isSlice r₂) h₂)
+  ⇨-uncurry {_ ⇒ _} (_ isSlice ⊑⇒ p₁ p₂) (_ isSlice ⊑⇒ q₁ q₂) (_ isSlice ⊑⇒ r₁ r₂) (⊑⇒ h₁ h₂) =
+    ⊑⇒ (⇨-uncurry (_ isSlice p₁) (_ isSlice q₁) (_ isSlice r₁) h₁)
+       (⇨-uncurry (_ isSlice p₂) (_ isSlice q₂) (_ isSlice r₂) h₂)
+  ⇨-uncurry {∀· _} (_ isSlice ⊑∀ p) (_ isSlice ⊑∀ q) (_ isSlice ⊑∀ r) (⊑∀ h) =
+    ⊑∀ (⇨-uncurry (_ isSlice p) (_ isSlice q) (_ isSlice r) h)
+
+typ-⇨-exponential : ∀ {τ : Typ} → Exponential (_⊑ₛ_ {a = τ}) _⊓ₛ_ (typ-⇨ₛ {τ})
+typ-⇨-exponential w x y = ⇨-curry w x y , ⇨-uncurry w x y
+
+private
+  -- Co-Heyting adjunction: forward direction (curry)
+  -- y ⊑ w ⊔ x → y \\ x ⊑ w
+  \\-curry : ∀ {τ} (w x y : ⌊ τ ⌋) → y ⊑ₛ (w ⊔ₛ x) → typ-\\ₛ y x ⊑ₛ w
+  -- y = □: □ \\ x = □ ⊑ w
+  \\-curry _ x (□ isSlice ⊑□) _ rewrite \\t-□ₗ (x .↓) = ⊑□
+  -- w = □ (y non-□): hyp y ⊑ □ ⊔ x = x; goal y \\ x ⊑ □
+  \\-curry (□ isSlice ⊑□) x y hyp
+    rewrite ⊔-identityₗ (x .↓) | ⊑⇒\\t-≡-□ hyp = ⊑□
+  -- x = □ (y, w non-□): hyp y ⊑ w ⊔ □ = w; goal y \\ □ = y ⊑ w
+  \\-curry w (□ isSlice ⊑□) (* isSlice ⊑*) hyp
+    rewrite ⊔-identityᵣ (w .↓) = hyp
+  \\-curry {⟨ n ⟩} w (□ isSlice ⊑□) (_ isSlice ⊑Var) hyp
+    rewrite ⊔-identityᵣ (w .↓) = hyp
+  \\-curry w (□ isSlice ⊑□) ((_ + _) isSlice ⊑+ _ _) hyp
+    rewrite ⊔-identityᵣ (w .↓) = hyp
+  \\-curry w (□ isSlice ⊑□) ((_ × _) isSlice ⊑× _ _) hyp
+    rewrite ⊔-identityᵣ (w .↓) = hyp
+  \\-curry w (□ isSlice ⊑□) ((_ ⇒ _) isSlice ⊑⇒ _ _) hyp
+    rewrite ⊔-identityᵣ (w .↓) = hyp
+  \\-curry w (□ isSlice ⊑□) ((∀· _) isSlice ⊑∀ _) hyp
+    rewrite ⊔-identityᵣ (w .↓) = hyp
+  -- atoms: y = w = x = same atom (handled either via above ⊑□ cases or here)
+  \\-curry {*} (* isSlice ⊑*) (* isSlice ⊑*) (* isSlice ⊑*) _ = ⊑□
+  \\-curry {⟨ n ⟩} (_ isSlice ⊑Var) (_ isSlice ⊑Var) (_ isSlice ⊑Var) _ with n ≟ℕ n
+  ... | yes refl  = ⊑□
+  ... | no contra = ⊥-elim (contra refl)
+  -- compound: recurse via c+-⊑/c×-⊑/c⇒-⊑/c∀-⊑
+  \\-curry {_ + _} (_ isSlice ⊑+ r₁ r₂) (_ isSlice ⊑+ q₁ q₂) (_ isSlice ⊑+ p₁ p₂) (⊑+ h₁ h₂) =
+    c+-⊑ _ _
+      (\\-curry (_ isSlice r₁) (_ isSlice q₁) (_ isSlice p₁) h₁)
+      (\\-curry (_ isSlice r₂) (_ isSlice q₂) (_ isSlice p₂) h₂)
+  \\-curry {_ × _} (_ isSlice ⊑× r₁ r₂) (_ isSlice ⊑× q₁ q₂) (_ isSlice ⊑× p₁ p₂) (⊑× h₁ h₂) =
+    c×-⊑ _ _
+      (\\-curry (_ isSlice r₁) (_ isSlice q₁) (_ isSlice p₁) h₁)
+      (\\-curry (_ isSlice r₂) (_ isSlice q₂) (_ isSlice p₂) h₂)
+  \\-curry {_ ⇒ _} (_ isSlice ⊑⇒ r₁ r₂) (_ isSlice ⊑⇒ q₁ q₂) (_ isSlice ⊑⇒ p₁ p₂) (⊑⇒ h₁ h₂) =
+    c⇒-⊑ _ _
+      (\\-curry (_ isSlice r₁) (_ isSlice q₁) (_ isSlice p₁) h₁)
+      (\\-curry (_ isSlice r₂) (_ isSlice q₂) (_ isSlice p₂) h₂)
+  \\-curry {∀· _} (_ isSlice ⊑∀ r) (_ isSlice ⊑∀ q) (_ isSlice ⊑∀ p) (⊑∀ h) =
+    c∀-⊑ _
+      (\\-curry (_ isSlice r) (_ isSlice q) (_ isSlice p) h)
+
+  -- Helper: invert ⊑ □ to extract the equality
+  ⊑□⇒≡□ : ∀ {α} → α ⊑t □ → α ≡ □
+  ⊑□⇒≡□ ⊑□ = refl
+
+  -- Co-Heyting adjunction: reverse direction (uncurry)
+  -- y \\ x ⊑ w → y ⊑ w ⊔ x
+  \\-uncurry : ∀ {τ} (w x y : ⌊ τ ⌋) → typ-\\ₛ y x ⊑ₛ w → y ⊑ₛ (w ⊔ₛ x)
+  -- y = □
+  \\-uncurry _ _ (□ isSlice ⊑□) _ = ⊑□
+  -- x = □ (y non-□): hyp y \\ □ = y ⊑ w; goal y ⊑ w ⊔ □ = w
+  \\-uncurry w (□ isSlice ⊑□) (* isSlice ⊑*) hyp
+    rewrite ⊔-identityᵣ (w .↓) = hyp
+  \\-uncurry {⟨ n ⟩} w (□ isSlice ⊑□) (_ isSlice ⊑Var) hyp
+    rewrite ⊔-identityᵣ (w .↓) = hyp
+  \\-uncurry w (□ isSlice ⊑□) ((_ + _) isSlice ⊑+ _ _) hyp
+    rewrite ⊔-identityᵣ (w .↓) = hyp
+  \\-uncurry w (□ isSlice ⊑□) ((_ × _) isSlice ⊑× _ _) hyp
+    rewrite ⊔-identityᵣ (w .↓) = hyp
+  \\-uncurry w (□ isSlice ⊑□) ((_ ⇒ _) isSlice ⊑⇒ _ _) hyp
+    rewrite ⊔-identityᵣ (w .↓) = hyp
+  \\-uncurry w (□ isSlice ⊑□) ((∀· _) isSlice ⊑∀ _) hyp
+    rewrite ⊔-identityᵣ (w .↓) = hyp
+  -- w = □ (y, x non-□): hyp y \\ x ≡ □; goal y ⊑ □ ⊔ x = x
+  \\-uncurry (□ isSlice ⊑□) x y hyp
+    rewrite ⊔-identityₗ (x .↓) = \\t-≡-□⇒⊑ (y .↓) (x .↓) (⊑□⇒≡□ hyp)
+  -- atoms: y = w = x = same atom, all non-□
+  \\-uncurry {*} (* isSlice ⊑*) (* isSlice ⊑*) (* isSlice ⊑*) _ = ⊑*
+  \\-uncurry {⟨ n ⟩} (_ isSlice ⊑Var) (_ isSlice ⊑Var) (_ isSlice ⊑Var) _ with n ≟ℕ n
+  ... | yes refl  = ⊑Var
+  ... | no contra = ⊥-elim (contra refl)
+  -- compound: recurse using c+-⊑-inv/etc to extract sub-hypotheses
+  \\-uncurry {_ + _} (_ isSlice ⊑+ r₁ r₂) (_ isSlice ⊑+ q₁ q₂) (_ isSlice ⊑+ p₁ p₂) hyp
+    with c+-⊑-inv _ _ hyp
+  ... | h₁ , h₂ = ⊑+
+      (\\-uncurry (_ isSlice r₁) (_ isSlice q₁) (_ isSlice p₁) h₁)
+      (\\-uncurry (_ isSlice r₂) (_ isSlice q₂) (_ isSlice p₂) h₂)
+  \\-uncurry {_ × _} (_ isSlice ⊑× r₁ r₂) (_ isSlice ⊑× q₁ q₂) (_ isSlice ⊑× p₁ p₂) hyp
+    with c×-⊑-inv _ _ hyp
+  ... | h₁ , h₂ = ⊑×
+      (\\-uncurry (_ isSlice r₁) (_ isSlice q₁) (_ isSlice p₁) h₁)
+      (\\-uncurry (_ isSlice r₂) (_ isSlice q₂) (_ isSlice p₂) h₂)
+  \\-uncurry {_ ⇒ _} (_ isSlice ⊑⇒ r₁ r₂) (_ isSlice ⊑⇒ q₁ q₂) (_ isSlice ⊑⇒ p₁ p₂) hyp
+    with c⇒-⊑-inv _ _ hyp
+  ... | h₁ , h₂ = ⊑⇒
+      (\\-uncurry (_ isSlice r₁) (_ isSlice q₁) (_ isSlice p₁) h₁)
+      (\\-uncurry (_ isSlice r₂) (_ isSlice q₂) (_ isSlice p₂) h₂)
+  \\-uncurry {∀· _} (_ isSlice ⊑∀ r) (_ isSlice ⊑∀ q) (_ isSlice ⊑∀ p) hyp =
+    ⊑∀ (\\-uncurry (_ isSlice r) (_ isSlice q) (_ isSlice p) (c∀-⊑-inv _ hyp))
+
+typ-\\-exponential : ∀ {τ : Typ} → Exponential (λ x y → _⊑ₛ_ {a = τ} y x) _⊔ₛ_ (flip (typ-\\ₛ {τ}))
+typ-\\-exponential w x y = \\-curry w x y , \\-uncurry w x y
+
+instance
+  typ-sliceBiHeyting : I.SliceBiHeyting Typ
+  typ-sliceBiHeyting = record
+    { _⇨ₛ_ = typ-⇨ₛ
+    ; ⇨-exponential = typ-⇨-exponential
+    ; _\\ₛ_ = typ-\\ₛ
+    ; \\-exponential = typ-\\-exponential
     }

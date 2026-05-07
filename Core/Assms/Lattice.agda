@@ -99,8 +99,6 @@ private
 postulate
   assms-¬ₛ : ∀ {Γ : Assms} → ⌊ Γ ⌋ → ⌊ Γ ⌋
   assms-⊔ₛ-complement : ∀ {Γ : Assms} (s : ⌊ Γ ⌋) → (s ⊔ₛ assms-¬ₛ s) ≈ₛ ⊤ₛ {a = Γ}
-  assms-⊓ₛ-complement : ∀ {Γ : Assms} (s : ⌊ Γ ⌋) → (s ⊓ₛ assms-¬ₛ s) ≈ₛ (⊥ₛ' {Γ})
-  assms-¬ₛ-cong : ∀ {Γ : Assms} {s₁ s₂ : ⌊ Γ ⌋} → s₁ ≈ₛ s₂ → assms-¬ₛ s₁ ≈ₛ assms-¬ₛ s₂
 
 instance
   assms-sliceLattice : SliceLattice Assms
@@ -115,6 +113,4 @@ instance
     ; ⊓ₛ-distribˡ-⊔ₛ = ⊓ₛ-distribˡ-⊔ₛ'
     ; ¬ₛ_ = assms-¬ₛ
     ; ⊔ₛ-complement = assms-⊔ₛ-complement
-    ; ⊓ₛ-complement = assms-⊓ₛ-complement
-    ; ¬ₛ-cong = assms-¬ₛ-cong
     }
