@@ -290,29 +290,7 @@ postulate
       → IsCaseBranchPairMin D₁ D₂ σ₁ σ₂ υ
           (ϕ-fst τ D₁ m σ₁ ψ₀) (ϕ-snd τ D₂ m σ₂ ψ₀)
 
--- Postulate: at the descent terminus, the
--- BFP's preferred head pair (ς₁, ς₂) is dominated by ψ₀-min via
--- unmatch+-min. Combined with `fst/snd-unmatch+-min`, this yields
--- ςᵢ ⊑ fst+ₛ' ψ₀-min m / snd+ₛ' ψ₀-min m, the missing context-precision
--- step in the υᵢ ⊑ₛ ϕᵢ chain.
--- Intuition: the descent starts at ⊤ₛ ⊒ unmatch+-min m ς₁ ς₂ and only
--- moves to a strict pred ψ₀' if ψ₀' still covers. Since unmatch+-min m ς₁ ς₂
--- is a "natural" lower bound supporting BFP's coverage, the descent
--- terminus stays above it.
-postulate
-  bfp-heads-fit
-    : ∀ {n} {Γ : Assms} {e₁ e₂ τ₁ τ₂ τ₁' τ₂'} (τ : Typ)
-        (D₁ : n ； (τ₁ ∷ Γ) ⊢ e₁ ↦ τ₁')
-        (D₂ : n ； (τ₂ ∷ Γ) ⊢ e₂ ↦ τ₂')
-        (m : τ ⊔ □ + □ ≡ τ₁ + τ₂) (c : τ₁' ~ τ₂')
-        (υ : ⌊ τ₁' ⊔ τ₂' ⌋)
-      → (bfp : BranchFP {τ = τ} m D₁ D₂ c υ)
-      → (ψ₀ : ⌊ τ ⌋)
-      → Cov τ D₁ D₂ m (BranchFP.σ₁ bfp) (BranchFP.σ₂ bfp) υ ψ₀
-      → unmatch+-min {τ = τ} m (BranchFP.ς₁ bfp) (BranchFP.ς₂ bfp) .↓ ⊑ ψ₀ .↓
-
-
--- Phase 2 
+-- Phase 2
 phase2
   : ∀ {n} {Γ : Assms} {e e₁ e₂ τ τ₁ τ₂ τ₁' τ₂'}
       (D : n ； Γ ⊢ e ↦ τ)
@@ -329,28 +307,17 @@ phase2 {Γ = Γ} {τ = τ} {τ₁ = τ₁} {τ₂ = τ₂} D D₁ D₂ m c υ υ
                     (init-cov τ D₁ D₂ m c υ bfp)
                     (⊏ₛ-wf (⊤ₛ {a = τ}))
 ... | ψ₀-min , cov , no-desc
-  with extract (BranchFP.sub₁ bfp) | extract-σ (BranchFP.sub₁ bfp) | extract-ψ (BranchFP.sub₁ bfp)
-     | extract (BranchFP.sub₂ bfp) | extract-σ (BranchFP.sub₂ bfp) | extract-ψ (BranchFP.sub₂ bfp)
-     | extract-ctx (BranchFP.sub₁ bfp) | extract-ctx (BranchFP.sub₂ bfp)
-... | s₁ | ≡refl | ≡refl | s₂ | ≡refl | ≡refl
-    | ψ-ctx₁ , d₁-ctx , v₁-ctx
-    | ψ-ctx₂ , d₂-ctx , v₂-ctx
-  = _ , _ , _ , mincase-desc {ϕ₁ = ϕ₁} {ϕ₂ = ϕ₂}
+  = _ , _ , _ , mincase-desc {ϕ₁ = ϕ-fst τ D₁ m (BranchFP.σ₁ bfp) ψ₀-min}
+                              {ϕ₂ = ϕ-snd τ D₂ m (BranchFP.σ₂ bfp) ψ₀-min}
                               υ≢□
                               (BranchFP.sub₁ bfp) (BranchFP.sub₂ bfp)
                               (BranchFP.z₁ bfp) (BranchFP.z₂ bfp)
-                              υ₁⊑ϕ₁ υ₂⊑ϕ₂
-                              d₁ d₂
+                              (d-fst τ D₁ m (BranchFP.σ₁ bfp) ψ₀-min)
+                              (d-snd τ D₂ m (BranchFP.σ₂ bfp) ψ₀-min)
                               (cov .cov-prf) sub-scr ψ-min mbpc
   where
-    ϕ₁  = ϕ-fst τ D₁ m (BranchFP.σ₁ bfp) ψ₀-min
-    ϕ₂  = ϕ-snd τ D₂ m (BranchFP.σ₂ bfp) ψ₀-min
-    d₁  = d-fst τ D₁ m (BranchFP.σ₁ bfp) ψ₀-min
-    d₂  = d-snd τ D₂ m (BranchFP.σ₂ bfp) ψ₀-min
     sub-scr-pkg = slice-at-min τ D D₁ D₂ m
                     (BranchFP.σ₁ bfp) (BranchFP.σ₂ bfp) υ ψ₀-min cov no-desc
-    σ₀  = proj₁ sub-scr-pkg
-    γ₀  = proj₁ (proj₂ sub-scr-pkg)
     sub-scr = proj₂ (proj₂ sub-scr-pkg)
     ψ-min = branch-pair-min-at-fp τ D₁ D₂ m
                     (BranchFP.σ₁ bfp) (BranchFP.σ₂ bfp) υ ψ₀-min cov no-desc
@@ -358,22 +325,6 @@ phase2 {Γ = Γ} {τ = τ} {τ₁ = τ₁} {τ₂ = τ₂} D D₁ D₂ m c υ υ
              (fst+ₛ' ψ₀-min m) (snd+ₛ' ψ₀-min m)
              (BranchFP.ς₁ bfp ∷ₛ BranchFP.γ₁' bfp)
              (BranchFP.ς₂ bfp ∷ₛ BranchFP.γ₂' bfp) υ
-    fit : unmatch+-min {τ = τ} m (BranchFP.ς₁ bfp) (BranchFP.ς₂ bfp) .↓ ⊑ ψ₀-min .↓
-    fit = bfp-heads-fit τ D₁ D₂ m c υ bfp ψ₀-min cov
-    ς₁⊑fst : BranchFP.ς₁ bfp .↓ ⊑ fst+ₛ' ψ₀-min m .↓
-    ς₁⊑fst = fst-unmatch+-min τ m (BranchFP.ς₁ bfp) (BranchFP.ς₂ bfp) ψ₀-min fit
-    ς₂⊑snd : BranchFP.ς₂ bfp .↓ ⊑ snd+ₛ' ψ₀-min m .↓
-    ς₂⊑snd = snd-unmatch+-min τ m (BranchFP.ς₁ bfp) (BranchFP.ς₂ bfp) ψ₀-min fit
-    ψ-ctx₁⊑ϕ₁ : ψ-ctx₁ .↓ ⊑ ϕ₁ .↓
-    ψ-ctx₁⊑ϕ₁ = syn-precision (⊑∷ ς₁⊑fst (BranchFP.γ₁' bfp .proof))
-                              (⊑.refl {Exp}) d₁ d₁-ctx
-    ψ-ctx₂⊑ϕ₂ : ψ-ctx₂ .↓ ⊑ ϕ₂ .↓
-    ψ-ctx₂⊑ϕ₂ = syn-precision (⊑∷ ς₂⊑snd (BranchFP.γ₂' bfp .proof))
-                              (⊑.refl {Exp}) d₂ d₂-ctx
-    υ₁⊑ϕ₁ : BranchFP.υ₁ bfp ⊑ₛ ϕ₁
-    υ₁⊑ϕ₁ = ⊑.trans {Typ} v₁-ctx ψ-ctx₁⊑ϕ₁
-    υ₂⊑ϕ₂ : BranchFP.υ₂ bfp ⊑ₛ ϕ₂
-    υ₂⊑ϕ₂ = ⊑.trans {Typ} v₂-ctx ψ-ctx₂⊑ϕ₂
 
 -- Construct a calculus derivation from a typing derivation and type query
 slice

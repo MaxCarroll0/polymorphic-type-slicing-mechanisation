@@ -132,7 +132,6 @@ data _◂_⤳_↦_⊣_ {n : ℕ} {Γ : Assms} : ∀ {e : Exp} {τ : Typ}
              → ⊔-inrₛ c υ₂ ⊑ₛ (υ \\ₛ ⊔-inlₛ c ψ₁)
              -- 'Phase 2'
              -- calculating the scrutinee slice that provide sufficient assumptions to cover the query
-             → υ₁ ⊑ₛ ϕ₁ → υ₂ ⊑ₛ ϕ₂
              → n ； (fst+ₛ' ψ₀ m .↓ ∷ Γ) ⊢ σ₁ .↓ ↦ ϕ₁ .↓
              → n ； (snd+ₛ' ψ₀ m .↓ ∷ Γ) ⊢ σ₂ .↓ ↦ ϕ₂ .↓
              → υ .↓ ⊑ ϕ₁ .↓ ⊔ ϕ₂ .↓ -- (coverage)
@@ -597,7 +596,7 @@ extract' (mincase-desc {τ = τ} {τ₁' = τ₁'} {τ₂' = τ₂'} {ς₁ = ς
                   {γ₁ = γ₁} {γ₂ = γ₂}
                   {ϕ₁ = ϕ₁} {ϕ₂ = ϕ₂}
                   {D = D} {m = m} {D₁ = D₁} {D₂ = D₂} {c = c} {υ = υ}
-                  υ≢□ s₁ s₂ z₁ z₂ υ₁⊑ϕ₁ υ₂⊑ϕ₂ d₁-syn d₂-syn υ⊑ϕ⊔
+                  υ≢□ s₁ s₂ z₁ z₂ d₁-syn d₂-syn υ⊑ϕ⊔
                   s-scr ψ-min (cov , min-cov))
   with extract' s₁ | extract' s₂ | extract' s-scr
 ... | ((σ₁ ⇑ ψ₁e ∈ d₁ ⊒ v₁) , ih₁) , ≡refl , ≡refl
@@ -813,7 +812,7 @@ extract-ctx (mincase-desc {τ = τ} {ς₁ = ς₁} {ς₂ = ς₂}
                     {σ₀ = σ₀} {σ₁ = σ₁} {σ₂ = σ₂}
                     {ϕ₁ = ϕ₁} {ϕ₂ = ϕ₂}
                     {D = D} {m = m} {D₁ = D₁} {D₂ = D₂} {c = c} {υ = υ}
-                    _ _ _ _ _ _ _ _ _ υ⊑ϕ⊔ s-scrut _ (cov , _))
+                    _ _ _ _ _ _ _ υ⊑ϕ⊔ s-scrut _ (cov , _))
   with extract-ctx s-scrut
 ... | ψ₀ , d₀ , v₀ -- (unmatch+-min m ς₁ ς₂) ⊑ ψ₀
   with static-gradual-syn ((γ₀ ⊔ₛ cov .γ-tail) .proof)
@@ -960,7 +959,7 @@ extract-ctx-min (mincase-desc {τ = τ} {ς₁ = ς₁} {ς₂ = ς₂}
                          {γ₀ = γ₀}
                          {σ₀ = σ₀}
                          {D = D} {m = m}
-                         υ≢□ cs₁ cs₂ z₁ z₂ _ _ _ _ _ cs₀ _ (cov , min-cov))
+                         υ≢□ cs₁ cs₂ z₁ z₂ _ _ _ cs₀ _ (cov , min-cov))
                 (↦case d₀' m' db₁' db₂' c'') v Γ'⊑
   with syn-precision Γ'⊑ (σ₀ .proof) D d₀'
 ... | τ₀⊑
