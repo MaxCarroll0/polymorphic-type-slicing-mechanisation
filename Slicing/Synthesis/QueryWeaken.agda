@@ -21,22 +21,17 @@ query-weaken : ∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} {σ υ ψ γ}
     → ∃[ γ' ] D ◂ ψ' ⤳ σ ↦ ψ ⊣ γ'
 
 -- □ case: ψ must be ⊥ₛ, so ψ' = ⊥ₛ
-query-weaken min□ ψ' υ⊑ψ' ψ'⊑ψ
-  with ⊑.antisym {Typ} (⊑.trans {Typ} υ⊑ψ' ψ'⊑ψ) ⊑□
-... | ≡refl with ⊑.antisym {Typ} ψ'⊑ψ ⊑□
-... | ≡refl = _ , min□
+query-weaken {D = D} min□ (□ isSlice ⊑□) ⊑□ ⊑□ = _ , min□
 
 -- * case: query and output are both ⊤ₛ, ψ' must be ⊤ₛ
-query-weaken min* ψ' υ⊑ψ' ψ'⊑ψ
-  with ⊑.antisym {Typ} ψ'⊑ψ (⊑.trans {Typ} (⊤ₛ-max {a = *} ψ') ⊑*)
-... | ≡refl = _ , min*
+query-weaken min* (* isSlice ⊑*) ⊑* ⊑* = _ , min*
 
 -- Var case: output is ⊤ₛ, raise query from υ to ψ'
 query-weaken (minVar {τ' = τ'} p {υ = υ} υ≢□) ψ' υ⊑ψ' ψ'⊑ψ
   = _ , minVar p ψ'≢□
   where
     ψ'≢□ : ψ' .↓ ≢ □
-    ψ'≢□ eq = υ≢□ (⊑.antisym {Typ} (⊑.trans {Typ} υ⊑ψ' (subst (_⊑ _) eq ⊑□)) ⊑□)
+    ψ'≢□ eq = υ≢□ (⊑.antisym {Typ} (⊑.trans {Typ} υ⊑ψ' (subst (_⊑ _) (≡sym eq) ⊑□)) ⊑□)
 
 -- Structural cases: recursively weaken sub-derivations
 -- Λ: query = ∀· υ, raise to ∀· ψ'body
@@ -60,4 +55,5 @@ query-weaken (min<> υ≢□ sub) ψ' υ⊑ψ' ψ'⊑ψ = {!!}
 query-weaken (mindef υ≢□ s-body s-def d-def) ψ' υ⊑ψ' ψ'⊑ψ = {!!}
 query-weaken (minπ₁ υ≢□ sub) ψ' υ⊑ψ' ψ'⊑ψ = {!!}
 query-weaken (minπ₂ υ≢□ sub) ψ' υ⊑ψ' ψ'⊑ψ = {!!}
-query-weaken (mincase υ≢□ s₁ s₂ υ⊑ z₁ z₂ s₁' s₂' s-scr) ψ' υ⊑ψ' ψ'⊑ψ = {!!}
+query-weaken (mincase-cov υ≢□ s₁ s₂ z₁ z₂ υ⊑ s-scr d₁-syn d₂-syn) ψ' υ⊑ψ' ψ'⊑ψ = {!!}
+query-weaken (mincase-desc υ≢□ s₁ s₂ z₁ z₂ υ₁⊑ϕ₁ υ₂⊑ϕ₂ d₁-syn d₂-syn υ⊑ϕ⊔ s-scr ψ-min mbpc) ψ' υ⊑ψ' ψ'⊑ψ = {!!}
