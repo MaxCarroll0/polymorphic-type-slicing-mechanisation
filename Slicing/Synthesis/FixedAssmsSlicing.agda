@@ -2,13 +2,18 @@ open import Data.Nat hiding (_+_; _⊔_; _≟_)
 open import Data.Product using (_,_; proj₁; proj₂; Σ-syntax; ∃-syntax) renaming (_×_ to _∧_)
 open import Data.Sum using (_⊎_; inj₁; inj₂)
 open import Relation.Binary.PropositionalEquality using (_≡_; _≢_; subst; cong) renaming (refl to ≡refl; sym to ≡sym)
-open import Relation.Nullary using (yes; no; ¬_)
+open import Relation.Nullary using (yes; no; ¬_; Dec)
 open import Data.Empty using (⊥-elim)
 open import Data.Maybe using (just)
 open import Data.List using (_∷_)
+open import Data.List.Relation.Unary.Any using (Any; any?; here; there)
+open import Data.List.Membership.Propositional using (_∈_; find)
+open import Data.List.Relation.Unary.All using (All; lookup)
+open import Data.List.Relation.Unary.All.Properties.Core using (¬Any⇒All¬)
 open import Induction.WellFounded using (Acc; acc)
 open import Core
-open import Core.Typ.WellFounded using (⊏ₛ-wf)
+open import Core.Typ.WellFounded
+  using (⊏ₛ-wf; max-strict-slices; max-strict-slices-valid; max-strict-slices-complete)
 open import Semantics.Statics
 open import Semantics.Graduality using (static-gradual-syn)
 
@@ -159,37 +164,91 @@ init-cov {Γ = Γ} {τ₁ = τ₁} {τ₂ = τ₂} τ D₁ D₂ m c υ bfp
                     ((ϕ-snd τ D₂ m (BranchFP.σ₂ bfp) (⊤ₛ {a = τ})) .proof)
     υ⊑ϕ⊔ = ⊑.trans {Typ} (BranchFP.υ⊑ψ⊔ bfp) (⊔-mono-⊑ c' ψ₁⊑ϕ₁⊤ ψ₂⊑ϕ₂⊤)
 
--- Postulate: 1-step strict descent decidability.
--- Intuition: ⌊τ⌋ is a finite distributive lattice; the maximal
--- predecessors of ψ₀ are finite and enumerable. Cov is a decidable
--- Typ-level predicate (⊑t is decidable). A covering strict predecessor
--- exists iff a covering 1-step predecessor exists (by transitivity of ⊏).
-postulate
-  one-step-descent
-    : ∀ {n} {Γ : Assms} {e₁ e₂ τ₁ τ₂ τ₁' τ₂'} (τ : Typ)
-        (D₁ : n ； (τ₁ ∷ Γ) ⊢ e₁ ↦ τ₁')
-        (D₂ : n ； (τ₂ ∷ Γ) ⊢ e₂ ↦ τ₂')
-        (m : τ ⊔ □ + □ ≡ τ₁ + τ₂)
-        (σ₁ : ⌊ e₁ ⌋) (σ₂ : ⌊ e₂ ⌋) (υ : ⌊ τ₁' ⊔ τ₂' ⌋)
-      → (ψ₀ : ⌊ τ ⌋) → Cov τ D₁ D₂ m σ₁ σ₂ υ ψ₀
-      → (∃[ ψ₀' ] (ψ₀' .↓ ⊏ ψ₀ .↓) ∧ Cov τ D₁ D₂ m σ₁ σ₂ υ ψ₀')
-      ⊎ (∀ {ψ₀'} → ψ₀' .↓ ⊏ ψ₀ .↓ → ¬ Cov τ D₁ D₂ m σ₁ σ₂ υ ψ₀')
+-- Decidability of Cov: reduces to decidability of ⊑ at Typ.
+cov-decidable
+  : ∀ {n} {Γ : Assms} {e₁ e₂ τ₁ τ₂ τ₁' τ₂'} (τ : Typ)
+      (D₁ : n ； (τ₁ ∷ Γ) ⊢ e₁ ↦ τ₁')
+      (D₂ : n ； (τ₂ ∷ Γ) ⊢ e₂ ↦ τ₂')
+      (m : τ ⊔ □ + □ ≡ τ₁ + τ₂)
+      (σ₁ : ⌊ e₁ ⌋) (σ₂ : ⌊ e₂ ⌋) (υ : ⌊ τ₁' ⊔ τ₂' ⌋)
+    → (ψ₀ : ⌊ τ ⌋) → Dec (Cov τ D₁ D₂ m σ₁ σ₂ υ ψ₀)
+cov-decidable τ D₁ D₂ m σ₁ σ₂ υ ψ₀
+  with υ .↓ ⊑? ((ϕ-fst τ D₁ m σ₁ ψ₀) .↓ ⊔ (ϕ-snd τ D₂ m σ₂ ψ₀) .↓)
+... | yes p = yes (mkCov p)
+... | no ¬p = no λ cov → ¬p (cov .cov-prf)
+
+-- Cov is monotone in ψ₀: ψ₀' ⊑ ψ₀ ⇒ Cov ψ₀' ⇒ Cov ψ₀.
+cov-mono
+  : ∀ {n} {Γ : Assms} {e₁ e₂ τ₁ τ₂ τ₁' τ₂'} (τ : Typ)
+      (D₁ : n ； (τ₁ ∷ Γ) ⊢ e₁ ↦ τ₁')
+      (D₂ : n ； (τ₂ ∷ Γ) ⊢ e₂ ↦ τ₂')
+      (m : τ ⊔ □ + □ ≡ τ₁ + τ₂) (c : τ₁' ~ τ₂')
+      (σ₁ : ⌊ e₁ ⌋) (σ₂ : ⌊ e₂ ⌋) (υ : ⌊ τ₁' ⊔ τ₂' ⌋)
+      (ψ₀ ψ₀' : ⌊ τ ⌋)
+    → ψ₀' .↓ ⊑ ψ₀ .↓
+    → Cov τ D₁ D₂ m σ₁ σ₂ υ ψ₀'
+    → Cov τ D₁ D₂ m σ₁ σ₂ υ ψ₀
+cov-mono {Γ = Γ} τ D₁ D₂ m c σ₁ σ₂ υ ψ₀ ψ₀' ψ₀'⊑ψ₀ (mkCov υ⊑ϕ⊔')
+  = mkCov (⊑.trans {Typ} υ⊑ϕ⊔' ⊔-mono-step)
+  where
+    fst-mono : (fst+ₛ' ψ₀' m) .↓ ⊑ (fst+ₛ' ψ₀ m) .↓
+    fst-mono = +-proj-fst-mono ψ₀ m ψ₀'⊑ψ₀ (match+ₛ ψ₀' m)
+    snd-mono : (snd+ₛ' ψ₀' m) .↓ ⊑ (snd+ₛ' ψ₀ m) .↓
+    snd-mono = +-proj-snd-mono ψ₀ m ψ₀'⊑ψ₀ (match+ₛ ψ₀' m)
+    ϕ-fst-mono : (ϕ-fst τ D₁ m σ₁ ψ₀') .↓ ⊑ (ϕ-fst τ D₁ m σ₁ ψ₀) .↓
+    ϕ-fst-mono = syn-precision (⊑∷ fst-mono (⊑.refl {Assms} {Γ})) (⊑.refl {Exp})
+                                (d-fst τ D₁ m σ₁ ψ₀) (d-fst τ D₁ m σ₁ ψ₀')
+    ϕ-snd-mono : (ϕ-snd τ D₂ m σ₂ ψ₀') .↓ ⊑ (ϕ-snd τ D₂ m σ₂ ψ₀) .↓
+    ϕ-snd-mono = syn-precision (⊑∷ snd-mono (⊑.refl {Assms} {Γ})) (⊑.refl {Exp})
+                                (d-snd τ D₂ m σ₂ ψ₀) (d-snd τ D₂ m σ₂ ψ₀')
+    c' : (ϕ-fst τ D₁ m σ₁ ψ₀) .↓ ~ (ϕ-snd τ D₂ m σ₂ ψ₀) .↓
+    c' = ~-⊑-down c ((ϕ-fst τ D₁ m σ₁ ψ₀) .proof) ((ϕ-snd τ D₂ m σ₂ ψ₀) .proof)
+    ⊔-mono-step
+      : (ϕ-fst τ D₁ m σ₁ ψ₀') .↓ ⊔ (ϕ-snd τ D₂ m σ₂ ψ₀') .↓
+      ⊑ (ϕ-fst τ D₁ m σ₁ ψ₀)  .↓ ⊔ (ϕ-snd τ D₂ m σ₂ ψ₀)  .↓
+    ⊔-mono-step = ⊔-mono-⊑ c' ϕ-fst-mono ϕ-snd-mono
+
+-- one-step strict descent: enumerate maximal strict predecessors via
+-- max-strict-slices, decide coverage on each via cov-decidable
+one-step-descent
+  : ∀ {n} {Γ : Assms} {e₁ e₂ τ₁ τ₂ τ₁' τ₂'} (τ : Typ)
+      (D₁ : n ； (τ₁ ∷ Γ) ⊢ e₁ ↦ τ₁')
+      (D₂ : n ； (τ₂ ∷ Γ) ⊢ e₂ ↦ τ₂')
+      (m : τ ⊔ □ + □ ≡ τ₁ + τ₂) (c : τ₁' ~ τ₂')
+      (σ₁ : ⌊ e₁ ⌋) (σ₂ : ⌊ e₂ ⌋) (υ : ⌊ τ₁' ⊔ τ₂' ⌋)
+    → (ψ₀ : ⌊ τ ⌋) → Cov τ D₁ D₂ m σ₁ σ₂ υ ψ₀
+    → (∃[ ψ₀' ] (ψ₀' .↓ ⊏ ψ₀ .↓) ∧ Cov τ D₁ D₂ m σ₁ σ₂ υ ψ₀')
+    ⊎ (∀ {ψ₀'} → ψ₀' .↓ ⊏ ψ₀ .↓ → ¬ Cov τ D₁ D₂ m σ₁ σ₂ υ ψ₀')
+one-step-descent τ D₁ D₂ m c σ₁ σ₂ υ ψ₀ cov
+  with any? (cov-decidable τ D₁ D₂ m σ₁ σ₂ υ) (max-strict-slices ψ₀)
+... | yes any-cov =
+        let ψ-max , ψ-max∈ , cov-max = find any-cov
+            ψ-max⊏ψ₀                 = lookup (max-strict-slices-valid ψ₀) ψ-max∈
+        in inj₁ (ψ-max , ψ-max⊏ψ₀ , cov-max)
+... | no ¬any-cov = inj₂ λ {ψ₀'} ψ₀'⊏ψ₀ cov' →
+        let any-≤                   = max-strict-slices-complete ψ₀ ψ₀' ψ₀'⊏ψ₀
+            ψ-max , ψ-max∈ , ψ₀'⊑ψ-max = find any-≤
+            cov-max                  = cov-mono τ D₁ D₂ m c σ₁ σ₂ υ ψ-max ψ₀'
+                                                ψ₀'⊑ψ-max cov'
+            ¬cov-max                 = lookup (¬Any⇒All¬ (max-strict-slices ψ₀) ¬any-cov)
+                                              ψ-max∈
+        in ¬cov-max cov-max
 
 -- Descent loop: well-founded recursion on _⊏_.
 case-descend
   : ∀ {n} {Γ : Assms} {e₁ e₂ τ₁ τ₂ τ₁' τ₂'} (τ : Typ)
       (D₁ : n ； (τ₁ ∷ Γ) ⊢ e₁ ↦ τ₁')
       (D₂ : n ； (τ₂ ∷ Γ) ⊢ e₂ ↦ τ₂')
-      (m : τ ⊔ □ + □ ≡ τ₁ + τ₂)
+      (m : τ ⊔ □ + □ ≡ τ₁ + τ₂) (c : τ₁' ~ τ₂')
       (σ₁ : ⌊ e₁ ⌋) (σ₂ : ⌊ e₂ ⌋) (υ : ⌊ τ₁' ⊔ τ₂' ⌋)
     → (ψ₀ : ⌊ τ ⌋) → Cov τ D₁ D₂ m σ₁ σ₂ υ ψ₀
     → Acc (λ a b → a .↓ ⊏ b .↓) ψ₀
     → ∃[ ψ₀-min ] Cov τ D₁ D₂ m σ₁ σ₂ υ ψ₀-min
                 ∧ (∀ {ψ₀'} → ψ₀' .↓ ⊏ ψ₀-min .↓ → ¬ Cov τ D₁ D₂ m σ₁ σ₂ υ ψ₀')
-case-descend τ D₁ D₂ m σ₁ σ₂ υ ψ₀ cov (acc rs)
-  with one-step-descent τ D₁ D₂ m σ₁ σ₂ υ ψ₀ cov
+case-descend τ D₁ D₂ m c σ₁ σ₂ υ ψ₀ cov (acc rs)
+  with one-step-descent τ D₁ D₂ m c σ₁ σ₂ υ ψ₀ cov
 ... | inj₁ (ψ₀' , ψ₀'⊏ψ₀ , cov') =
-        case-descend τ D₁ D₂ m σ₁ σ₂ υ ψ₀' cov' (rs ψ₀'⊏ψ₀)
+        case-descend τ D₁ D₂ m c σ₁ σ₂ υ ψ₀' cov' (rs ψ₀'⊏ψ₀)
 ... | inj₂ no-descent             = ψ₀ , cov , no-descent
 
 -- Postulate: at the descent terminus ψ₀-min, slicing D at the natural
@@ -265,7 +324,7 @@ phase2
     → ∃[ σ ] ∃[ ψ ] ∃[ γ ]
         (↦case D m D₁ D₂ c) ◂ υ ⤳ σ ↦ ψ ⊣ γ
 phase2 {Γ = Γ} {τ = τ} {τ₁ = τ₁} {τ₂ = τ₂} D D₁ D₂ m c υ υ≢□ bfp
-  with case-descend τ D₁ D₂ m (BranchFP.σ₁ bfp) (BranchFP.σ₂ bfp) υ
+  with case-descend τ D₁ D₂ m c (BranchFP.σ₁ bfp) (BranchFP.σ₂ bfp) υ
                     (⊤ₛ {a = τ})
                     (init-cov τ D₁ D₂ m c υ bfp)
                     (⊏ₛ-wf (⊤ₛ {a = τ}))
@@ -299,9 +358,6 @@ phase2 {Γ = Γ} {τ = τ} {τ₁ = τ₁} {τ₂ = τ₂} D D₁ D₂ m c υ υ
              (fst+ₛ' ψ₀-min m) (snd+ₛ' ψ₀-min m)
              (BranchFP.ς₁ bfp ∷ₛ BranchFP.γ₁' bfp)
              (BranchFP.ς₂ bfp ∷ₛ BranchFP.γ₂' bfp) υ
-    -- Holes 1+2 discharge: chain `υᵢ ⊑ ψ-ctxᵢ` (extract-ctx) with
-    -- `ψ-ctxᵢ ⊑ ϕᵢ` (syn-precision under context bound supplied by
-    -- `bfp-heads-fit` + `fst/snd-unmatch+-min`).
     fit : unmatch+-min {τ = τ} m (BranchFP.ς₁ bfp) (BranchFP.ς₂ bfp) .↓ ⊑ ψ₀-min .↓
     fit = bfp-heads-fit τ D₁ D₂ m c υ bfp ψ₀-min cov
     ς₁⊑fst : BranchFP.ς₁ bfp .↓ ⊑ fst+ₛ' ψ₀-min m .↓
@@ -384,6 +440,7 @@ slice (↦π₂ D m) υ with υ .↓ ≈? □
 ... | no υ≢□ with slice D (unmatch× m ⊥ₛ υ)
 ...   | _ , _ , _ , sub = _ , _ , _ , minπ₂ υ≢□ sub
 
+-- Similar use of graduality to annotated lambdas
 slice (↦def D₁ D₂) υ with υ .↓ ≈? □
 ... | yes eq = _ , _ , _ , subst (λ υ' → ↦def D₁ D₂ ◂ υ' ⤳ ⊥ₛ ↦ ⊥ₛ ⊣ ⊥ₛ)
                                  (≡sym (↓□→⊥ₛ υ eq))
