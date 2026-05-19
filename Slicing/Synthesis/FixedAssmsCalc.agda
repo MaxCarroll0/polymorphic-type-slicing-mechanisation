@@ -136,10 +136,10 @@ data _◂_⤳_↦_⊣_ {n : ℕ} {Γ : Assms} : ∀ {e : Exp} {τ : Typ}
              → n ； (snd+ₛ' ψ₀ m .↓ ∷ Γ) ⊢ σ₂ .↓ ↦ ϕ₂ .↓
              → υ .↓ ⊑ ϕ₁ .↓ ⊔ ϕ₂ .↓ -- (coverage)
              → D ◂ unmatch+-min m ς₁ ς₂ ⤳ σ₀ ↦ ψ₀ ⊣ γ₀
-             → IsCaseBranchPairMin D₁ D₂ σ₁ σ₂ υ ϕ₁ ϕ₂ -- Minimality of the assumption
+             → IsCaseBranchPairMin D₁ D₂ σ₁ σ₂ υ (fst+ₛ' ψ₀ m) (snd+ₛ' ψ₀ m)
              -- 'Phase 3'
-             -- Mutually minimal assumptions for the branch slices in parallel provided externally
-             → (mbpc : MinBranchPairCover D₁ D₂ σ₁ σ₂ ς₁ ς₂ υ) -- TODO: Reference individual minimal contexts γ₁ γ₂ for a more efficient starting point
+             -- outer context (γ-tail) minimality at heads (ς₁, ς₂).
+             → (mbpc : MinBranchPairCover D₁ D₂ σ₁ σ₂ ς₁ ς₂ υ)
              → (↦case D m D₁ D₂ c) ◂ υ ⤳ caseₛ σ₀ σ₁ σ₂
                ↦ (ϕ₁ ⊔~ₛ ϕ₂) {c}
                ⊣ γ₀ ⊔ₛ proj₁ mbpc .γ-tail
@@ -597,7 +597,7 @@ extract' (mincase-desc {τ = τ} {τ₁' = τ₁'} {τ₂' = τ₂'} {ς₁ = ς
                   {ϕ₁ = ϕ₁} {ϕ₂ = ϕ₂}
                   {D = D} {m = m} {D₁ = D₁} {D₂ = D₂} {c = c} {υ = υ}
                   υ≢□ s₁ s₂ z₁ z₂ d₁-syn d₂-syn υ⊑ϕ⊔
-                  s-scr ψ-min (cov , min-cov))
+                  s-scr head-min (cov , min-cov))
   with extract' s₁ | extract' s₂ | extract' s-scr
 ... | ((σ₁ ⇑ ψ₁e ∈ d₁ ⊒ v₁) , ih₁) , ≡refl , ≡refl
     | ((σ₂ ⇑ ψ₂e ∈ d₂ ⊒ v₂) , ih₂) , ≡refl , ≡refl
@@ -663,10 +663,17 @@ extract' (mincase-desc {τ = τ} {τ₁' = τ₁'} {τ₂' = τ₂'} {ς₁ = ς
                       (syn-precision (⊑∷ τ₄⊑τ₂ (⊑.refl {Assms}))
                         (⊑.refl {Exp}) d-body₂' d₂')) e₂⊑
     ... | ≡refl | ≡refl
-      with min-cov (⊑.refl {Assms}) τ₃⊑τ₁ τ₄⊑τ₂ d₁' d₂' v'
-    ... | ς₁⊑τ₃' , ς₂⊑τ₄' , _
+      -- Slicing the case can only shrink the scrutinee (σ₀' ⊑ σ₀), hence
+      -- τ₀-comp ⊑ ψ₀ at the same Γ
+      with τ₃⊑fst ← +-proj-fst-mono ψ₀ m τ₀⊑ψ₀ m'
+         | τ₄⊑snd ← +-proj-snd-mono ψ₀ m τ₀⊑ψ₀ m'
+      with τ₃≡fst , τ₄≡snd ← head-min-witness head-min τ₃⊑fst τ₄⊑snd d₁' d₂' v'
       with ih₀ (↑ p₀ ⇑ ↑ τ₀⊑ ∈ d₀'
-                  ⊒ unmatch+-min-⊑ τ m ς₁ ς₂ τ₀⊑ m' ς₁⊑τ₃' ς₂⊑τ₄') e₀⊑
+                  ⊒ unmatch+-min-⊑ τ m ς₁ ς₂ τ₀⊑ m'
+                      (subst (λ x → ς₁ .↓ ⊑t x) (≡sym τ₃≡fst)
+                         (fst-unmatch+-min τ m ς₁ ς₂ ψ₀ v₀))
+                      (subst (λ x → ς₂ .↓ ⊑t x) (≡sym τ₄≡snd)
+                         (snd-unmatch+-min τ m ς₁ ς₂ ψ₀ v₀))) e₀⊑
     ... | ≡refl = ≡refl
 
 -- Verify the proposed minimal context is a valid context
@@ -771,8 +778,6 @@ extract-ctx (mincase-cov {τ = τ} {ς₁ = ς₁} {ς₂ = ς₂}
                     {σ₀ = σ₀} {σ₁ = σ₁} {σ₂ = σ₂}
                     {D = D} {m = m} {D₁ = D₁} {D₂ = D₂} {c = c} {υ = υ}
                     _ s₁ s₂ _ _ υ⊑ s-scrut _ _)
-  -- Use branch slice extract-ctx to get branch typings at (ςᵢ ∷ γᵢ).
-  -- Lift σ₀, σ₁, σ₂ to combined γ-out via static-gradual-syn and combine via ↦case.
   with extract-ctx s₁ | extract-ctx s₂ | extract-ctx s-scrut
 ... | ψ₁c , d₁ , v₁ -- (ς₁ ∷ γ₁) ⊢ σ₁ ↦ ψ₁c, υ₁ ⊑ ψ₁c
     | ψ₂c , d₂ , v₂
@@ -807,14 +812,14 @@ extract-ctx (mincase-cov {τ = τ} {ς₁ = ς₁} {ς₂ = ς₂}
     υ₂⊑τr = ⊑.trans {Typ} v₂
               (syn-precision (⊑∷ ς₂⊑ γ₂⊑) (⊑.refl {Exp}) dr d₂)
 
-extract-ctx (mincase-desc {τ = τ} {ς₁ = ς₁} {ς₂ = ς₂}
+extract-ctx (mincase-desc {τ = τ} {ς₁ = ς₁} {ς₂ = ς₂} {ψ₀ = ψ₀}
                     {γ₀ = γ₀}
                     {σ₀ = σ₀} {σ₁ = σ₁} {σ₂ = σ₂}
                     {ϕ₁ = ϕ₁} {ϕ₂ = ϕ₂}
                     {D = D} {m = m} {D₁ = D₁} {D₂ = D₂} {c = c} {υ = υ}
                     _ _ _ _ _ _ _ υ⊑ϕ⊔ s-scrut _ (cov , _))
   with extract-ctx s-scrut
-... | ψ₀ , d₀ , v₀ -- (unmatch+-min m ς₁ ς₂) ⊑ ψ₀
+... | ψ₀-ctx , d₀-ctx , v₀-ctx                              -- γ₀ ⊢ σ₀ ↦ ψ₀-ctx
   with static-gradual-syn ((γ₀ ⊔ₛ cov .γ-tail) .proof)
          (σ₀ .proof) D
 ... | τ₀ , d₀' , p₀
@@ -835,12 +840,16 @@ extract-ctx (mincase-desc {τ = τ} {ς₁ = ς₁} {ς₂ = ς₂}
     c'' = ~-⊑-down c pl pr
     γ₀⊑γ-out = ⊑ₛLat.x⊑ₛx⊔ₛy {A = Assms} γ₀ (cov .γ-tail)
     γ-min⊑γ-out = ⊑ₛLat.y⊑ₛx⊔ₛy {A = Assms} γ₀ (cov .γ-tail)
-    q₀  = syn-precision γ₀⊑γ-out (⊑.refl {Exp}) d₀' d₀
-    ς₁⊑τa = ⊑.trans {Typ} (fst-unmatch+-min τ m ς₁ ς₂ ψ₀ v₀)
-              (fst+ₛ'-⊔ ψ₀ m q₀ m')
-    ς₂⊑τb = ⊑.trans {Typ} (snd-unmatch+-min τ m ς₁ ς₂ ψ₀ v₀)
-              (snd+ₛ'-⊔ ψ₀ m q₀ m')
-    -- cov .syn₁ : (ς₁ ∷ γ-tail) ⊢ σ₁ ↦ τ-c1; lift to (τa ∷ γ-out) via syn-precision.
+    ς₁⊑τa : ς₁ .↓ ⊑t τa
+    ς₁⊑τa = ⊑.trans {Typ}
+              (fst-unmatch+-min τ m ς₁ ς₂ ψ₀-ctx v₀-ctx)
+              (fst+ₛ'-⊔ ψ₀-ctx m
+                (syn-precision γ₀⊑γ-out (⊑.refl {Exp}) d₀' d₀-ctx) m')
+    ς₂⊑τb : ς₂ .↓ ⊑t τb
+    ς₂⊑τb = ⊑.trans {Typ}
+              (snd-unmatch+-min τ m ς₁ ς₂ ψ₀-ctx v₀-ctx)
+              (snd+ₛ'-⊔ ψ₀-ctx m
+                (syn-precision γ₀⊑γ-out (⊑.refl {Exp}) d₀' d₀-ctx) m')
     τc1⊑τl = syn-precision (⊑∷ ς₁⊑τa γ-min⊑γ-out) (⊑.refl {Exp}) dl (cov .syn₁)
     τc2⊑τr = syn-precision (⊑∷ ς₂⊑τb γ-min⊑γ-out) (⊑.refl {Exp}) dr (cov .syn₂)
 
@@ -956,20 +965,56 @@ extract-ctx-min (mincase-cov {τ = τ} {ψ₁ = ψ₁} {ψ₂ = ψ₂} {ς₁ = 
       (⊑ₛLat.⊔ₛ-least {A = Assms} {x = γ₀} {y = γ₁} {z = ↑ Γ'⊑} γ₀⊑ γ₁⊑) γ₂⊑
 
 extract-ctx-min (mincase-desc {τ = τ} {ς₁ = ς₁} {ς₂ = ς₂}
+                         {ψ₀ = ψ₀}
                          {γ₀ = γ₀}
-                         {σ₀ = σ₀}
-                         {D = D} {m = m}
-                         υ≢□ cs₁ cs₂ z₁ z₂ _ _ _ cs₀ _ (cov , min-cov))
+                         {σ₀ = σ₀} {σ₁ = σ₁} {σ₂ = σ₂}
+                         {D = D} {m = m} {D₁ = D₁} {D₂ = D₂} {c = c}
+                         υ≢□ cs₁ cs₂ z₁ z₂ _ _ _ cs₀ head-min (cov , min-cov))
                 (↦case d₀' m' db₁' db₂' c'') v Γ'⊑
+  with extract cs₀ | extract-ψ cs₀ | extract-σ cs₀
+... | ec₀ | ≡refl | ≡refl
   with syn-precision Γ'⊑ (σ₀ .proof) D d₀'
 ... | τ₀⊑
+  with syn-precision Γ'⊑ (⊑.refl {Exp}) (ec₀ .syn) d₀'
+... | τ₀⊑ψ₀
   with ⊔-+-⊑ τ₀⊑ m
 ... | τ₃ , τ₄ , m₃ , τ₃⊑τ₁ , τ₄⊑τ₂
   with ≡refl ← ≡trans (≡sym m₃) m'
-  with min-cov Γ'⊑ τ₃⊑τ₁ τ₄⊑τ₂ db₁' db₂' v -- use externally provided minimality proof
-... | ς₁⊑τ₃ , ς₂⊑τ₄ , γ-min⊑Γ'
-  with extract-ctx-min cs₀ d₀' (unmatch+-min-⊑ τ m ς₁ ς₂ τ₀⊑ m' ς₁⊑τ₃ ς₂⊑τ₄) Γ'⊑
+  with static-gradual-syn (⊑∷ τ₃⊑τ₁ (⊑.refl {Assms})) (σ₁ .proof) D₁
+     | static-gradual-syn (⊑∷ τ₄⊑τ₂ (⊑.refl {Assms})) (σ₂ .proof) D₂
+... | τ-fst , d-fst , p-fst | τ-snd , d-snd , p-snd
+  with syn-precision (⊑∷ (⊑.refl {Typ}) Γ'⊑) (⊑.refl {Exp}) d-fst db₁'
+     | syn-precision (⊑∷ (⊑.refl {Typ}) Γ'⊑) (⊑.refl {Exp}) d-snd db₂'
+... | τc1⊑τfst | τc2⊑τsnd
+  with υ-cov-lifted ← ⊑.trans {Typ} v
+                        (⊔-mono-⊑ (~-⊑-down c p-fst p-snd)
+                                   τc1⊑τfst τc2⊑τsnd)
+  with τ₃⊑ψ₀fst ← +-proj-fst-mono ψ₀ m τ₀⊑ψ₀ m'
+     | τ₄⊑ψ₀snd ← +-proj-snd-mono ψ₀ m τ₀⊑ψ₀ m'
+  with τ₃≡ , τ₄≡ ← head-min-witness head-min τ₃⊑ψ₀fst τ₄⊑ψ₀snd d-fst d-snd υ-cov-lifted
+  with ς₁⊑ψ₀fst ← fst-unmatch+-min τ m ς₁ ς₂ ψ₀ (ec₀ .valid)
+     | ς₂⊑ψ₀snd ← snd-unmatch+-min τ m ς₁ ς₂ ψ₀ (ec₀ .valid)
+  with static-gradual-syn (⊑∷ (ς₁ .proof) (⊑.refl {Assms})) (σ₁ .proof) D₁
+     | static-gradual-syn (⊑∷ (ς₂ .proof) (⊑.refl {Assms})) (σ₂ .proof) D₂
+... | τ-ς1Γ , d-ς1Γ , p-ς1Γ | τ-ς2Γ , d-ς2Γ , p-ς2Γ
+  with τc1⊑τ-ς1Γ ← syn-precision (⊑∷ (⊑.refl {Typ}) ((cov .γ-tail) .proof))
+                      (⊑.refl {Exp}) d-ς1Γ (cov .syn₁)
+     | τc2⊑τ-ς2Γ ← syn-precision (⊑∷ (⊑.refl {Typ}) ((cov .γ-tail) .proof))
+                      (⊑.refl {Exp}) d-ς2Γ (cov .syn₂)
+  with υ-cov-ς ← ⊑.trans {Typ} (cov .valid)
+                   (⊔-mono-⊑ (~-⊑-down c p-ς1Γ p-ς2Γ) τc1⊑τ-ς1Γ τc2⊑τ-ς2Γ)
+  with ς₁≡ , ς₂≡ ← head-min-witness head-min ς₁⊑ψ₀fst ς₂⊑ψ₀snd d-ς1Γ d-ς2Γ υ-cov-ς
+  with extract-ctx-min cs₀ d₀'
+         (unmatch+-min-⊑ τ m ς₁ ς₂ τ₀⊑ m'
+            (subst (λ x → ς₁ .↓ ⊑t x) (≡sym τ₃≡)
+              (fst-unmatch+-min τ m ς₁ ς₂ ψ₀ (ec₀ .valid)))
+            (subst (λ x → ς₂ .↓ ⊑t x) (≡sym τ₄≡)
+              (snd-unmatch+-min τ m ς₁ ς₂ ψ₀ (ec₀ .valid)))) Γ'⊑
 ... | γ₀⊑
+  with min-cov Γ'⊑
+         (subst (λ x → _ ； x ∷ _ ⊢ _ ↦ _) (≡trans τ₃≡ (≡sym ς₁≡)) db₁')
+         (subst (λ x → _ ； x ∷ _ ⊢ _ ↦ _) (≡trans τ₄≡ (≡sym ς₂≡)) db₂') v
+... | γ-min⊑Γ'
   = ⊑ₛLat.⊔ₛ-least {A = Assms} {x = γ₀}
       {y = cov .γ-tail}
       {z = ↑ Γ'⊑} γ₀⊑ γ-min⊑Γ'

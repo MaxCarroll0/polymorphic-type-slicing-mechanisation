@@ -251,13 +251,7 @@ case-descend τ D₁ D₂ m c σ₁ σ₂ υ ψ₀ cov (acc rs)
         case-descend τ D₁ D₂ m c σ₁ σ₂ υ ψ₀' cov' (rs ψ₀'⊏ψ₀)
 ... | inj₂ no-descent             = ψ₀ , cov , no-descent
 
--- Postulate: at the descent terminus ψ₀-min, slicing D at the natural
--- query unmatch+-min m (fst+ₛ' ψ₀-min m) (snd+ₛ' ψ₀-min m) yields a
--- scrutinee output equal to ψ₀-min.
--- Intuition: graduality says output ⊒ query; fst-unmatch+-min lifts to
--- ψ₀-min ⊑ ψ₀-real. If ψ₀-real ⊐ ψ₀-min strictly, the slice operator
--- hasn't reached its FP — contradicting descent terminus (which
--- characterises the slice-operator FP modulo coverage).
+-- These postulates are not true, need to be reformulated
 postulate
   slice-at-min
     : ∀ {n} {Γ : Assms} {e e₁ e₂ τ₁ τ₂ τ₁' τ₂'} (τ : Typ)
@@ -271,15 +265,8 @@ postulate
       → ∃[ σ₀ ] ∃[ γ₀ ]
           D ◂ unmatch+-min m (fst+ₛ' ψ₀ m) (snd+ₛ' ψ₀ m) ⤳ σ₀ ↦ ψ₀ ⊣ γ₀
 
--- Postulate: at descent terminus, ϕᵢ(ψ₀-min) is jointly minimal across
--- all covering head-refinements (IsCaseBranchPairMin).
--- Intuition: any smaller heads (τa ⊏ fst+ₛ' ψ₀-min m, τb ⊏ snd+ₛ' …)
--- with covering branch synth (τ-c1, τ-c2) would correspond to a
--- strictly-smaller ψ₀ candidate (via unmatch+-min reconstruction)
--- that still covers — contradicting `no-descent`. Hence
--- fst+ₛ' ψ₀-min m ⊑ τa, giving ϕᵢ ⊑ τ-cᵢ by syn-monotonicity.
 postulate
-  branch-pair-min-at-fp
+  head-min-at-fp
     : ∀ {n} {Γ : Assms} {e₁ e₂ τ₁ τ₂ τ₁' τ₂'} (τ : Typ)
         (D₁ : n ； (τ₁ ∷ Γ) ⊢ e₁ ↦ τ₁')
         (D₂ : n ； (τ₂ ∷ Γ) ⊢ e₂ ↦ τ₂')
@@ -288,7 +275,7 @@ postulate
       → (ψ₀ : ⌊ τ ⌋) → Cov τ D₁ D₂ m σ₁ σ₂ υ ψ₀
       → (∀ {ψ₀'} → ψ₀' .↓ ⊏ ψ₀ .↓ → ¬ Cov τ D₁ D₂ m σ₁ σ₂ υ ψ₀')
       → IsCaseBranchPairMin D₁ D₂ σ₁ σ₂ υ
-          (ϕ-fst τ D₁ m σ₁ ψ₀) (ϕ-snd τ D₂ m σ₂ ψ₀)
+                              (fst+ₛ' ψ₀ m) (snd+ₛ' ψ₀ m)
 
 -- Phase 2
 phase2
@@ -314,13 +301,13 @@ phase2 {Γ = Γ} {τ = τ} {τ₁ = τ₁} {τ₂ = τ₂} D D₁ D₂ m c υ υ
                               (BranchFP.z₁ bfp) (BranchFP.z₂ bfp)
                               (d-fst τ D₁ m (BranchFP.σ₁ bfp) ψ₀-min)
                               (d-snd τ D₂ m (BranchFP.σ₂ bfp) ψ₀-min)
-                              (cov .cov-prf) sub-scr ψ-min mbpc
+                              (cov .cov-prf) sub-scr head-min mbpc
   where
     sub-scr-pkg = slice-at-min τ D D₁ D₂ m
                     (BranchFP.σ₁ bfp) (BranchFP.σ₂ bfp) υ ψ₀-min cov no-desc
     sub-scr = proj₂ (proj₂ sub-scr-pkg)
-    ψ-min = branch-pair-min-at-fp τ D₁ D₂ m
-                    (BranchFP.σ₁ bfp) (BranchFP.σ₂ bfp) υ ψ₀-min cov no-desc
+    head-min = head-min-at-fp τ D₁ D₂ m
+                 (BranchFP.σ₁ bfp) (BranchFP.σ₂ bfp) υ ψ₀-min cov no-desc
     mbpc = min-branch-pair-cover D₁ D₂ (BranchFP.σ₁ bfp) (BranchFP.σ₂ bfp)
              (fst+ₛ' ψ₀-min m) (snd+ₛ' ψ₀-min m)
              (BranchFP.ς₁ bfp ∷ₛ BranchFP.γ₁' bfp)

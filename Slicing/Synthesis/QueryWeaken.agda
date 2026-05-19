@@ -56,4 +56,4 @@ query-weaken (mindef υ≢□ s-body s-def d-def) ψ' υ⊑ψ' ψ'⊑ψ = {!!}
 query-weaken (minπ₁ υ≢□ sub) ψ' υ⊑ψ' ψ'⊑ψ = {!!}
 query-weaken (minπ₂ υ≢□ sub) ψ' υ⊑ψ' ψ'⊑ψ = {!!}
 query-weaken (mincase-cov υ≢□ s₁ s₂ z₁ z₂ υ⊑ s-scr d₁-syn d₂-syn) ψ' υ⊑ψ' ψ'⊑ψ = {!!}
-query-weaken (mincase-desc υ≢□ s₁ s₂ z₁ z₂ υ₁⊑ϕ₁ υ₂⊑ϕ₂ d₁-syn d₂-syn υ⊑ϕ⊔ s-scr ψ-min mbpc) ψ' υ⊑ψ' ψ'⊑ψ = {!!}
+query-weaken (mincase-desc υ≢□ s₁ s₂ z₁ z₂ d₁-syn d₂-syn υ⊑ϕ⊔ s-scr head-min mbpc) ψ' υ⊑ψ' ψ'⊑ψ = {!!}

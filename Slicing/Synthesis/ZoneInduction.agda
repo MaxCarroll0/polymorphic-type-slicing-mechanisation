@@ -5,6 +5,7 @@ open import Data.Product using (_,_; proj₁; proj₂; Σ-syntax; ∃-syntax) re
 open import Relation.Binary.PropositionalEquality using (_≡_; subst) renaming (refl to ≡refl; sym to ≡sym)
 open import Core
 open import Core.Typ.Injection
+open import Core.Typ.Lattice using (typ-¬ₛ-anti)
 
 module ZoneProps {τ₁' τ₂' : Typ} (c : τ₁' ~ τ₂') (υ : ⌊ τ₁' ⊔ τ₂' ⌋) where
 
@@ -26,7 +27,7 @@ module ZoneProps {τ₁' τ₂' : Typ} (c : τ₁' ~ τ₂') (υ : ⌊ τ₁' �
                       υ                      ∎
         Rψ₂⊑¬new = begin R c ψ₂                 ⊑⟨ ih ⟩
                          υ ⊓ₛ (¬ₛ (L c ψ₁_prev)) ⊑⟨ x⊓ₛy⊑ₛy υ (¬ₛ (L c ψ₁_prev)) ⟩
-                         ¬ₛ (L c ψ₁_prev)        ⊑⟨ ¬ₛ-anti ψ₁'⊑prev ⟩
+                         ¬ₛ (L c ψ₁_prev)        ⊑⟨ typ-¬ₛ-anti ψ₁'⊑prev ⟩
                          ¬ₛ (L c ψ₁')            ∎
     in ⊔ₛ-least {x = R c ψ₂} {y = rhs} {z = rhs}
       (⊓ₛ-greatest {x = R c ψ₂} {y = υ} {z = ¬ₛ (L c ψ₁')} Rψ₂⊑υ Rψ₂⊑¬new)
