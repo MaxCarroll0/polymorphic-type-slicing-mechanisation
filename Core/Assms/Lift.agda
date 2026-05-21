@@ -20,6 +20,11 @@ hdₛ (_ isSlice (⊑∷ h _)) = _ isSlice h
 tlₛ : ∀ {τ : Typ} {Γ : Assms} → ⌊ τ ∷ Γ ⌋ → ⌊ Γ ⌋
 tlₛ (_ isSlice (⊑∷ _ t)) = _ isSlice t
 
+-- Decomposition: γₛ : ⌊ τ ∷ Γ ⌋ propositionally equals (hd ∷ tl) on the carrier.
+-- Used to lift derivations parameterised by γₛ .↓ to ones at (hdₛ γₛ .↓ ∷ tlₛ γₛ .↓).
+cons-decompₛ : ∀ {τ : Typ} {Γ : Assms} (γₛ : ⌊ τ ∷ Γ ⌋) → γₛ .↓ ≡ hdₛ γₛ .↓ ∷ tlₛ γₛ .↓
+cons-decompₛ (_ isSlice (⊑∷ _ _)) = refl
+
 -- Head/tail respect precision
 hdₛ-⊑ : ∀ {τ Γ τ' Γ'} (γₛ : ⌊ τ ∷ Γ ⌋) → γₛ .↓ ⊑a (τ' ∷ Γ') → hdₛ γₛ .↓ ⊑ τ'
 hdₛ-⊑ (_ isSlice (⊑∷ _ _)) (⊑∷ h _) = h
