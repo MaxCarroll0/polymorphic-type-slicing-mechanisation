@@ -1,6 +1,6 @@
 open import Data.Nat hiding (_+_; _⊔_; _≟_)
 open import Data.Product using (_,_; proj₁; proj₂; Σ-syntax; ∃-syntax) renaming (_×_ to _∧_)
-open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; subst)
+open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; trans; subst)
 open import Data.List using (_∷_)
 open import Core
 open import Core.Typ.Lift
@@ -405,50 +405,75 @@ mutual
   extract-pos-minimal (minAλ: m _ _ _) s' s'⊑ = {!TODO: minAλ: — eq-induced type bridging via cod⇒ₛ!}
   -- minAλ⇒ and related binder cases are deferred (see note at minAλ:).
   extract-pos-minimal (minAλ⇒ {τ = τ} {τ₁ = τ₁} {τ₂ = τ₂} {eq = eq} m) s' s'⊑ = {!TODO: minAλ⇒ binder handling — TODO!}
-  extract-pos-minimal (minA&₁ {τ = τ} {τ₁ = τ₁} {τ₂ = τ₂} {eq = eq} m) s' (κ⊑ , γ⊑ , υ⊑)
-    with s' .ana-κ                   | κ⊑                  | s' .ana-valid
-  ... | _ isSlice (⊑&₁ p q)          | ⊑&₁ p' q'          | _ , _ , a&₁ match-eq inner-cls' d₂' =
-        let υ-fst-s' : ⌊ τ₁ ⌋
-            υ-fst-s' = fst×ₛ' (s' .ana-υ_outer) eq
-            inner-υ-m : ⌊ τ₁ ⌋
-            inner-υ-m = ana-υ_outer (extract-pos m)
-            inner-υ⊑ : inner-υ-m .↓ ⊑ υ-fst-s' .↓
-            inner-υ⊑ = unmatch×-fst (extract-pos m .ana-υ_outer) (s' .ana-υ_outer) υ⊑ match-eq
-                         (match×ₛ (s' .ana-υ_outer) eq)
-            inner-s' : AnaPosSlice _ _
+  extract-pos-minimal (minA&₁ {τ = τ} {τ₁ = τ₁} {τ₂ = τ₂} {eq = eq} m) s' s'⊑ =
+    {!TODO: minA&₁ — type mismatch on pair decomposition!}
+  extract-pos-minimal (minA&₂ {τ = τ} {τ₁ = τ₁} {τ₂ = τ₂} {eq = eq} m) s' s'⊑ =
+    {!TODO: minA&₂ — type mismatch on pair decomposition!}
+  -- minAι₁: outer aι₁ eq Cls'. extract.υ_outer = unmatch+-min eq υ-fst ⊥ where
+  -- υ-fst = ana-υ_outer (extract-pos m). Decompose s'.ana-υ_outer's precision
+  -- via ⊔-+-⊑ to get τ_a ⊑ τ₁ with s'.ana-υ_outer.↓ ⊔ □+□ ≡ τ_a + τ_b. Unify
+  -- with s'-match-eq's components via trans+sym. Build inner-s' for Cls' with
+  -- υ_outer = ↑ τ_a⊑ (a slice of τ₁ whose .↓ = τ_a). Apply IH; lift the υ_outer
+  -- conclusion back via unmatch+-min-⊑.
+  extract-pos-minimal (minAι₁ {τ = τ} {τ₁ = τ₁} {τ₂ = τ₂} {eq = eq} {Cls' = Cls'} m) s' (κ⊑ , γ⊑ , υ⊑)
+    with s' .ana-κ                   | κ⊑           | s' .ana-valid
+  ... | _ isSlice (⊑ι₁ p)            | ⊑ι₁ κ-body⊑ | _ , _ , aι₁ s'-match-eq s'-inner-cls'
+      with ⊔-+-⊑ (s' .ana-υ_outer .proof) eq
+  ... | _ , _ , derived-eq , τ_a⊑ , τ_b⊑
+      with refl ← trans (sym derived-eq) s'-match-eq =
+        let inner-s' : AnaPosSlice Cls' _
             inner-s' = record
-              { κ       = ↑ p'
+              { κ       = ↑ p
               ; γ       = s' .ana-γ
-              ; υ_outer = υ-fst-s'
+              ; υ_outer = ↑ τ_a⊑
               ; focus   = s' .ana-focus
               ; focus⊒  = s' .ana-focus⊒
-              ; valid   = _ , _ , inner-cls'
+              ; valid   = _ , _ , s'-inner-cls'
               }
-            ih-κ , ih-γ , ih-υ = extract-pos-minimal m inner-s' (p' , γ⊑ , inner-υ⊑)
-        in ⊑&₁ ih-κ q' , ih-γ , ih-υ
-  extract-pos-minimal (minA&₂ {τ = τ} {τ₁ = τ₁} {τ₂ = τ₂} {eq = eq} m) s' (κ⊑ , γ⊑ , υ⊑)
-    with s' .ana-κ                   | κ⊑                  | s' .ana-valid
-  ... | _ isSlice (⊑&₂ p q)          | ⊑&₂ p' q'          | _ , _ , a&₂ match-eq d₁' inner-cls' =
-        let υ-snd-s' : ⌊ τ₂ ⌋
-            υ-snd-s' = snd×ₛ (s' .ana-υ_outer) eq
-            inner-υ-m : ⌊ τ₂ ⌋
-            inner-υ-m = ana-υ_outer (extract-pos m)
-            inner-υ⊑ : inner-υ-m .↓ ⊑ υ-snd-s' .↓
-            inner-υ⊑ = unmatch×-snd (extract-pos m .ana-υ_outer) (s' .ana-υ_outer) υ⊑ match-eq
-                         (match×ₛ (s' .ana-υ_outer) eq)
-            inner-s' : AnaPosSlice _ _
+            ih-υ-hyp : ↑ τ_a⊑ ⊑ₛ ana-υ_outer (extract-pos m)
+            ih-υ-hyp =
+              let outer-υ-slice = ana-υ_outer (extract-pos (minAι₁ {eq = eq} m))
+                  outer-match-eq = match+ₛ outer-υ-slice eq
+                  fst-step : _ ⊑t (fst+ₛ' outer-υ-slice eq) .↓
+                  fst-step = +-proj-fst-mono outer-υ-slice eq υ⊑ s'-match-eq
+                  bridge : (ana-υ_outer (extract-pos m)) .↓ ≡ (fst+ₛ' outer-υ-slice eq) .↓
+                  bridge = unmatch+-min-≡-fst {τ = τ} eq (ana-υ_outer (extract-pos m)) ⊥ₛ outer-match-eq
+              in subst (_ ⊑t_) (sym bridge) fst-step
+            ih-κ , ih-γ , ih-υ = extract-pos-minimal m inner-s' (κ-body⊑ , γ⊑ , ih-υ-hyp)
+            outer-υ⊑ : ana-υ_outer (extract-pos (minAι₁ {eq = eq} m)) .↓ ⊑t s' .ana-υ_outer .↓
+            outer-υ⊑ = unmatch+-min-⊑ τ eq (ana-υ_outer (extract-pos m)) (⊥ₛ {a = τ₂})
+                         (s' .ana-υ_outer .proof) s'-match-eq ih-υ ⊑□
+        in ⊑ι₁ ih-κ , ih-γ , outer-υ⊑
+  -- minAι₂: symmetric to minAι₁ (right component of sum).
+  extract-pos-minimal (minAι₂ {τ = τ} {τ₁ = τ₁} {τ₂ = τ₂} {eq = eq} {Cls' = Cls'} m) s' (κ⊑ , γ⊑ , υ⊑)
+    with s' .ana-κ                   | κ⊑           | s' .ana-valid
+  ... | _ isSlice (⊑ι₂ q)            | ⊑ι₂ κ-body⊑ | _ , _ , aι₂ s'-match-eq s'-inner-cls'
+      with ⊔-+-⊑ (s' .ana-υ_outer .proof) eq
+  ... | _ , _ , derived-eq , τ_a⊑ , τ_b⊑
+      with refl ← trans (sym derived-eq) s'-match-eq =
+        let inner-s' : AnaPosSlice Cls' _
             inner-s' = record
-              { κ       = ↑ q'
+              { κ       = ↑ q
               ; γ       = s' .ana-γ
-              ; υ_outer = υ-snd-s'
+              ; υ_outer = ↑ τ_b⊑
               ; focus   = s' .ana-focus
               ; focus⊒  = s' .ana-focus⊒
-              ; valid   = _ , _ , inner-cls'
+              ; valid   = _ , _ , s'-inner-cls'
               }
-            ih-κ , ih-γ , ih-υ = extract-pos-minimal m inner-s' (q' , γ⊑ , inner-υ⊑)
-        in ⊑&₂ p' ih-κ , ih-γ , ih-υ
-  extract-pos-minimal (minAι₁ m) s' s'⊑ = {!TODO: minAι₁ — switch unmatch+ → unmatch+-min!}
-  extract-pos-minimal (minAι₂ m) s' s'⊑ = {!TODO: minAι₂ — switch unmatch+ → unmatch+-min!}
+            ih-υ-hyp : ↑ τ_b⊑ ⊑ₛ ana-υ_outer (extract-pos m)
+            ih-υ-hyp =
+              let outer-υ-slice = ana-υ_outer (extract-pos (minAι₂ {eq = eq} m))
+                  outer-match-eq = match+ₛ outer-υ-slice eq
+                  snd-step : _ ⊑t (snd+ₛ' outer-υ-slice eq) .↓
+                  snd-step = +-proj-snd-mono outer-υ-slice eq υ⊑ s'-match-eq
+                  bridge : (ana-υ_outer (extract-pos m)) .↓ ≡ (snd+ₛ' outer-υ-slice eq) .↓
+                  bridge = unmatch+-min-≡-snd {τ = τ} eq ⊥ₛ (ana-υ_outer (extract-pos m)) outer-match-eq
+              in subst (_ ⊑t_) (sym bridge) snd-step
+            ih-κ , ih-γ , ih-υ = extract-pos-minimal m inner-s' (κ-body⊑ , γ⊑ , ih-υ-hyp)
+            outer-υ⊑ : ana-υ_outer (extract-pos (minAι₂ {eq = eq} m)) .↓ ⊑t s' .ana-υ_outer .↓
+            outer-υ⊑ = unmatch+-min-⊑ τ eq (⊥ₛ {a = τ₁}) (ana-υ_outer (extract-pos m))
+                         (s' .ana-υ_outer .proof) s'-match-eq ⊑□ ih-υ
+        in ⊑ι₂ ih-κ , ih-γ , outer-υ⊑
   -- minAcase₁ (restructured): scrutinee + sibling sliced to □, inner Cls'
   -- lifted to (□ ∷ tlₛ). Pattern-match e/e' precision as ⊑□ to force them
   -- to □; then D' = ↦□ and eq' = refl pin the binder types to □.
