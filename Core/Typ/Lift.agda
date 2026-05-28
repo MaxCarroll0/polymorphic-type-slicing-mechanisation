@@ -564,39 +564,193 @@ unmatch+-min-⊑ (τ_a + (c × d)) refl s₁@(_ isSlice ⊑□) s₂@(_ isSlice 
 unmatch+-min-⊑ (τ_a + (c ⇒ d)) refl s₁@(_ isSlice ⊑□) s₂@(_ isSlice ⊑⇒ _ _) ⊑□ refl _ ()
 unmatch+-min-⊑ (τ_a + (∀· c)) refl s₁@(_ isSlice ⊑□) s₂@(_ isSlice ⊑∀ _) ⊑□ refl _ ()
 
-postulate
-  unmatch+-min-≡-fst : ∀ {τ τ₁ τ₂} (m : τ ⊔ □ + □ ≡ τ₁ + τ₂)
-                       (s₁ : ⌊ τ₁ ⌋) (s₂ : ⌊ τ₂ ⌋)
-                     → ∀ {a b} → (unmatch+-min {τ} m s₁ s₂) .↓ ⊔ □ + □ ≡ a + b → s₁ .↓ ≡ a
-  unmatch+-min-≡-snd : ∀ {τ τ₁ τ₂} (m : τ ⊔ □ + □ ≡ τ₁ + τ₂)
-                       (s₁ : ⌊ τ₁ ⌋) (s₂ : ⌊ τ₂ ⌋)
-                     → ∀ {a b} → (unmatch+-min {τ} m s₁ s₂) .↓ ⊔ □ + □ ≡ a + b → s₂ .↓ ≡ b
-
-  -- unmatch×-min lemmas (analogues of unmatch+-min)
-  unmatch×-min-⊑ : ∀ (τ : Typ) {τ₁ τ₂ τ' τ₃' τ₄'} (m : τ ⊔ □ × □ ≡ τ₁ × τ₂)
+unmatch×-min-⊑ : ∀ (τ : Typ) {τ₁ τ₂ τ' τ₃' τ₄'} (m : τ ⊔ □ × □ ≡ τ₁ × τ₂)
     (s₁ : ⌊ τ₁ ⌋) (s₂ : ⌊ τ₂ ⌋)
     → τ' ⊑t τ → τ' ⊔ (□ × □) ≡ τ₃' × τ₄'
     → s₁ .↓ ⊑t τ₃' → s₂ .↓ ⊑t τ₄'
     → (unmatch×-min {τ} m s₁ s₂) .↓ ⊑t τ'
-  ×-proj-fst-mono : ∀ {τ τ₁ τ₂ τ₀ τ_a τ_b} (ψ₀ : ⌊ τ ⌋)
-    (m : τ ⊔ □ × □ ≡ τ₁ × τ₂) → τ₀ ⊑t ψ₀ .↓ → τ₀ ⊔ □ × □ ≡ τ_a × τ_b
-    → τ_a ⊑t (fst×ₛ' ψ₀ m) .↓
-  ×-proj-snd-mono : ∀ {τ τ₁ τ₂ τ₀ τ_a τ_b} (ψ₀ : ⌊ τ ⌋)
-    (m : τ ⊔ □ × □ ≡ τ₁ × τ₂) → τ₀ ⊑t ψ₀ .↓ → τ₀ ⊔ □ × □ ≡ τ_a × τ_b
-    → τ_b ⊑t (snd×ₛ ψ₀ m) .↓
+unmatch×-min-⊑ □ refl (□ isSlice ⊑□) (□ isSlice ⊑□) _ _ _ _ = ⊑□
+unmatch×-min-⊑ (_ × _) refl (□ isSlice ⊑□) (□ isSlice ⊑□) _ _ _ _ = ⊑□
+unmatch×-min-⊑ (Typ.* × τ_b) refl s₁@(_ isSlice ⊑*) s₂ (⊑× {τ₁ = a'} {τ₂ = b'} _ _) m'-eq s₁⊑ s₂⊑
+  rewrite subst-↓-pre (⊔t-zeroᵣ {Typ.*}) s₁ | subst-↓-pre (⊔t-zeroᵣ {τ_b}) s₂
+        | ⊔t-zeroᵣ {a'} | ⊔t-zeroᵣ {b'}
+  with refl ← m'-eq = ⊑× s₁⊑ s₂⊑
+unmatch×-min-⊑ (⟨ n ⟩ × τ_b) refl s₁@(_ isSlice ⊑Var) s₂ (⊑× {τ₁ = a'} {τ₂ = b'} _ _) m'-eq s₁⊑ s₂⊑
+  rewrite subst-↓-pre (⊔t-zeroᵣ {⟨ n ⟩}) s₁ | subst-↓-pre (⊔t-zeroᵣ {τ_b}) s₂
+        | ⊔t-zeroᵣ {a'} | ⊔t-zeroᵣ {b'}
+  with refl ← m'-eq = ⊑× s₁⊑ s₂⊑
+unmatch×-min-⊑ ((c + d) × τ_b) refl s₁@(_ isSlice ⊑+ _ _) s₂ (⊑× {τ₁ = a'} {τ₂ = b'} _ _) m'-eq s₁⊑ s₂⊑
+  rewrite subst-↓-pre (⊔t-zeroᵣ {c + d}) s₁ | subst-↓-pre (⊔t-zeroᵣ {τ_b}) s₂
+        | ⊔t-zeroᵣ {a'} | ⊔t-zeroᵣ {b'}
+  with refl ← m'-eq = ⊑× s₁⊑ s₂⊑
+unmatch×-min-⊑ ((c × d) × τ_b) refl s₁@(_ isSlice ⊑× _ _) s₂ (⊑× {τ₁ = a'} {τ₂ = b'} _ _) m'-eq s₁⊑ s₂⊑
+  rewrite subst-↓-pre (⊔t-zeroᵣ {c × d}) s₁ | subst-↓-pre (⊔t-zeroᵣ {τ_b}) s₂
+        | ⊔t-zeroᵣ {a'} | ⊔t-zeroᵣ {b'}
+  with refl ← m'-eq = ⊑× s₁⊑ s₂⊑
+unmatch×-min-⊑ ((c ⇒ d) × τ_b) refl s₁@(_ isSlice ⊑⇒ _ _) s₂ (⊑× {τ₁ = a'} {τ₂ = b'} _ _) m'-eq s₁⊑ s₂⊑
+  rewrite subst-↓-pre (⊔t-zeroᵣ {c ⇒ d}) s₁ | subst-↓-pre (⊔t-zeroᵣ {τ_b}) s₂
+        | ⊔t-zeroᵣ {a'} | ⊔t-zeroᵣ {b'}
+  with refl ← m'-eq = ⊑× s₁⊑ s₂⊑
+unmatch×-min-⊑ ((∀· c) × τ_b) refl s₁@(_ isSlice ⊑∀ _) s₂ (⊑× {τ₁ = a'} {τ₂ = b'} _ _) m'-eq s₁⊑ s₂⊑
+  rewrite subst-↓-pre (⊔t-zeroᵣ {∀· c}) s₁ | subst-↓-pre (⊔t-zeroᵣ {τ_b}) s₂
+        | ⊔t-zeroᵣ {a'} | ⊔t-zeroᵣ {b'}
+  with refl ← m'-eq = ⊑× s₁⊑ s₂⊑
+unmatch×-min-⊑ (τ_a × Typ.*) refl s₁@(_ isSlice ⊑□) s₂@(_ isSlice ⊑*) (⊑× {τ₁ = a'} {τ₂ = b'} _ _) m'-eq s₁⊑ s₂⊑
+  rewrite subst-↓-pre (⊔t-zeroᵣ {τ_a}) s₁ | subst-↓-pre (⊔t-zeroᵣ {Typ.*}) s₂
+        | ⊔t-zeroᵣ {a'} | ⊔t-zeroᵣ {b'}
+  with refl ← m'-eq = ⊑× s₁⊑ s₂⊑
+unmatch×-min-⊑ (τ_a × ⟨ n ⟩) refl s₁@(_ isSlice ⊑□) s₂@(_ isSlice ⊑Var) (⊑× {τ₁ = a'} {τ₂ = b'} _ _) m'-eq s₁⊑ s₂⊑
+  rewrite subst-↓-pre (⊔t-zeroᵣ {τ_a}) s₁ | subst-↓-pre (⊔t-zeroᵣ {⟨ n ⟩}) s₂
+        | ⊔t-zeroᵣ {a'} | ⊔t-zeroᵣ {b'}
+  with refl ← m'-eq = ⊑× s₁⊑ s₂⊑
+unmatch×-min-⊑ (τ_a × (c + d)) refl s₁@(_ isSlice ⊑□) s₂@(_ isSlice ⊑+ _ _) (⊑× {τ₁ = a'} {τ₂ = b'} _ _) m'-eq s₁⊑ s₂⊑
+  rewrite subst-↓-pre (⊔t-zeroᵣ {τ_a}) s₁ | subst-↓-pre (⊔t-zeroᵣ {c + d}) s₂
+        | ⊔t-zeroᵣ {a'} | ⊔t-zeroᵣ {b'}
+  with refl ← m'-eq = ⊑× s₁⊑ s₂⊑
+unmatch×-min-⊑ (τ_a × (c × d)) refl s₁@(_ isSlice ⊑□) s₂@(_ isSlice ⊑× _ _) (⊑× {τ₁ = a'} {τ₂ = b'} _ _) m'-eq s₁⊑ s₂⊑
+  rewrite subst-↓-pre (⊔t-zeroᵣ {τ_a}) s₁ | subst-↓-pre (⊔t-zeroᵣ {c × d}) s₂
+        | ⊔t-zeroᵣ {a'} | ⊔t-zeroᵣ {b'}
+  with refl ← m'-eq = ⊑× s₁⊑ s₂⊑
+unmatch×-min-⊑ (τ_a × (c ⇒ d)) refl s₁@(_ isSlice ⊑□) s₂@(_ isSlice ⊑⇒ _ _) (⊑× {τ₁ = a'} {τ₂ = b'} _ _) m'-eq s₁⊑ s₂⊑
+  rewrite subst-↓-pre (⊔t-zeroᵣ {τ_a}) s₁ | subst-↓-pre (⊔t-zeroᵣ {c ⇒ d}) s₂
+        | ⊔t-zeroᵣ {a'} | ⊔t-zeroᵣ {b'}
+  with refl ← m'-eq = ⊑× s₁⊑ s₂⊑
+unmatch×-min-⊑ (τ_a × (∀· c)) refl s₁@(_ isSlice ⊑□) s₂@(_ isSlice ⊑∀ _) (⊑× {τ₁ = a'} {τ₂ = b'} _ _) m'-eq s₁⊑ s₂⊑
+  rewrite subst-↓-pre (⊔t-zeroᵣ {τ_a}) s₁ | subst-↓-pre (⊔t-zeroᵣ {∀· c}) s₂
+        | ⊔t-zeroᵣ {a'} | ⊔t-zeroᵣ {b'}
+  with refl ← m'-eq = ⊑× s₁⊑ s₂⊑
+unmatch×-min-⊑ (Typ.* × τ_b) refl s₁@(_ isSlice ⊑*) s₂ ⊑□ refl () _
+unmatch×-min-⊑ (⟨ n ⟩ × τ_b) refl s₁@(_ isSlice ⊑Var) s₂ ⊑□ refl () _
+unmatch×-min-⊑ ((c + d) × τ_b) refl s₁@(_ isSlice ⊑+ _ _) s₂ ⊑□ refl () _
+unmatch×-min-⊑ ((c × d) × τ_b) refl s₁@(_ isSlice ⊑× _ _) s₂ ⊑□ refl () _
+unmatch×-min-⊑ ((c ⇒ d) × τ_b) refl s₁@(_ isSlice ⊑⇒ _ _) s₂ ⊑□ refl () _
+unmatch×-min-⊑ ((∀· c) × τ_b) refl s₁@(_ isSlice ⊑∀ _) s₂ ⊑□ refl () _
+unmatch×-min-⊑ (τ_a × Typ.*) refl s₁@(_ isSlice ⊑□) s₂@(_ isSlice ⊑*) ⊑□ refl _ ()
+unmatch×-min-⊑ (τ_a × ⟨ n ⟩) refl s₁@(_ isSlice ⊑□) s₂@(_ isSlice ⊑Var) ⊑□ refl _ ()
+unmatch×-min-⊑ (τ_a × (c + d)) refl s₁@(_ isSlice ⊑□) s₂@(_ isSlice ⊑+ _ _) ⊑□ refl _ ()
+unmatch×-min-⊑ (τ_a × (c × d)) refl s₁@(_ isSlice ⊑□) s₂@(_ isSlice ⊑× _ _) ⊑□ refl _ ()
+unmatch×-min-⊑ (τ_a × (c ⇒ d)) refl s₁@(_ isSlice ⊑□) s₂@(_ isSlice ⊑⇒ _ _) ⊑□ refl _ ()
+unmatch×-min-⊑ (τ_a × (∀· c)) refl s₁@(_ isSlice ⊑□) s₂@(_ isSlice ⊑∀ _) ⊑□ refl _ ()
 
-  -- unmatch⇒-min lemmas (analogues of unmatch+-min)
-  unmatch⇒-min-⊑ : ∀ (τ : Typ) {τ₁ τ₂ τ' τ₃' τ₄'} (m : τ ⊔ □ ⇒ □ ≡ τ₁ ⇒ τ₂)
+unmatch⇒-min-⊑ : ∀ (τ : Typ) {τ₁ τ₂ τ' τ₃' τ₄'} (m : τ ⊔ □ ⇒ □ ≡ τ₁ ⇒ τ₂)
     (s₁ : ⌊ τ₁ ⌋) (s₂ : ⌊ τ₂ ⌋)
     → τ' ⊑t τ → τ' ⊔ (□ ⇒ □) ≡ τ₃' ⇒ τ₄'
     → s₁ .↓ ⊑t τ₃' → s₂ .↓ ⊑t τ₄'
     → (unmatch⇒-min {τ} m s₁ s₂) .↓ ⊑t τ'
-  ⇒-proj-dom-mono : ∀ {τ τ₁ τ₂ τ₀ τ_a τ_b} (ψ₀ : ⌊ τ ⌋)
+unmatch⇒-min-⊑ □ refl (□ isSlice ⊑□) (□ isSlice ⊑□) _ _ _ _ = ⊑□
+unmatch⇒-min-⊑ (_ ⇒ _) refl (□ isSlice ⊑□) (□ isSlice ⊑□) _ _ _ _ = ⊑□
+unmatch⇒-min-⊑ (Typ.* ⇒ τ_b) refl s₁@(_ isSlice ⊑*) s₂ (⊑⇒ {τ₁ = a'} {τ₂ = b'} _ _) m'-eq s₁⊑ s₂⊑
+  rewrite subst-↓-pre (⊔t-zeroᵣ {Typ.*}) s₁ | subst-↓-pre (⊔t-zeroᵣ {τ_b}) s₂
+        | ⊔t-zeroᵣ {a'} | ⊔t-zeroᵣ {b'}
+  with refl ← m'-eq = ⊑⇒ s₁⊑ s₂⊑
+unmatch⇒-min-⊑ (⟨ n ⟩ ⇒ τ_b) refl s₁@(_ isSlice ⊑Var) s₂ (⊑⇒ {τ₁ = a'} {τ₂ = b'} _ _) m'-eq s₁⊑ s₂⊑
+  rewrite subst-↓-pre (⊔t-zeroᵣ {⟨ n ⟩}) s₁ | subst-↓-pre (⊔t-zeroᵣ {τ_b}) s₂
+        | ⊔t-zeroᵣ {a'} | ⊔t-zeroᵣ {b'}
+  with refl ← m'-eq = ⊑⇒ s₁⊑ s₂⊑
+unmatch⇒-min-⊑ ((c + d) ⇒ τ_b) refl s₁@(_ isSlice ⊑+ _ _) s₂ (⊑⇒ {τ₁ = a'} {τ₂ = b'} _ _) m'-eq s₁⊑ s₂⊑
+  rewrite subst-↓-pre (⊔t-zeroᵣ {c + d}) s₁ | subst-↓-pre (⊔t-zeroᵣ {τ_b}) s₂
+        | ⊔t-zeroᵣ {a'} | ⊔t-zeroᵣ {b'}
+  with refl ← m'-eq = ⊑⇒ s₁⊑ s₂⊑
+unmatch⇒-min-⊑ ((c × d) ⇒ τ_b) refl s₁@(_ isSlice ⊑× _ _) s₂ (⊑⇒ {τ₁ = a'} {τ₂ = b'} _ _) m'-eq s₁⊑ s₂⊑
+  rewrite subst-↓-pre (⊔t-zeroᵣ {c × d}) s₁ | subst-↓-pre (⊔t-zeroᵣ {τ_b}) s₂
+        | ⊔t-zeroᵣ {a'} | ⊔t-zeroᵣ {b'}
+  with refl ← m'-eq = ⊑⇒ s₁⊑ s₂⊑
+unmatch⇒-min-⊑ ((c ⇒ d) ⇒ τ_b) refl s₁@(_ isSlice ⊑⇒ _ _) s₂ (⊑⇒ {τ₁ = a'} {τ₂ = b'} _ _) m'-eq s₁⊑ s₂⊑
+  rewrite subst-↓-pre (⊔t-zeroᵣ {c ⇒ d}) s₁ | subst-↓-pre (⊔t-zeroᵣ {τ_b}) s₂
+        | ⊔t-zeroᵣ {a'} | ⊔t-zeroᵣ {b'}
+  with refl ← m'-eq = ⊑⇒ s₁⊑ s₂⊑
+unmatch⇒-min-⊑ ((∀· c) ⇒ τ_b) refl s₁@(_ isSlice ⊑∀ _) s₂ (⊑⇒ {τ₁ = a'} {τ₂ = b'} _ _) m'-eq s₁⊑ s₂⊑
+  rewrite subst-↓-pre (⊔t-zeroᵣ {∀· c}) s₁ | subst-↓-pre (⊔t-zeroᵣ {τ_b}) s₂
+        | ⊔t-zeroᵣ {a'} | ⊔t-zeroᵣ {b'}
+  with refl ← m'-eq = ⊑⇒ s₁⊑ s₂⊑
+unmatch⇒-min-⊑ (τ_a ⇒ Typ.*) refl s₁@(_ isSlice ⊑□) s₂@(_ isSlice ⊑*) (⊑⇒ {τ₁ = a'} {τ₂ = b'} _ _) m'-eq s₁⊑ s₂⊑
+  rewrite subst-↓-pre (⊔t-zeroᵣ {τ_a}) s₁ | subst-↓-pre (⊔t-zeroᵣ {Typ.*}) s₂
+        | ⊔t-zeroᵣ {a'} | ⊔t-zeroᵣ {b'}
+  with refl ← m'-eq = ⊑⇒ s₁⊑ s₂⊑
+unmatch⇒-min-⊑ (τ_a ⇒ ⟨ n ⟩) refl s₁@(_ isSlice ⊑□) s₂@(_ isSlice ⊑Var) (⊑⇒ {τ₁ = a'} {τ₂ = b'} _ _) m'-eq s₁⊑ s₂⊑
+  rewrite subst-↓-pre (⊔t-zeroᵣ {τ_a}) s₁ | subst-↓-pre (⊔t-zeroᵣ {⟨ n ⟩}) s₂
+        | ⊔t-zeroᵣ {a'} | ⊔t-zeroᵣ {b'}
+  with refl ← m'-eq = ⊑⇒ s₁⊑ s₂⊑
+unmatch⇒-min-⊑ (τ_a ⇒ (c + d)) refl s₁@(_ isSlice ⊑□) s₂@(_ isSlice ⊑+ _ _) (⊑⇒ {τ₁ = a'} {τ₂ = b'} _ _) m'-eq s₁⊑ s₂⊑
+  rewrite subst-↓-pre (⊔t-zeroᵣ {τ_a}) s₁ | subst-↓-pre (⊔t-zeroᵣ {c + d}) s₂
+        | ⊔t-zeroᵣ {a'} | ⊔t-zeroᵣ {b'}
+  with refl ← m'-eq = ⊑⇒ s₁⊑ s₂⊑
+unmatch⇒-min-⊑ (τ_a ⇒ (c × d)) refl s₁@(_ isSlice ⊑□) s₂@(_ isSlice ⊑× _ _) (⊑⇒ {τ₁ = a'} {τ₂ = b'} _ _) m'-eq s₁⊑ s₂⊑
+  rewrite subst-↓-pre (⊔t-zeroᵣ {τ_a}) s₁ | subst-↓-pre (⊔t-zeroᵣ {c × d}) s₂
+        | ⊔t-zeroᵣ {a'} | ⊔t-zeroᵣ {b'}
+  with refl ← m'-eq = ⊑⇒ s₁⊑ s₂⊑
+unmatch⇒-min-⊑ (τ_a ⇒ (c ⇒ d)) refl s₁@(_ isSlice ⊑□) s₂@(_ isSlice ⊑⇒ _ _) (⊑⇒ {τ₁ = a'} {τ₂ = b'} _ _) m'-eq s₁⊑ s₂⊑
+  rewrite subst-↓-pre (⊔t-zeroᵣ {τ_a}) s₁ | subst-↓-pre (⊔t-zeroᵣ {c ⇒ d}) s₂
+        | ⊔t-zeroᵣ {a'} | ⊔t-zeroᵣ {b'}
+  with refl ← m'-eq = ⊑⇒ s₁⊑ s₂⊑
+unmatch⇒-min-⊑ (τ_a ⇒ (∀· c)) refl s₁@(_ isSlice ⊑□) s₂@(_ isSlice ⊑∀ _) (⊑⇒ {τ₁ = a'} {τ₂ = b'} _ _) m'-eq s₁⊑ s₂⊑
+  rewrite subst-↓-pre (⊔t-zeroᵣ {τ_a}) s₁ | subst-↓-pre (⊔t-zeroᵣ {∀· c}) s₂
+        | ⊔t-zeroᵣ {a'} | ⊔t-zeroᵣ {b'}
+  with refl ← m'-eq = ⊑⇒ s₁⊑ s₂⊑
+unmatch⇒-min-⊑ (Typ.* ⇒ τ_b) refl s₁@(_ isSlice ⊑*) s₂ ⊑□ refl () _
+unmatch⇒-min-⊑ (⟨ n ⟩ ⇒ τ_b) refl s₁@(_ isSlice ⊑Var) s₂ ⊑□ refl () _
+unmatch⇒-min-⊑ ((c + d) ⇒ τ_b) refl s₁@(_ isSlice ⊑+ _ _) s₂ ⊑□ refl () _
+unmatch⇒-min-⊑ ((c × d) ⇒ τ_b) refl s₁@(_ isSlice ⊑× _ _) s₂ ⊑□ refl () _
+unmatch⇒-min-⊑ ((c ⇒ d) ⇒ τ_b) refl s₁@(_ isSlice ⊑⇒ _ _) s₂ ⊑□ refl () _
+unmatch⇒-min-⊑ ((∀· c) ⇒ τ_b) refl s₁@(_ isSlice ⊑∀ _) s₂ ⊑□ refl () _
+unmatch⇒-min-⊑ (τ_a ⇒ Typ.*) refl s₁@(_ isSlice ⊑□) s₂@(_ isSlice ⊑*) ⊑□ refl _ ()
+unmatch⇒-min-⊑ (τ_a ⇒ ⟨ n ⟩) refl s₁@(_ isSlice ⊑□) s₂@(_ isSlice ⊑Var) ⊑□ refl _ ()
+unmatch⇒-min-⊑ (τ_a ⇒ (c + d)) refl s₁@(_ isSlice ⊑□) s₂@(_ isSlice ⊑+ _ _) ⊑□ refl _ ()
+unmatch⇒-min-⊑ (τ_a ⇒ (c × d)) refl s₁@(_ isSlice ⊑□) s₂@(_ isSlice ⊑× _ _) ⊑□ refl _ ()
+unmatch⇒-min-⊑ (τ_a ⇒ (c ⇒ d)) refl s₁@(_ isSlice ⊑□) s₂@(_ isSlice ⊑⇒ _ _) ⊑□ refl _ ()
+unmatch⇒-min-⊑ (τ_a ⇒ (∀· c)) refl s₁@(_ isSlice ⊑□) s₂@(_ isSlice ⊑∀ _) ⊑□ refl _ ()
+
+×-proj-fst-mono : ∀ {τ τ₁ τ₂ τ₀ τ_a τ_b} (ψ₀ : ⌊ τ ⌋)
+    (m : τ ⊔ □ × □ ≡ τ₁ × τ₂) → τ₀ ⊑t ψ₀ .↓ → τ₀ ⊔ □ × □ ≡ τ_a × τ_b
+    → τ_a ⊑t (fst×ₛ' ψ₀ m) .↓
+×-proj-fst-mono (□ isSlice ⊑□) _ ⊑□ refl = ⊑□
+×-proj-fst-mono {τ_a × τ_b} ((x × y) isSlice ⊑× {τ₁' = .τ_a} {τ₂' = .τ_b} _ _) m ⊑□ refl
+  rewrite ⊔t-zeroᵣ {x} | ⊔t-zeroᵣ {y} | ⊔t-zeroᵣ {τ_a} | ⊔t-zeroᵣ {τ_b}
+  with refl ← m = ⊑□
+×-proj-fst-mono {τ_a × τ_b} ((x × y) isSlice ⊑× {τ₁' = .τ_a} {τ₂' = .τ_b} _ _) m
+    (⊑× {τ₁ = c} {τ₂ = d} p _) τ₀eq
+  rewrite ⊔t-zeroᵣ {x} | ⊔t-zeroᵣ {y} | ⊔t-zeroᵣ {τ_a} | ⊔t-zeroᵣ {τ_b}
+        | ⊔t-zeroᵣ {c} | ⊔t-zeroᵣ {d}
+  with refl ← m | refl ← τ₀eq = p
+
+×-proj-snd-mono : ∀ {τ τ₁ τ₂ τ₀ τ_a τ_b} (ψ₀ : ⌊ τ ⌋)
+    (m : τ ⊔ □ × □ ≡ τ₁ × τ₂) → τ₀ ⊑t ψ₀ .↓ → τ₀ ⊔ □ × □ ≡ τ_a × τ_b
+    → τ_b ⊑t (snd×ₛ ψ₀ m) .↓
+×-proj-snd-mono (□ isSlice ⊑□) _ ⊑□ refl = ⊑□
+×-proj-snd-mono {τ_a × τ_b} ((x × y) isSlice ⊑× {τ₁' = .τ_a} {τ₂' = .τ_b} _ _) m ⊑□ refl
+  rewrite ⊔t-zeroᵣ {x} | ⊔t-zeroᵣ {y} | ⊔t-zeroᵣ {τ_a} | ⊔t-zeroᵣ {τ_b}
+  with refl ← m = ⊑□
+×-proj-snd-mono {τ_a × τ_b} ((x × y) isSlice ⊑× {τ₁' = .τ_a} {τ₂' = .τ_b} _ _) m
+    (⊑× {τ₁ = c} {τ₂ = d} _ q) τ₀eq
+  rewrite ⊔t-zeroᵣ {x} | ⊔t-zeroᵣ {y} | ⊔t-zeroᵣ {τ_a} | ⊔t-zeroᵣ {τ_b}
+        | ⊔t-zeroᵣ {c} | ⊔t-zeroᵣ {d}
+  with refl ← m | refl ← τ₀eq = q
+
+⇒-proj-dom-mono : ∀ {τ τ₁ τ₂ τ₀ τ_a τ_b} (ψ₀ : ⌊ τ ⌋)
     (m : τ ⊔ □ ⇒ □ ≡ τ₁ ⇒ τ₂) → τ₀ ⊑t ψ₀ .↓ → τ₀ ⊔ □ ⇒ □ ≡ τ_a ⇒ τ_b
     → τ_a ⊑t (dom⇒ₛ ψ₀ m) .↓
-  ⇒-proj-cod-mono : ∀ {τ τ₁ τ₂ τ₀ τ_a τ_b} (ψ₀ : ⌊ τ ⌋)
+⇒-proj-dom-mono (□ isSlice ⊑□) _ ⊑□ refl = ⊑□
+⇒-proj-dom-mono {τ_a ⇒ τ_b} ((x ⇒ y) isSlice ⊑⇒ {τ₁' = .τ_a} {τ₂' = .τ_b} _ _) m ⊑□ refl
+  rewrite ⊔t-zeroᵣ {x} | ⊔t-zeroᵣ {y} | ⊔t-zeroᵣ {τ_a} | ⊔t-zeroᵣ {τ_b}
+  with refl ← m = ⊑□
+⇒-proj-dom-mono {τ_a ⇒ τ_b} ((x ⇒ y) isSlice ⊑⇒ {τ₁' = .τ_a} {τ₂' = .τ_b} _ _) m
+    (⊑⇒ {τ₁ = c} {τ₂ = d} p _) τ₀eq
+  rewrite ⊔t-zeroᵣ {x} | ⊔t-zeroᵣ {y} | ⊔t-zeroᵣ {τ_a} | ⊔t-zeroᵣ {τ_b}
+        | ⊔t-zeroᵣ {c} | ⊔t-zeroᵣ {d}
+  with refl ← m | refl ← τ₀eq = p
+
+⇒-proj-cod-mono : ∀ {τ τ₁ τ₂ τ₀ τ_a τ_b} (ψ₀ : ⌊ τ ⌋)
     (m : τ ⊔ □ ⇒ □ ≡ τ₁ ⇒ τ₂) → τ₀ ⊑t ψ₀ .↓ → τ₀ ⊔ □ ⇒ □ ≡ τ_a ⇒ τ_b
     → τ_b ⊑t (cod⇒ₛ ψ₀ m) .↓
+⇒-proj-cod-mono (□ isSlice ⊑□) _ ⊑□ refl = ⊑□
+⇒-proj-cod-mono {τ_a ⇒ τ_b} ((x ⇒ y) isSlice ⊑⇒ {τ₁' = .τ_a} {τ₂' = .τ_b} _ _) m ⊑□ refl
+  rewrite ⊔t-zeroᵣ {x} | ⊔t-zeroᵣ {y} | ⊔t-zeroᵣ {τ_a} | ⊔t-zeroᵣ {τ_b}
+  with refl ← m = ⊑□
+⇒-proj-cod-mono {τ_a ⇒ τ_b} ((x ⇒ y) isSlice ⊑⇒ {τ₁' = .τ_a} {τ₂' = .τ_b} _ _) m
+    (⊑⇒ {τ₁ = c} {τ₂ = d} _ q) τ₀eq
+  rewrite ⊔t-zeroᵣ {x} | ⊔t-zeroᵣ {y} | ⊔t-zeroᵣ {τ_a} | ⊔t-zeroᵣ {τ_b}
+        | ⊔t-zeroᵣ {c} | ⊔t-zeroᵣ {d}
+  with refl ← m | refl ← τ₀eq = q
 
 -- Join of slices of consistent types
 _⊔~ₛ_ : ∀ {τ₁ τ₂} → ⌊ τ₁ ⌋ → ⌊ τ₂ ⌋ → {c : τ₁ ~ τ₂} → ⌊ τ₁ ⊔ τ₂ ⌋
@@ -753,6 +907,40 @@ unmatch+-≡-snd {τ_a + τ_b} refl s₁ s₂ eq | kind+
 unmatch+-≡-snd {τ} m s₁ s₂ eq | diff with τ ≟t □
 unmatch+-≡-snd refl (□ isSlice ⊑□) (□ isSlice ⊑□) refl | diff | yes refl = refl
 unmatch+-≡-snd () _ _ _ | diff | no _
+
+unmatch+-min-≡-fst : ∀ {τ τ₁ τ₂} (m : τ ⊔ □ + □ ≡ τ₁ + τ₂)
+                     (s₁ : ⌊ τ₁ ⌋) (s₂ : ⌊ τ₂ ⌋)
+                   → ∀ {a b} → (unmatch+-min {τ} m s₁ s₂) .↓ ⊔ □ + □ ≡ a + b → s₁ .↓ ≡ a
+unmatch+-min-≡-fst m (□ isSlice ⊑□) (□ isSlice ⊑□) refl = refl
+unmatch+-min-≡-fst {τ} m s₁@(_ isSlice ⊑*)     s₂ eq = unmatch+-≡-fst {τ = τ} m s₁ s₂ eq
+unmatch+-min-≡-fst {τ} m s₁@(_ isSlice ⊑Var)   s₂ eq = unmatch+-≡-fst {τ = τ} m s₁ s₂ eq
+unmatch+-min-≡-fst {τ} m s₁@(_ isSlice ⊑⇒ _ _) s₂ eq = unmatch+-≡-fst {τ = τ} m s₁ s₂ eq
+unmatch+-min-≡-fst {τ} m s₁@(_ isSlice ⊑× _ _) s₂ eq = unmatch+-≡-fst {τ = τ} m s₁ s₂ eq
+unmatch+-min-≡-fst {τ} m s₁@(_ isSlice ⊑+ _ _) s₂ eq = unmatch+-≡-fst {τ = τ} m s₁ s₂ eq
+unmatch+-min-≡-fst {τ} m s₁@(_ isSlice ⊑∀ _)   s₂ eq = unmatch+-≡-fst {τ = τ} m s₁ s₂ eq
+unmatch+-min-≡-fst {τ} m s₁@(_ isSlice ⊑□) s₂@(_ isSlice ⊑*)     eq = unmatch+-≡-fst {τ = τ} m s₁ s₂ eq
+unmatch+-min-≡-fst {τ} m s₁@(_ isSlice ⊑□) s₂@(_ isSlice ⊑Var)   eq = unmatch+-≡-fst {τ = τ} m s₁ s₂ eq
+unmatch+-min-≡-fst {τ} m s₁@(_ isSlice ⊑□) s₂@(_ isSlice ⊑⇒ _ _) eq = unmatch+-≡-fst {τ = τ} m s₁ s₂ eq
+unmatch+-min-≡-fst {τ} m s₁@(_ isSlice ⊑□) s₂@(_ isSlice ⊑× _ _) eq = unmatch+-≡-fst {τ = τ} m s₁ s₂ eq
+unmatch+-min-≡-fst {τ} m s₁@(_ isSlice ⊑□) s₂@(_ isSlice ⊑+ _ _) eq = unmatch+-≡-fst {τ = τ} m s₁ s₂ eq
+unmatch+-min-≡-fst {τ} m s₁@(_ isSlice ⊑□) s₂@(_ isSlice ⊑∀ _)   eq = unmatch+-≡-fst {τ = τ} m s₁ s₂ eq
+
+unmatch+-min-≡-snd : ∀ {τ τ₁ τ₂} (m : τ ⊔ □ + □ ≡ τ₁ + τ₂)
+                     (s₁ : ⌊ τ₁ ⌋) (s₂ : ⌊ τ₂ ⌋)
+                   → ∀ {a b} → (unmatch+-min {τ} m s₁ s₂) .↓ ⊔ □ + □ ≡ a + b → s₂ .↓ ≡ b
+unmatch+-min-≡-snd m (□ isSlice ⊑□) (□ isSlice ⊑□) refl = refl
+unmatch+-min-≡-snd {τ} m s₁@(_ isSlice ⊑*)     s₂ eq = unmatch+-≡-snd {τ = τ} m s₁ s₂ eq
+unmatch+-min-≡-snd {τ} m s₁@(_ isSlice ⊑Var)   s₂ eq = unmatch+-≡-snd {τ = τ} m s₁ s₂ eq
+unmatch+-min-≡-snd {τ} m s₁@(_ isSlice ⊑⇒ _ _) s₂ eq = unmatch+-≡-snd {τ = τ} m s₁ s₂ eq
+unmatch+-min-≡-snd {τ} m s₁@(_ isSlice ⊑× _ _) s₂ eq = unmatch+-≡-snd {τ = τ} m s₁ s₂ eq
+unmatch+-min-≡-snd {τ} m s₁@(_ isSlice ⊑+ _ _) s₂ eq = unmatch+-≡-snd {τ = τ} m s₁ s₂ eq
+unmatch+-min-≡-snd {τ} m s₁@(_ isSlice ⊑∀ _)   s₂ eq = unmatch+-≡-snd {τ = τ} m s₁ s₂ eq
+unmatch+-min-≡-snd {τ} m s₁@(_ isSlice ⊑□) s₂@(_ isSlice ⊑*)     eq = unmatch+-≡-snd {τ = τ} m s₁ s₂ eq
+unmatch+-min-≡-snd {τ} m s₁@(_ isSlice ⊑□) s₂@(_ isSlice ⊑Var)   eq = unmatch+-≡-snd {τ = τ} m s₁ s₂ eq
+unmatch+-min-≡-snd {τ} m s₁@(_ isSlice ⊑□) s₂@(_ isSlice ⊑⇒ _ _) eq = unmatch+-≡-snd {τ = τ} m s₁ s₂ eq
+unmatch+-min-≡-snd {τ} m s₁@(_ isSlice ⊑□) s₂@(_ isSlice ⊑× _ _) eq = unmatch+-≡-snd {τ = τ} m s₁ s₂ eq
+unmatch+-min-≡-snd {τ} m s₁@(_ isSlice ⊑□) s₂@(_ isSlice ⊑+ _ _) eq = unmatch+-≡-snd {τ = τ} m s₁ s₂ eq
+unmatch+-min-≡-snd {τ} m s₁@(_ isSlice ⊑□) s₂@(_ isSlice ⊑∀ _)   eq = unmatch+-≡-snd {τ = τ} m s₁ s₂ eq
 
 -- unmatch monotonicity lemmas
 unmatch×-mono-fst : ∀ {τ τ₁ τ₂ τ'}
