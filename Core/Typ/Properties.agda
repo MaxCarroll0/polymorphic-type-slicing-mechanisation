@@ -67,6 +67,30 @@ open import Core.Instances
 ...                       | yes refl = ~?₂
 ⊔-⇒-~     ()    | diff    | no  _
 
+-- Specialised to the value produced by ⊔-ann-⇒-⊑-intro-tight: outputs of
+-- shape (□ ⇒ τ_b) for some τ_b. Such a value is consistent with τ_h ⇒ □ via
+-- ~⇒ ~?₂ ~?₁ regardless of τ_h.
+□⇒-~-ann-⇒ : ∀ {τ_h τ_b} → (□ ⇒ τ_b) ~ (τ_h ⇒ □)
+□⇒-~-ann-⇒ = ~⇒ ~?₂ ~?₁
+
+-- Full intro lemma: extends ⊔-ann-⇒-⊑-intro-tight to also return the
+-- consistency τ' ~ τ_h₁⇒□. The output τ' is either □ or □⇒τ_b; both are
+-- consistent with τ_h₁⇒□.
+⊔-ann-⇒-⊑-intro-full : ∀ {τ τ_h τ_a τ₂ τ_h₁ τ_b} → τ ⊔ τ_h ⇒ □ ≡ τ_a ⇒ τ₂
+           → τ_h₁ ⊑t τ_h → τ_b ⊑t τ₂
+           → ∃[ τ' ] (τ' ⊑t τ) ∧ (τ' ⊔ τ_h₁ ⇒ □ ≡ τ_h₁ ⇒ τ_b) ∧ (τ' ~ τ_h₁ ⇒ □)
+⊔-ann-⇒-⊑-intro-full {τ} {τ_h} eq τ_h₁⊑ τ_b⊑ with diag τ (τ_h ⇒ □)
+⊔-ann-⇒-⊑-intro-full {τ_l ⇒ τ_r} {τ_h₁ = τ_h₁} {τ_b = τ_b} eq τ_h₁⊑ τ_b⊑ | kind⇒
+  rewrite ⊔t-zeroᵣ {τ_r}
+  with refl ← eq = (□ ⇒ τ_b) , ⊑⇒ ⊑□ τ_b⊑ , out-eq , ~⇒ ~?₂ ~?₁
+  where
+    out-eq : (□ ⇒ τ_b) ⊔ (τ_h₁ ⇒ □) ≡ τ_h₁ ⇒ τ_b
+    out-eq rewrite ⊔t-zeroᵣ {τ_b} | ⊔t-zeroₗ {τ_h₁} = refl
+⊔-ann-⇒-⊑-intro-full {τ} eq τ_h₁⊑ τ_b⊑ | diff with τ ≟ □
+⊔-ann-⇒-⊑-intro-full {τ_h₁ = τ_h₁} refl τ_h₁⊑ ⊑□ | diff | yes refl
+  = □ , ⊑□ , refl , ~?₂
+⊔-ann-⇒-⊑-intro-full () _ _ | diff | no _
+
 
 ⊔-+-~ : ∀ {τ τ₁ τ₂} → τ ⊔ (□ + □) ≡ τ₁ + τ₂ → τ ~ □ + □
 ⊔-+-~ {τ} eq with diag τ (□ + □)
@@ -141,6 +165,86 @@ open import Core.Instances
 ⊔-ann-⇒-⊑ (⊑⇒ {τ₂ = b₁} {τ₂' = b₂} p q) r eq
   rewrite ⊔t-zeroᵣ {b₁} | ⊔t-zeroᵣ {b₂}
   with refl ← eq = _ , _ , refl , q
+
+-- Introduction rules dual to the matching monotonicity lemmas above.
+-- Where ⊔-+-⊑ etc. *eliminate* a precision proof (decomposing it into
+-- component precisions via the match equation), the -intro variants
+-- *introduce* a precision proof from component precisions plus the
+-- outer match equation, choosing a τ' ⊑ τ that carries the matching
+-- equation.
+⊔-+-⊑-intro : ∀ {τ τ₁ τ₂ τ_a τ_b} → τ ⊔ □ + □ ≡ τ₁ + τ₂
+       → τ_a ⊑t τ₁ → τ_b ⊑t τ₂
+       → ∃[ τ' ] τ' ⊑t τ ∧ τ' ⊔ □ + □ ≡ τ_a + τ_b
+⊔-+-⊑-intro {τ} eq τ_a⊑ τ_b⊑ with diag τ (□ + □)
+⊔-+-⊑-intro {τ_l + τ_r} {τ_a = τ_a} {τ_b = τ_b} eq τ_a⊑ τ_b⊑ | kind+
+  rewrite ⊔t-zeroᵣ {τ_l} | ⊔t-zeroᵣ {τ_r}
+  with refl ← eq = (τ_a + τ_b) , ⊑+ τ_a⊑ τ_b⊑ , out-eq
+  where
+    out-eq : (τ_a + τ_b) ⊔ (□ + □) ≡ τ_a + τ_b
+    out-eq rewrite ⊔t-zeroᵣ {τ_a} | ⊔t-zeroᵣ {τ_b} = refl
+⊔-+-⊑-intro {τ} eq τ_a⊑ τ_b⊑ | diff with τ ≟ □
+⊔-+-⊑-intro refl ⊑□ ⊑□ | diff | yes refl = □ , ⊑□ , refl
+⊔-+-⊑-intro () _ _ | diff | no _
+
+⊔-×-⊑-intro : ∀ {τ τ₁ τ₂ τ_a τ_b} → τ ⊔ □ × □ ≡ τ₁ × τ₂
+       → τ_a ⊑t τ₁ → τ_b ⊑t τ₂
+       → ∃[ τ' ] τ' ⊑t τ ∧ τ' ⊔ □ × □ ≡ τ_a × τ_b
+⊔-×-⊑-intro {τ} eq τ_a⊑ τ_b⊑ with diag τ (□ × □)
+⊔-×-⊑-intro {τ_l × τ_r} {τ_a = τ_a} {τ_b = τ_b} eq τ_a⊑ τ_b⊑ | kind×
+  rewrite ⊔t-zeroᵣ {τ_l} | ⊔t-zeroᵣ {τ_r}
+  with refl ← eq = (τ_a × τ_b) , ⊑× τ_a⊑ τ_b⊑ , out-eq
+  where
+    out-eq : (τ_a × τ_b) ⊔ (□ × □) ≡ τ_a × τ_b
+    out-eq rewrite ⊔t-zeroᵣ {τ_a} | ⊔t-zeroᵣ {τ_b} = refl
+⊔-×-⊑-intro {τ} eq τ_a⊑ τ_b⊑ | diff with τ ≟ □
+⊔-×-⊑-intro refl ⊑□ ⊑□ | diff | yes refl = □ , ⊑□ , refl
+⊔-×-⊑-intro () _ _ | diff | no _
+
+⊔-⇒-⊑-intro : ∀ {τ τ₁ τ₂ τ_a τ_b} → τ ⊔ □ ⇒ □ ≡ τ₁ ⇒ τ₂
+       → τ_a ⊑t τ₁ → τ_b ⊑t τ₂
+       → ∃[ τ' ] τ' ⊑t τ ∧ τ' ⊔ □ ⇒ □ ≡ τ_a ⇒ τ_b
+⊔-⇒-⊑-intro {τ} eq τ_a⊑ τ_b⊑ with diag τ (□ ⇒ □)
+⊔-⇒-⊑-intro {τ_l ⇒ τ_r} {τ_a = τ_a} {τ_b = τ_b} eq τ_a⊑ τ_b⊑ | kind⇒
+  rewrite ⊔t-zeroᵣ {τ_l} | ⊔t-zeroᵣ {τ_r}
+  with refl ← eq = (τ_a ⇒ τ_b) , ⊑⇒ τ_a⊑ τ_b⊑ , out-eq
+  where
+    out-eq : (τ_a ⇒ τ_b) ⊔ (□ ⇒ □) ≡ τ_a ⇒ τ_b
+    out-eq rewrite ⊔t-zeroᵣ {τ_a} | ⊔t-zeroᵣ {τ_b} = refl
+⊔-⇒-⊑-intro {τ} eq τ_a⊑ τ_b⊑ | diff with τ ≟ □
+⊔-⇒-⊑-intro refl ⊑□ ⊑□ | diff | yes refl = □ , ⊑□ , refl
+⊔-⇒-⊑-intro () _ _ | diff | no _
+
+⊔-ann-⇒-⊑-intro : ∀ {τ τ_h τ_a τ₂ τ_h₁ τ_b} → τ ⊔ τ_h ⇒ □ ≡ τ_a ⇒ τ₂
+           → τ_h₁ ⊑t τ_h → τ_b ⊑t τ₂
+           → ∃[ τ' ] (τ' ⊑t τ) ∧ ∃[ τ_a₁ ] (τ' ⊔ τ_h₁ ⇒ □ ≡ τ_a₁ ⇒ τ_b)
+⊔-ann-⇒-⊑-intro {τ} {τ_h} eq τ_h₁⊑ τ_b⊑ with diag τ (τ_h ⇒ □)
+⊔-ann-⇒-⊑-intro {τ_l ⇒ τ_r} {τ_h₁ = τ_h₁} {τ_b = τ_b} eq τ_h₁⊑ τ_b⊑ | kind⇒
+  rewrite ⊔t-zeroᵣ {τ_r}
+  with refl ← eq = (□ ⇒ τ_b) , ⊑⇒ ⊑□ τ_b⊑ , τ_h₁ , out-eq
+  where
+    out-eq : (□ ⇒ τ_b) ⊔ (τ_h₁ ⇒ □) ≡ τ_h₁ ⇒ τ_b
+    out-eq rewrite ⊔t-zeroᵣ {τ_b} | ⊔t-zeroₗ {τ_h₁} = refl
+⊔-ann-⇒-⊑-intro {τ} eq τ_h₁⊑ τ_b⊑ | diff with τ ≟ □
+⊔-ann-⇒-⊑-intro {τ_h₁ = τ_h₁} refl τ_h₁⊑ ⊑□ | diff | yes refl
+  = □ , ⊑□ , τ_h₁ , refl
+⊔-ann-⇒-⊑-intro () _ _ | diff | no _
+
+-- Tight variant: τ_a₁ is concretely τ_h₁ (the input precision's level-1 type).
+-- Same as ⊔-ann-⇒-⊑-intro but with the dom-component pinned to τ_h₁ directly.
+⊔-ann-⇒-⊑-intro-tight : ∀ {τ τ_h τ_a τ₂ τ_h₁ τ_b} → τ ⊔ τ_h ⇒ □ ≡ τ_a ⇒ τ₂
+           → τ_h₁ ⊑t τ_h → τ_b ⊑t τ₂
+           → ∃[ τ' ] (τ' ⊑t τ) ∧ (τ' ⊔ τ_h₁ ⇒ □ ≡ τ_h₁ ⇒ τ_b)
+⊔-ann-⇒-⊑-intro-tight {τ} {τ_h} eq τ_h₁⊑ τ_b⊑ with diag τ (τ_h ⇒ □)
+⊔-ann-⇒-⊑-intro-tight {τ_l ⇒ τ_r} {τ_h₁ = τ_h₁} {τ_b = τ_b} eq τ_h₁⊑ τ_b⊑ | kind⇒
+  rewrite ⊔t-zeroᵣ {τ_r}
+  with refl ← eq = (□ ⇒ τ_b) , ⊑⇒ ⊑□ τ_b⊑ , out-eq
+  where
+    out-eq : (□ ⇒ τ_b) ⊔ (τ_h₁ ⇒ □) ≡ τ_h₁ ⇒ τ_b
+    out-eq rewrite ⊔t-zeroᵣ {τ_b} | ⊔t-zeroₗ {τ_h₁} = refl
+⊔-ann-⇒-⊑-intro-tight {τ} eq τ_h₁⊑ τ_b⊑ | diff with τ ≟ □
+⊔-ann-⇒-⊑-intro-tight {τ_h₁ = τ_h₁} refl τ_h₁⊑ ⊑□ | diff | yes refl
+  = □ , ⊑□ , refl
+⊔-ann-⇒-⊑-intro-tight () _ _ | diff | no _
 
 
 -- Shifting preserves precision

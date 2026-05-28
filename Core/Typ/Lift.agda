@@ -218,6 +218,16 @@ unmatch+-min : ∀ {τ τ₁ τ₂} → τ ⊔ □ + □ ≡ τ₁ + τ₂ → �
 unmatch+-min m (□ isSlice ⊑□) (□ isSlice ⊑□) = ⊥ₛ
 unmatch+-min m s₁ s₂ = unmatch+ m s₁ s₂
 
+-- unmatch×-min: same pattern for product types
+unmatch×-min : ∀ {τ τ₁ τ₂} → τ ⊔ □ × □ ≡ τ₁ × τ₂ → ⌊ τ₁ ⌋ → ⌊ τ₂ ⌋ → ⌊ τ ⌋
+unmatch×-min m (□ isSlice ⊑□) (□ isSlice ⊑□) = ⊥ₛ
+unmatch×-min m s₁ s₂ = unmatch× m s₁ s₂
+
+-- unmatch⇒-min: same pattern for function types
+unmatch⇒-min : ∀ {τ τ₁ τ₂} → τ ⊔ □ ⇒ □ ≡ τ₁ ⇒ τ₂ → ⌊ τ₁ ⌋ → ⌊ τ₂ ⌋ → ⌊ τ ⌋
+unmatch⇒-min m (□ isSlice ⊑□) (□ isSlice ⊑□) = ⊥ₛ
+unmatch⇒-min m s₁ s₂ = unmatch⇒ m s₁ s₂
+
 dom⇒ₛ : ∀ {τ τ₁ τ₂} → ⌊ τ ⌋ → τ ⊔ □ ⇒ □ ≡ τ₁ ⇒ τ₂ → ⌊ τ₁ ⌋
 dom⇒ₛ ψ m = let _ , _ , _ , p , _ = ⊔-⇒-⊑ (ψ .proof) m in ↑ p
 
@@ -554,6 +564,39 @@ unmatch+-min-⊑ (τ_a + (c × d)) refl s₁@(_ isSlice ⊑□) s₂@(_ isSlice 
 unmatch+-min-⊑ (τ_a + (c ⇒ d)) refl s₁@(_ isSlice ⊑□) s₂@(_ isSlice ⊑⇒ _ _) ⊑□ refl _ ()
 unmatch+-min-⊑ (τ_a + (∀· c)) refl s₁@(_ isSlice ⊑□) s₂@(_ isSlice ⊑∀ _) ⊑□ refl _ ()
 
+postulate
+  unmatch+-min-≡-fst : ∀ {τ τ₁ τ₂} (m : τ ⊔ □ + □ ≡ τ₁ + τ₂)
+                       (s₁ : ⌊ τ₁ ⌋) (s₂ : ⌊ τ₂ ⌋)
+                     → ∀ {a b} → (unmatch+-min {τ} m s₁ s₂) .↓ ⊔ □ + □ ≡ a + b → s₁ .↓ ≡ a
+  unmatch+-min-≡-snd : ∀ {τ τ₁ τ₂} (m : τ ⊔ □ + □ ≡ τ₁ + τ₂)
+                       (s₁ : ⌊ τ₁ ⌋) (s₂ : ⌊ τ₂ ⌋)
+                     → ∀ {a b} → (unmatch+-min {τ} m s₁ s₂) .↓ ⊔ □ + □ ≡ a + b → s₂ .↓ ≡ b
+
+  -- unmatch×-min lemmas (analogues of unmatch+-min)
+  unmatch×-min-⊑ : ∀ (τ : Typ) {τ₁ τ₂ τ' τ₃' τ₄'} (m : τ ⊔ □ × □ ≡ τ₁ × τ₂)
+    (s₁ : ⌊ τ₁ ⌋) (s₂ : ⌊ τ₂ ⌋)
+    → τ' ⊑t τ → τ' ⊔ (□ × □) ≡ τ₃' × τ₄'
+    → s₁ .↓ ⊑t τ₃' → s₂ .↓ ⊑t τ₄'
+    → (unmatch×-min {τ} m s₁ s₂) .↓ ⊑t τ'
+  ×-proj-fst-mono : ∀ {τ τ₁ τ₂ τ₀ τ_a τ_b} (ψ₀ : ⌊ τ ⌋)
+    (m : τ ⊔ □ × □ ≡ τ₁ × τ₂) → τ₀ ⊑t ψ₀ .↓ → τ₀ ⊔ □ × □ ≡ τ_a × τ_b
+    → τ_a ⊑t (fst×ₛ' ψ₀ m) .↓
+  ×-proj-snd-mono : ∀ {τ τ₁ τ₂ τ₀ τ_a τ_b} (ψ₀ : ⌊ τ ⌋)
+    (m : τ ⊔ □ × □ ≡ τ₁ × τ₂) → τ₀ ⊑t ψ₀ .↓ → τ₀ ⊔ □ × □ ≡ τ_a × τ_b
+    → τ_b ⊑t (snd×ₛ ψ₀ m) .↓
+
+  -- unmatch⇒-min lemmas (analogues of unmatch+-min)
+  unmatch⇒-min-⊑ : ∀ (τ : Typ) {τ₁ τ₂ τ' τ₃' τ₄'} (m : τ ⊔ □ ⇒ □ ≡ τ₁ ⇒ τ₂)
+    (s₁ : ⌊ τ₁ ⌋) (s₂ : ⌊ τ₂ ⌋)
+    → τ' ⊑t τ → τ' ⊔ (□ ⇒ □) ≡ τ₃' ⇒ τ₄'
+    → s₁ .↓ ⊑t τ₃' → s₂ .↓ ⊑t τ₄'
+    → (unmatch⇒-min {τ} m s₁ s₂) .↓ ⊑t τ'
+  ⇒-proj-dom-mono : ∀ {τ τ₁ τ₂ τ₀ τ_a τ_b} (ψ₀ : ⌊ τ ⌋)
+    (m : τ ⊔ □ ⇒ □ ≡ τ₁ ⇒ τ₂) → τ₀ ⊑t ψ₀ .↓ → τ₀ ⊔ □ ⇒ □ ≡ τ_a ⇒ τ_b
+    → τ_a ⊑t (dom⇒ₛ ψ₀ m) .↓
+  ⇒-proj-cod-mono : ∀ {τ τ₁ τ₂ τ₀ τ_a τ_b} (ψ₀ : ⌊ τ ⌋)
+    (m : τ ⊔ □ ⇒ □ ≡ τ₁ ⇒ τ₂) → τ₀ ⊑t ψ₀ .↓ → τ₀ ⊔ □ ⇒ □ ≡ τ_a ⇒ τ_b
+    → τ_b ⊑t (cod⇒ₛ ψ₀ m) .↓
 
 -- Join of slices of consistent types
 _⊔~ₛ_ : ∀ {τ₁ τ₂} → ⌊ τ₁ ⌋ → ⌊ τ₂ ⌋ → {c : τ₁ ~ τ₂} → ⌊ τ₁ ⊔ τ₂ ⌋
@@ -606,6 +649,36 @@ private
   ∀-inj-body : ∀ {a c : Typ} → ∀· a ≡ ∀· c → a ≡ c
   ∀-inj-body refl = refl
 
+-- ⇒-dom monotonicity (parallel to unmatch×-fst): if q ⊑ ϕ then dom of q ⊑ dom of ϕ.
+unmatch⇒-dom : ∀ {τ} → (q : ⌊ τ ⌋) → (ϕ : ⌊ τ ⌋)
+             → q ⊑ₛ ϕ
+             → ∀ {τ₁' τ₂'} → ϕ .↓ ⊔ □ ⇒ □ ≡ τ₁' ⇒ τ₂'
+             → ∀ {τ₁'' τ₂''} → q .↓ ⊔ □ ⇒ □ ≡ τ₁'' ⇒ τ₂''
+             → τ₁'' ⊑t τ₁'
+unmatch⇒-dom q ϕ v m' m''
+  with ⊔-⇒-⊑ v m'
+... | _ , _ , eq , p , _ rewrite eq with refl ← m'' = p
+
+-- +-fst monotonicity.
+unmatch+-fst : ∀ {τ} → (q : ⌊ τ ⌋) → (ϕ : ⌊ τ ⌋)
+             → q ⊑ₛ ϕ
+             → ∀ {τ₁' τ₂'} → ϕ .↓ ⊔ □ + □ ≡ τ₁' + τ₂'
+             → ∀ {τ₁'' τ₂''} → q .↓ ⊔ □ + □ ≡ τ₁'' + τ₂''
+             → τ₁'' ⊑t τ₁'
+unmatch+-fst q ϕ v m' m''
+  with ⊔-+-⊑ v m'
+... | _ , _ , eq , p , _ rewrite eq with refl ← m'' = p
+
+-- +-snd monotonicity.
+unmatch+-snd : ∀ {τ} → (q : ⌊ τ ⌋) → (ϕ : ⌊ τ ⌋)
+             → q ⊑ₛ ϕ
+             → ∀ {τ₁' τ₂'} → ϕ .↓ ⊔ □ + □ ≡ τ₁' + τ₂'
+             → ∀ {τ₁'' τ₂''} → q .↓ ⊔ □ + □ ≡ τ₁'' + τ₂''
+             → τ₂'' ⊑t τ₂'
+unmatch+-snd q ϕ v m' m''
+  with ⊔-+-⊑ v m'
+... | _ , _ , eq , _ , p rewrite eq with refl ← m'' = p
+
 -- Extract component equalities from unmatch⇒/×/∀ match
 unmatch⇒-≡-fst : ∀ {τ τ₁ τ₂} (m : τ ⊔ □ ⇒ □ ≡ τ₁ ⇒ τ₂)
                (s₁ : ⌊ τ₁ ⌋) (s₂ : ⌊ τ₂ ⌋)
@@ -656,6 +729,30 @@ unmatch∀-≡ {∀· τ_a} refl s eq | kind∀
 unmatch∀-≡ {τ} m s eq | diff with τ ≟t □
 unmatch∀-≡ refl (□ isSlice ⊑□) refl | diff | yes refl = refl
 unmatch∀-≡ () _ _ | diff | no _
+
+unmatch+-≡-fst : ∀ {τ τ₁ τ₂} (m : τ ⊔ □ + □ ≡ τ₁ + τ₂)
+               (s₁ : ⌊ τ₁ ⌋) (s₂ : ⌊ τ₂ ⌋)
+               → ∀ {a b} → (unmatch+ {τ} m s₁ s₂) .↓ ⊔ □ + □ ≡ a + b → s₁ .↓ ≡ a
+unmatch+-≡-fst {τ} m s₁ s₂ eq with diag τ (□ + □)
+unmatch+-≡-fst {τ_a + τ_b} refl s₁ s₂ eq | kind+
+  rewrite ⊔t-zeroᵣ {τ_a} | ⊔t-zeroᵣ {τ_b} | ⊔t-zeroᵣ {s₁ .↓} | ⊔t-zeroᵣ {s₂ .↓} = +-inj-fst eq
+  where +-inj-fst : ∀ {a b c d : Typ} → a + b ≡ c + d → a ≡ c
+        +-inj-fst refl = refl
+unmatch+-≡-fst {τ} m s₁ s₂ eq | diff with τ ≟t □
+unmatch+-≡-fst refl (□ isSlice ⊑□) (□ isSlice ⊑□) refl | diff | yes refl = refl
+unmatch+-≡-fst () _ _ _ | diff | no _
+
+unmatch+-≡-snd : ∀ {τ τ₁ τ₂} (m : τ ⊔ □ + □ ≡ τ₁ + τ₂)
+               (s₁ : ⌊ τ₁ ⌋) (s₂ : ⌊ τ₂ ⌋)
+               → ∀ {a b} → (unmatch+ {τ} m s₁ s₂) .↓ ⊔ □ + □ ≡ a + b → s₂ .↓ ≡ b
+unmatch+-≡-snd {τ} m s₁ s₂ eq with diag τ (□ + □)
+unmatch+-≡-snd {τ_a + τ_b} refl s₁ s₂ eq | kind+
+  rewrite ⊔t-zeroᵣ {τ_a} | ⊔t-zeroᵣ {τ_b} | ⊔t-zeroᵣ {s₁ .↓} | ⊔t-zeroᵣ {s₂ .↓} = +-inj-snd eq
+  where +-inj-snd : ∀ {a b c d : Typ} → a + b ≡ c + d → b ≡ d
+        +-inj-snd refl = refl
+unmatch+-≡-snd {τ} m s₁ s₂ eq | diff with τ ≟t □
+unmatch+-≡-snd refl (□ isSlice ⊑□) (□ isSlice ⊑□) refl | diff | yes refl = refl
+unmatch+-≡-snd () _ _ _ | diff | no _
 
 -- unmatch monotonicity lemmas
 unmatch×-mono-fst : ∀ {τ τ₁ τ₂ τ'}
@@ -709,3 +806,87 @@ unmatch∀-mono _ _ υ≢□ ⊑□ refl ⊑□ = ⊥-elim (υ≢□ refl)
 unmatch∀-mono {∀· τ₁'} refl υ' _ (⊑∀ {τ = a} _) m' υ⊑
   rewrite ⊔t-zeroᵣ {τ₁'} | ⊔t-zeroᵣ {a}
   with refl ← m' = ⊑∀ υ⊑
+
+-- Cov-inversion lemmas: given (unmatch{+,×,⇒} m υ₁ υ₂).↓ ⊑t τ' and a lifted
+-- match equation τ' ⊔ □K ≡ τ_a K τ_b, conclude υᵢ.↓ ⊑t τ_a (or τ_b).
+-- These are needed in lift-{pos,syn}-cov for inductive cases where
+-- ana-υ_outer-of-m is given by an unmatch+/×/⇒, and we need the inner
+-- precondition on the inner-υ.
+
+unmatch+-cov-fst : ∀ (τ : Typ) {τ₁ τ₂ τ' τ_a τ_b}
+  → (m : τ ⊔ □ + □ ≡ τ₁ + τ₂)
+  → (υ : ⌊ τ₁ ⌋) (s₂ : ⌊ τ₂ ⌋)
+  → (unmatch+ {τ} m υ s₂) .↓ ⊑t τ'
+  → τ' ⊔ □ + □ ≡ τ_a + τ_b
+  → υ .↓ ⊑t τ_a
+unmatch+-cov-fst (τ_a' + τ_b') refl υ s₂ (⊑+ {τ₁' = α} {τ₂' = β} p _) m'
+  rewrite ⊔t-zeroᵣ {τ_a'} | ⊔t-zeroᵣ {τ_b'} | ⊔t-zeroᵣ {α} | ⊔t-zeroᵣ {β}
+  with refl ← m' = p
+unmatch+-cov-fst □ refl υ _ _ _
+  with υ .proof
+... | ⊑□ = ⊑□
+
+unmatch+-cov-snd : ∀ (τ : Typ) {τ₁ τ₂ τ' τ_a τ_b}
+  → (m : τ ⊔ □ + □ ≡ τ₁ + τ₂)
+  → (s₁ : ⌊ τ₁ ⌋) (υ : ⌊ τ₂ ⌋)
+  → (unmatch+ {τ} m s₁ υ) .↓ ⊑t τ'
+  → τ' ⊔ □ + □ ≡ τ_a + τ_b
+  → υ .↓ ⊑t τ_b
+unmatch+-cov-snd (τ_a' + τ_b') refl s₁ υ (⊑+ {τ₁' = α} {τ₂' = β} _ q) m'
+  rewrite ⊔t-zeroᵣ {τ_a'} | ⊔t-zeroᵣ {τ_b'} | ⊔t-zeroᵣ {α} | ⊔t-zeroᵣ {β}
+  with refl ← m' = q
+unmatch+-cov-snd □ refl _ υ _ _
+  with υ .proof
+... | ⊑□ = ⊑□
+
+unmatch×-cov-fst : ∀ (τ : Typ) {τ₁ τ₂ τ' τ_a τ_b}
+  → (m : τ ⊔ □ × □ ≡ τ₁ × τ₂)
+  → (υ : ⌊ τ₁ ⌋) (s₂ : ⌊ τ₂ ⌋)
+  → (unmatch× {τ} m υ s₂) .↓ ⊑t τ'
+  → τ' ⊔ □ × □ ≡ τ_a × τ_b
+  → υ .↓ ⊑t τ_a
+unmatch×-cov-fst (τ_a' × τ_b') refl υ s₂ (⊑× {τ₁' = α} {τ₂' = β} p _) m'
+  rewrite ⊔t-zeroᵣ {τ_a'} | ⊔t-zeroᵣ {τ_b'} | ⊔t-zeroᵣ {α} | ⊔t-zeroᵣ {β}
+  with refl ← m' = p
+unmatch×-cov-fst □ refl υ _ _ _
+  with υ .proof
+... | ⊑□ = ⊑□
+
+unmatch×-cov-snd : ∀ (τ : Typ) {τ₁ τ₂ τ' τ_a τ_b}
+  → (m : τ ⊔ □ × □ ≡ τ₁ × τ₂)
+  → (s₁ : ⌊ τ₁ ⌋) (υ : ⌊ τ₂ ⌋)
+  → (unmatch× {τ} m s₁ υ) .↓ ⊑t τ'
+  → τ' ⊔ □ × □ ≡ τ_a × τ_b
+  → υ .↓ ⊑t τ_b
+unmatch×-cov-snd (τ_a' × τ_b') refl s₁ υ (⊑× {τ₁' = α} {τ₂' = β} _ q) m'
+  rewrite ⊔t-zeroᵣ {τ_a'} | ⊔t-zeroᵣ {τ_b'} | ⊔t-zeroᵣ {α} | ⊔t-zeroᵣ {β}
+  with refl ← m' = q
+unmatch×-cov-snd □ refl _ υ _ _
+  with υ .proof
+... | ⊑□ = ⊑□
+
+unmatch⇒-cov-cod : ∀ (τ : Typ) {τ₁ τ₂ τ' τ_a τ_b}
+  → (m : τ ⊔ □ ⇒ □ ≡ τ₁ ⇒ τ₂)
+  → (υ₁ : ⌊ τ₁ ⌋) (υ₂ : ⌊ τ₂ ⌋)
+  → (unmatch⇒ {τ} m υ₁ υ₂) .↓ ⊑t τ'
+  → τ' ⊔ □ ⇒ □ ≡ τ_a ⇒ τ_b
+  → υ₂ .↓ ⊑t τ_b
+unmatch⇒-cov-cod (τ_a' ⇒ τ_b') refl υ₁ υ₂ (⊑⇒ {τ₁' = α} {τ₂' = β} _ q) m'
+  rewrite ⊔t-zeroᵣ {τ_a'} | ⊔t-zeroᵣ {τ_b'} | ⊔t-zeroᵣ {α} | ⊔t-zeroᵣ {β}
+  with refl ← m' = q
+unmatch⇒-cov-cod □ refl υ₁ υ₂ _ _
+  with υ₁ .proof | υ₂ .proof
+... | ⊑□ | ⊑□ = ⊑□
+
+unmatch⇒-cov-dom : ∀ (τ : Typ) {τ₁ τ₂ τ' τ_a τ_b}
+  → (m : τ ⊔ □ ⇒ □ ≡ τ₁ ⇒ τ₂)
+  → (υ₁ : ⌊ τ₁ ⌋) (υ₂ : ⌊ τ₂ ⌋)
+  → (unmatch⇒ {τ} m υ₁ υ₂) .↓ ⊑t τ'
+  → τ' ⊔ □ ⇒ □ ≡ τ_a ⇒ τ_b
+  → υ₁ .↓ ⊑t τ_a
+unmatch⇒-cov-dom (τ_a' ⇒ τ_b') refl υ₁ υ₂ (⊑⇒ {τ₁' = α} {τ₂' = β} p _) m'
+  rewrite ⊔t-zeroᵣ {τ_a'} | ⊔t-zeroᵣ {τ_b'} | ⊔t-zeroᵣ {α} | ⊔t-zeroᵣ {β}
+  with refl ← m' = p
+unmatch⇒-cov-dom □ refl υ₁ υ₂ _ _
+  with υ₁ .proof | υ₂ .proof
+... | ⊑□ | ⊑□ = ⊑□
