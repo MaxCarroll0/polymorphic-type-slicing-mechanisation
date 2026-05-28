@@ -16,36 +16,13 @@ open import Slicing.Synthesis.Synthesis using (MinSynSlice_◂_; minimality; _�
 import Slicing.Synthesis.Synthesis as SS
 open import Semantics.Graduality using (static-gradual-syn; static-gradual-syn-cls; syn-unicity; syn-cls-unicity)
 
+-- Minimality of extract / extract-pos for MinAna / MinAnaPos.
+-- INCOMPLETE: several inductive cases (minS∘₂, minASub, minAλ:, minAλ⇒, minA&₁, minA&₂)
+-- are postulated; closing them likely needs restructuring the constructors and the
+-- ana-rule dispatch infrastructure (see also Slicing.Synthesis.FixedAssmsCalc.extract').
+-- Dissertation: §8.6 Term-Minimal Slices (analysis side).
 module Slicing.Analysis.Minimality where
 
--- Minimality of extract / extract-pos.
---
--- These lemmas state that the MinAna / MinAnaPos data types are
--- rule-faithfully minimal: every MinAnaPos m extracts to an AnaPosSlice
--- whose triple (κ, γ, υ_outer) is least under the lattice ordering
--- ⊑ana-pos, and similarly extract m is minimal for MinAna under ⊑ana
--- (the pair (κ, γ)).
---
--- Proofs follow the synthesis template
--- (`Slicing.Synthesis.FixedAssmsCalc.extract'`): pattern match on m,
--- destructure an arbitrary alternative s' (especially s'.valid), and
--- discharge each branch using the IH and monotonicity properties of
--- the slice combinators (unmatch{⇒,×,+}, hdₛ/tlₛ).
---
--- The catch-all constructors `minViaAnaSlice` / `minViaAnaPosSlice`
--- take an opaque AnaSlice / AnaPosSlice with no minimality guarantee,
--- so for those cases the proof is left as a hole — the algorithm in
--- `Slicing.Analysis.AnaSlicing` does not use the catch-alls, so any
--- algorithmically-produced slice never reaches them.
-
--- unmatch{⇒,×,+}-min variants now live in Core.Typ.Lift alongside their
--- precision lemmas.
-
--- Classification-precision lemma. Provable via static-gradual-syn-cls
--- plus syn-cls-unicity, but unicity requires matching modes. The
--- graduality theorem returns an existential mode, so we cannot pin it
--- to cls₁'s input mode without extra structure (mode-⊑ precondition
--- and direct induction). Postulated until the cleaner proof lands.
 postulate
   syn-cls-precision : ∀ {n Γ₁ Γ₂ C₁ C₂ τ_p₁ τ_p₂ n_f₁ n_f₂ Γ_f₁ Γ_f₂ m₁ m₂}
                     → Γ₁ ⊑ Γ₂ → C₁ ⊑c C₂
@@ -69,9 +46,6 @@ postulate
                                (m : MinAnaPos Cls υ)
                              → IsMinimalPos (extract-pos m)
 
--- Top-level minimality theorems. Mutual because MinAna and MinAnaPos
--- are mutually inductive (minASub, minAdef₁ cross synPos→anaPos; minS∘₂
--- crosses anaPos→synPos).
 mutual
   extract-minimal : ∀ {n Γ₀ C n_f Γ τ τ_p}
                       {Cls : n , Γ₀ ⊢ C at synPos τ_p ▷ n_f , Γ [ ⇐mode τ ]} {υ}
@@ -83,26 +57,10 @@ mutual
                         → (m : MinAnaPos Cls υ)
                         → IsMinimalPos (extract-pos m)
 
-  -- BASE CASES (proven) ------------------------------------------------
-
-  -- min□: extract → ⊥-ana with κ = ⊥ₛ, γ = ⊥ₛ. Any s' ⊑ ⊥-ana has
-  -- s'.κ ⊑ ⊥ₛ and s'.γ ⊑ ⊥ₛ, forcing both to ⊥ₛ; we discharge by ⊥-min.
+  -- min□: bottom slice — both component slices forced to ⊥ₛ.
   extract-minimal min□ s' (κ⊑ , γ⊑) =
     ⊑ₛLat.⊥ₛ-min (s' .κ) , ⊑ₛLat.⊥ₛ-min (s' .γ)
 
-  -- INDUCTIVE CASES (TODO) ---------------------------------------------
-  --
-  -- Each case below follows the synthesis template:
-  --   1. Pattern-match on m to expose the constructor structure.
-  --   2. Take an arbitrary alternative s' : AnaPosSlice Cls υ with s' ⊑ extract-pos m.
-  --   3. Destructure s'.valid (the underlying classification derivation)
-  --      to learn the structural shape of s'.κ, s'.γ, s'.υ_outer.
-  --   4. Apply the IH (extract-pos-minimal m') to the projected sub-slice.
-  --   5. Use unmatch-min-⊑ / monotonicity to discharge the υ_outer obligation.
-  --
-  -- Currently unproved cases are below as interactive holes (not
-  -- postulates). Comments per case point at the specific machinery
-  -- the proof needs.
   extract-minimal (minSλ: {Cls' = Cls'} υ₁ m) s' (κ⊑ , γ⊑)
     with s' .κ                         | κ⊑                        | s' .valid
   ... | _ isSlice (⊑λ τ-prec body-prec) | ⊑λ binder-prec body⊑inner | _ , _ , sλ: wf'' inner-cls' =
@@ -146,25 +104,6 @@ mutual
                 ; valid = _ , _ , inner-cls' }
               ih = extract-minimal m inner-s' (κ-body⊑inner , γ⊑)
           in ⊑∘₁ (proj₁ ih) ⊑□ , proj₂ ih
-  -- minS∘₂ (KEY cross-mutual case).
-  --
-  -- Outer: s∘₂ D₁ eq Cls' at synPos τ₂. extract.κ = fn.σ ∘₂ ana-κ arg.
-  -- s'.valid = s∘₂ D-s' eq-s' arg-cls-s'.
-  --
-  -- Proof outline:
-  --   1. Apply IH on m via inner-arg-s' built from arg-cls-s' (at anaPos τ_a-s'
-  --      bridged to anaPos τ₁ via slice). Get υ-fst ⊑t τ_a-s', plus arg.κ ⊑c s'-arg.
-  --   2. Build a SynSlice candidate for D₁ at query (unmatch⇒-min eq υ-fst ⊥ₛ)
-  --      with progₛ = (s'.γ.↓, s'-fn), syn = D-s'. Need Q ⊑ candidate.type:
-  --      unmatch⇒-min-⊑ applied with eq-s' and (1)'s υ-fst⊑τ_a-s'.
-  --   3. ss minimality on candidate gives fn.γ ⊑ s'.γ and fn.σ ⊑e s'-fn.
-  --   4. Combine (1)+(3) into ⊑∘₂.
-  --
-  -- Bridging lemmas needed:
-  --   - τ_a-s' ⊑t τ₁ (proj-dom-mono on s'.υ_outer-equivalent, but s' is AnaSlice
-  --     not AnaPosSlice; derive via syn-precision + ⊔ properties).
-  --   - υ-fst.↓ ⊑t τ_a-s' (from IH on m after bridging).
-  --
   extract-minimal (minS∘₂ m ss focus focus⊒ cls-lifted) =
     extract-minimal-minS∘₂ (minS∘₂ m ss focus focus⊒ cls-lifted)
   -- minS<>₁: outer κ shape `C <τ>₁`.
@@ -208,11 +147,8 @@ mutual
                 ; valid = _ , _ , inner-cls' }
               ih = extract-minimal m inner-s' (κ-body⊑inner , γ⊑)
           in ⊑&₂ ⊑□ (proj₁ ih) , proj₂ ih
-  -- minScase₁: scrutinee and sibling both sliced to □. The κ becomes
-  -- `case □ of inner.κ.↓ ·₁ □`. By ⊑case₁ inversion, s'.κ.↓ is forced to
-  -- `case □ of s'-C ·₁ □` (with s'-e and s'-e' both □). s'.valid's scase₁
-  -- pattern then gives D = ⇑□ (so τ₀-some = □), eq forcing τ₁ = τ₂ = □,
-  -- inner-cls' at (□ ∷ s'.γ.↓), d₂ = ⇑□.
+  -- minScase₁: outer scrutinee and sibling both □-sliced; ⊑case₁ inversion
+  -- forces s'.κ to the same shape so s'.valid pins inner-cls' at (□ ∷ tlₛ).
   extract-minimal (minScase₁ {Cls' = Cls'} m _ _ _ _ _) s' (κ⊑ , γ⊑)
     with s' .κ                          | κ⊑                       | s' .valid
   ... | _ isSlice (⊑case₁ e-prec body-prec e'-prec) | ⊑case₁ _ body⊑inner _ | _ , _ , scase₁ ⇑□ refl inner-cls' ⇑□ _ =
@@ -277,10 +213,8 @@ mutual
             ∧ (a ⊑a d)
           invert-and-build ih-κ (⊑∷ _ ih-tl) =
             ⊑case₂ ⊑□ ⊑□ ih-κ , ih-tl
-  -- minSπ₁: extract is at π₁-shaped outer κ. Invert s'.κ + κ⊑ + s'.valid
-  -- (without with-abstracting `extract m`, so the IH `extract-minimal m`
-  -- still typechecks against `extract m` rather than a freshly-bound
-  -- inner variable). Build inner-s' for Cls', apply IH, lift via ⊑π₁.
+  -- minSπ₁: invert s'.κ/κ⊑/s'.valid without with-abstracting `extract m` so
+  -- the IH still applies; build inner-s' for Cls', recurse, lift via ⊑π₁.
   extract-minimal (minSπ₁ {Cls' = Cls'} {eq = eq} m) s' (κ⊑ , γ⊑)
     with s' .κ                | κ⊑                | s' .valid
   ... | _ isSlice (⊑π₁ s-proof) | ⊑π₁ κ-body⊑inner | _ , _ , sπ₁ inner-cls' eq' =
@@ -350,12 +284,8 @@ mutual
               ih = extract-minimal m inner-s' (κ-body⊑inner , γ⊑)
           in ⊑def₁ (proj₁ ih) ⊑□ , proj₂ ih
 
-  -- minSdef₂: outer κ shape `def e ⊢₂ C`. Body Cls' at extended ctx (τ' ∷ Γ);
-  -- analogous to minSλ: but with def₂ wrapper. Uses cons-decompₛ to bridge.
-  -- minSdef₂ (restructured): extract.κ.↓ = `def □ ⊢₂ inner.κ.↓` (def-e
-  -- sliced to □). For s' ⊑ extract, s'.κ.↓ = `def □ ⊢₂ s'-C` (s'-e is
-  -- forced to □ by ⊑□). For s'.valid, sdef₂ rule fires with the def-e
-  -- synthesizing □ (via ⇑□), so τ-some = □. inner-cls' lives at (□ ∷ s'.γ.↓).
+  -- minSdef₂: def-e is □-sliced; ⊑def₂ inversion + sdef₂'s ⇑□ premise pin
+  -- inner-cls' at (□ ∷ tlₛ s'.γ). Same shape as minScase₁/₂.
   extract-minimal (minSdef₂ {Cls' = Cls'} m _ _ _ _ _) s' (κ⊑ , γ⊑)
     with s' .κ                          | κ⊑                       | s' .valid
   ... | _ isSlice (⊑def₂ e-prec body-prec) | ⊑def₂ _ body⊑inner | _ , _ , sdef₂ ⇑□ inner-cls' =
@@ -395,11 +325,8 @@ mutual
     , ⊑ₛLat.⊥ₛ-min (ana-γ s')
     , ⊑ₛLat.⊥ₛ-min (ana-υ_outer s')
 
-  -- minA○: outer Cls = a○ at anaPos τ with ⇐mode τ. The a○ rule couples
-  -- the anaPos τ and ⇐mode τ to the same metavariable, so any valid
-  -- derivation at this slice position forces s'.υ_outer.↓ ≡ s'.focus.↓
-  -- (the only matching rule is a○ itself, since aSub would need a
-  -- synPos sub-derivation at ⇐mode, but s○ produces ⇒mode).
+  -- minA○: a○ couples anaPos τ and ⇐mode τ, so any valid s' forces
+  -- s'.υ_outer.↓ ≡ s'.focus.↓ (aSub is ruled out by the mode mismatch).
   -- Hence υ ⊑ₛ s'.υ_outer follows from s'.focus⊒ : υ ⊑ₛ s'.focus.
   -- κ⊑ : (ana-κ s').↓ ⊑c ○ ; only constructor is ⊑○, forcing (ana-κ s').↓ = ○.
   -- Then ana-valid s' must be a○ (aSub at ⇐mode for ○ context needs s○

@@ -1,3 +1,6 @@
+-- Marked expression contexts: an MExp with exactly one hole, used by the marking-side
+-- classification judgement in Semantics.Marking.CtxMarking.
+-- Dissertation: §6.3 Marking (parallel to Core.Ctx for unmarked expressions).
 module Core.MCtx where
 
 open import Data.Nat using (ℕ)

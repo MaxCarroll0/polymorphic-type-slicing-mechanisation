@@ -20,22 +20,17 @@ open import Slicing.Analysis.Alignment using (scase₁-Cls-lifted; scase₂-Cls-
 open import Core.Typ.Lift using (unmatch⇒; unmatch⇒-min; match⇒ₛ; cod⇒ₛ; dom⇒ₛ)
 open import Core.Typ.Properties using (⊔-ann-⇒-⊑-intro-full)
 
+-- Algorithmic construction of MinAna / MinAnaPos from a context classification + query,
+-- plus the top-level `slice-ana` composing with `extract`. Mirrors `slice` in
+-- Slicing.Synthesis.FixedAssmsSlicing.
+-- INCOMPLETE: focus-⊑ witnesses are postulated; the s<>₁ coverage gap keeps
+-- --allow-incomplete-matches in place.
+-- Dissertation: §8.6 Term-Minimal Slices (analysis side).
 module Slicing.Analysis.AnaSlicing where
 
 private
   postulate
     focus-⊑ : ∀ {τ : Typ} (υ φ : ⌊ τ ⌋) → υ ⊑ₛ φ
-
--- Algorithmic construction of MinAna / MinAnaPos from a context
--- classification + query, plus a top-level `slice-ana` that composes
--- with `extract`. Mirrors the structure of `slice` from
--- Slicing.Synthesis.FixedAssmsSlicing.
---
--- Synthesis slices for the function side of s∘₂ (and similar) are
--- obtained via `minExists` applied to `⊤-syn` reindexed to the desired
--- query. minS∘₂'s constructor no longer demands exactness — the inner
--- Cls's position is taken as (dom⇒ₛ ψ eq).↓ where ψ is the min syn
--- slice's type, sidestepping the false `min-syn-exact` postulate.
 
 -- Helper: construct a MinSynSlice D ◂ υ via ⊤-syn → reindex → minExists.
 syn-slice : ∀ {n Γ e τ} → (D : n , Γ ⊢ e ⇑ τ) → (υ : ⌊ τ ⌋) → MinSynSlice D ◂ υ

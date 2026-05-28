@@ -1,4 +1,7 @@
-
+-- Marking-side context classification, decomposition and composition.
+-- INCOMPLETE: dynamic-sums refactor broke the ι₁/ι₂ clauses — see postulates below for the
+-- restructuring this requires (msι₁⇑/msι₂⇑ no longer fit the new mark⇑ι₁/ι₂ output type).
+-- Dissertation: §6.3 Marking.
 module Semantics.Marking.CtxMarking where
 
 open import Data.Nat hiding (_+_; _⊔_)

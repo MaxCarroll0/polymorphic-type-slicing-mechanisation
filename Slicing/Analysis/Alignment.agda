@@ -9,13 +9,13 @@ open import Semantics.Graduality using (static-gradual-ana-cls; static-gradual-s
 open import Slicing.Analysis.Analysis
 open import Slicing.Analysis.AnaSliceCalc
 
+-- Context-weakening lifts derived from static-gradual-{ana,syn}-cls: weaken Γ while letting
+-- the mode shrink, used to assemble lifted classifications inside AnaSlicing.
+-- Dissertation: §8.6 supporting infrastructure.
 module Slicing.Analysis.Alignment where
 
--- Context weakening with mode SHRINKAGE (not strict preservation).
--- Built directly from the static-gradual-ana-cls theorem, which preserves
--- anaPos type (with τ_p₁ = τ_p₂) but allows ⇐mode τ_m to shrink to
--- ⇐mode τ_m' with τ_m' ⊑t τ_m. This is the natural property granted by
--- the graduality theorems.
+-- Context weakening with mode SHRINKAGE (not strict preservation): allows
+-- ⇐mode τ_m to drop to ⇐mode τ_m' (τ_m' ⊑t τ_m) per the graduality theorems.
 weaken-ana-cls : ∀ {n Γ₁ Γ₂ C n_f Γ_f τ_p τ_m}
     → Γ₁ ⊑ Γ₂
     → n , Γ₂ ⊢ C at anaPos τ_p ▷ n_f , Γ_f [ ⇐mode τ_m ]

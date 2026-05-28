@@ -16,21 +16,11 @@ open import Slicing.Synthesis.Synthesis using (SynSlice_◂_; MinSynSlice_◂_; 
 open import Slicing.Analysis.Analysis
 open import Slicing.Analysis.AnaSliceCalc
 
+-- Strengthened gradual lifts: lift-pos-cov / lift-syn-cov also witness focus coverage
+-- (υ ⊑ τ_f) needed by AnaSlicing's algorithmic construction.
+-- INCOMPLETE: minAλ: and minS∘₂ remain postulated pending further restructuring.
+-- Dissertation: §8.6 supporting infrastructure.
 module Slicing.Analysis.FocusCov where
-
--- lift-pos-cov / lift-syn-cov: strengthened static-gradual-{ana,syn}-cls.
---
--- For a MinAnaPos m on Cls and a precondition relating m's structural
--- ana-υ_outer-of-m to the lift's τ_p_₁ input, lift-pos-cov produces the
--- lifted classification AND witnesses focus coverage (υ ⊑ τ_f).
---
--- Preconditions use the direct-mode helpers `ana-υ_outer-of-m` / `syn-*-of-m`
--- from AnaSliceCalc.agda, which compute the relevant slice values WITHOUT
--- going through extract-pos's with-blocked clauses. This is crucial for the
--- precondition to be statable in a way that reduces under abstract m.
---
--- Inductive cases use unmatch+/×/⇒-cov-{fst,snd,cod,dom} from Lift.agda to
--- invert the structural unmatch in the constructor's ana-υ_outer-of-m.
 
 private
   postulate
@@ -99,8 +89,8 @@ mutual
           lift-pos-cov m_inner (⊑∷ pa Γ⊑) C-inner⊑ pb inner-pre
     in _ , _ , _ , Γ_f⊑ , τ_f⊑ , cov , aλ⇒ eq-lifted inner-cls
 
-  -- minAλ:: aλ: c eq wf Cls'. Constructor links outer-υ ⊔ τ₁⇒□ to inner-υ
-  -- via eq-orig and ⊔-ann-⇒-⊑. Currently fallback + TODO for cov.
+  -- minAλ:: outer-υ ⊔ τ₁⇒□ links to inner-υ via eq-orig + ⊔-ann-⇒-⊑;
+  -- focus coverage discharged through cov-witness for now.
   lift-pos-cov {Cls = Cls} {υ = υ} (minAλ: m_inner outer-υ c-lifted eq-orig)
                Γ⊑ C⊑ τ_p⊑ pre
     with static-gradual-ana-cls Γ⊑ C⊑ τ_p⊑ Cls
