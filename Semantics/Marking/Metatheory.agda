@@ -262,15 +262,3 @@ mutual
        with τ ~? τ'
   ...     | yes c  = ě , mark⇓sub d' c
   ...     | no  ¬c = (ě ⦅≁ τ ⦆) , mark⇓sub⇑ d' ¬c
-
--- Unicity: marking is deterministic. TODO
-postulate
-  mark-unique-syn : ∀ {n Γ e ě₁ ě₂ τ₁ τ₂} →
-    n , Γ ⊢ e ↬ ě₁ ⇑ τ₁ →
-    n , Γ ⊢ e ↬ ě₂ ⇑ τ₂ →
-    ě₁ ≡ ě₂ ∧ τ₁ ≡ τ₂
-
-  mark-unique-ana : ∀ {n Γ e ě₁ ě₂ τ} →
-    n , Γ ⊢ e ↬ ě₁ ⇓ τ →
-    n , Γ ⊢ e ↬ ě₂ ⇓ τ →
-    ě₁ ≡ ě₂
