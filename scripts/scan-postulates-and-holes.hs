@@ -1,3 +1,4 @@
+{-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE ForeignFunctionInterface #-}
 {-# LANGUAGE OverloadedStrings #-}
 
@@ -7,8 +8,9 @@ import Control.Monad
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Builder as B
+import qualified Data.ByteString.Char8 as BSC
 import Data.IORef
-import Data.List (sort, isSuffixOf)
+import Data.List (isSuffixOf, sort)
 import Data.Word (Word32)
 import Foreign
 import Foreign.C.ConstPtr (ConstPtr (..))
@@ -24,112 +26,89 @@ foreign import ccall unsafe "tree_sitter_agda"
   c_tree_sitter_agda :: IO (Ptr TSLanguage_)
 
 agdaLanguage :: IO Language
-agdaLanguage = do
-  p <- c_tree_sitter_agda
-  unsafeToLanguage (ConstPtr (castPtr p))
+agdaLanguage = c_tree_sitter_agda >>= unsafeToLanguage . ConstPtr . castPtr
 
-data Item
-  = Pst FilePath Int ByteString ByteString
-  | Hol FilePath Int ByteString
-
-slice :: ByteString -> Word32 -> Word32 -> ByteString
-slice src s e =
-  let s' = fromIntegral s
-      e' = fromIntegral e
-  in BS.take (e' - s') (BS.drop s' src)
-
-isSp :: Word8 -> Bool
-isSp w = w == 0x20 || w == 0x09 || w == 0x0a || w == 0x0d
+type Pst = (FilePath, Int, ByteString, ByteString)
+type Hol = (FilePath, Int, ByteString)
 
 norm :: ByteString -> ByteString
-norm = BS.intercalate " " . filter (not . BS.null) . BS.splitWith isSp
+norm = BSC.unwords . BSC.words
 
-stripLeadingColon :: ByteString -> ByteString
-stripLeadingColon bs =
-  let s = BS.dropWhile (== 0x20) bs
-  in case BS.uncons s of
-       Just (c, r) | c == 0x3A -> BS.dropWhile (== 0x20) r
-       _                       -> bs
+textOf :: ByteString -> Node -> IO ByteString
+textOf src n = do
+  s <- nodeStartByte n
+  e <- nodeEndByte n
+  pure $ BS.take (fromIntegral (e - s)) (BS.drop (fromIntegral s) src)
+
+rowOf :: Node -> IO Int
+rowOf n = succ . fromIntegral . pointRow <$> nodeStartPoint n
 
 childrenOf :: Node -> IO [Node]
 childrenOf n = do
   c <- nodeChildCount n
   if c == 0 then pure [] else mapM (nodeChild n) [0 .. c - 1]
 
-findKid :: ByteString -> [Node] -> IO (Maybe Node)
-findKid _ [] = pure Nothing
-findKid w (n:ns) = do
-  t <- nodeType n
-  if t == w then pure (Just n) else findKid w ns
+childByType :: ByteString -> Node -> IO (Maybe Node)
+childByType ty parent = childrenOf parent >>= go
+  where
+    go []     = pure Nothing
+    go (n:ns) = nodeType n >>= \t -> if t == ty then pure (Just n) else go ns
 
-textOf :: ByteString -> Node -> IO ByteString
-textOf src n = do
-  s <- nodeStartByte n
-  e <- nodeEndByte n
-  pure (slice src s e)
+firstNamedChild :: Node -> IO (Maybe Node)
+firstNamedChild n = do
+  c <- nodeNamedChildCount n
+  if c == 0 then pure Nothing else Just <$> nodeNamedChild n 0
 
-rowOf :: Node -> IO Int
-rowOf n = do
-  p <- nodeStartPoint n
-  pure (fromIntegral (pointRow p) + 1)
+isHole :: ByteString -> Bool
+isHole bs = bs == "?"
+         || BS.length bs >= 2 && BS.head bs == 0x21 && BS.last bs == 0x21
 
-processFunction :: FilePath -> ByteString -> Node -> IO (Maybe Item)
+processFunction :: FilePath -> ByteString -> Node -> IO (Maybe Pst)
 processFunction path src fn = do
-  cs <- childrenOf fn
-  mLhs <- findKid "lhs" cs
-  mRhs <- findKid "rhs" cs
-  case (mLhs, mRhs) of
-    (Just lhs, Just rhs) -> do
-      n <- norm <$> textOf src lhs
-      t <- stripLeadingColon . norm <$> textOf src rhs
-      row <- rowOf fn
-      pure (Just (Pst path row n t))
+  mLhs  <- childByType "lhs" fn
+  mRhs  <- childByType "rhs" fn
+  mExpr <- maybe (pure Nothing) firstNamedChild mRhs
+  case (mLhs, mExpr) of
+    (Just lhs, Just expr) -> do
+      name <- norm <$> textOf src lhs
+      typ  <- norm <$> textOf src expr
+      row  <- rowOf fn
+      pure $ Just (path, row, name, typ)
     _ -> pure Nothing
-
-isNamedHole :: ByteString -> Bool
-isNamedHole bs = BS.length bs >= 2 && BS.head bs == 0x21 && BS.last bs == 0x21
-
-isBareQ :: ByteString -> Bool
-isBareQ bs = bs == "?"
 
 lineAt :: [ByteString] -> Int -> ByteString
 lineAt ls r
   | r >= 1 && r <= length ls = ls !! (r - 1)
   | otherwise                = ""
 
-walk :: FilePath -> ByteString -> [ByteString] -> Node -> IORef [Item] -> IO ()
-walk path src ls node ref = do
+walk
+  :: IORef [Pst] -> IORef [Hol]
+  -> FilePath -> ByteString -> [ByteString]
+  -> Node -> IO ()
+walk psRef hsRef path src ls node = do
   ty <- nodeType node
   case ty of
-    "comment"   -> pure ()
-    "postulate" -> do
-      cs <- childrenOf node
-      forM_ cs $ \c -> do
-        ct <- nodeType c
-        when (ct == "function") $ do
-          mi <- processFunction path src c
-          forM_ mi $ \i -> modifyIORef' ref (i :)
+    "comment" -> pure ()
+    "postulate" -> childrenOf node >>= mapM_ \c -> do
+      ct <- nodeType c
+      when (ct == "function") do
+        mi <- processFunction path src c
+        forM_ mi \p -> modifyIORef' psRef (p :)
     "qid" -> do
       txt <- textOf src node
-      when (isBareQ txt || isNamedHole txt) $ do
+      when (isHole txt) do
         row <- rowOf node
-        modifyIORef' ref (Hol path row (norm (lineAt ls row)) :)
-    _ -> childrenOf node >>= mapM_ (\c -> walk path src ls c ref)
+        modifyIORef' hsRef ((path, row, norm (lineAt ls row)) :)
+    _ -> childrenOf node >>= mapM_ (walk psRef hsRef path src ls)
 
-scanFile :: Parser -> FilePath -> IO [Item]
-scanFile parser path = do
+scanFile :: IORef [Pst] -> IORef [Hol] -> Parser -> FilePath -> IO ()
+scanFile psRef hsRef parser path = do
   src <- BS.readFile path
-  let ls = BS.split 0x0A src
   mtree <- parserParseByteString parser Nothing src
-  case mtree of
-    Nothing -> pure []
-    Just tree -> do
-      root <- treeRootNode tree
-      ref <- newIORef []
-      walk path src ls root ref
-      items <- reverse <$> readIORef ref
-      unsafeTreeDelete tree
-      pure items
+  forM_ mtree \tree -> do
+    root <- treeRootNode tree
+    walk psRef hsRef path src (BS.split 0x0A src) root
+    unsafeTreeDelete tree
 
 findAgda :: FilePath -> IO [FilePath]
 findAgda dir = do
@@ -148,37 +127,36 @@ stripDot :: FilePath -> FilePath
 stripDot ('.':'/':r) = r
 stripDot p           = p
 
-emitPst :: Item -> B.Builder
-emitPst (Pst f l n t) =
-  B.stringUtf8 (stripDot f) <> B.charUtf8 ':' <> B.intDec l
-    <> B.stringUtf8 ": " <> B.byteString n
-    <> B.stringUtf8 " : " <> B.byteString t <> B.charUtf8 '\n'
-emitPst _ = mempty
+prefix :: FilePath -> Int -> B.Builder
+prefix f l = B.stringUtf8 (stripDot f) <> B.char7 ':' <> B.intDec l <> B.stringUtf8 ": "
 
-emitHol :: Item -> B.Builder
-emitHol (Hol f l t) =
-  B.stringUtf8 (stripDot f) <> B.charUtf8 ':' <> B.intDec l
-    <> B.stringUtf8 ": " <> B.byteString t <> B.charUtf8 '\n'
-emitHol _ = mempty
+emitPst :: Pst -> B.Builder
+emitPst (f, l, n, t) = prefix f l <> B.byteString n <> B.stringUtf8 " : " <> B.byteString t <> B.char7 '\n'
+
+emitHol :: Hol -> B.Builder
+emitHol (f, l, x) = prefix f l <> B.byteString x <> B.char7 '\n'
+
+section :: String -> String -> (a -> B.Builder) -> [a] -> B.Builder
+section title empty render xs =
+  B.stringUtf8 title <> B.char7 '\n'
+    <> if null xs
+         then B.stringUtf8 empty <> B.char7 '\n'
+         else foldMap render xs
 
 main :: IO ()
 main = do
   args <- getArgs
-  let root = case args of (a:_) -> a; _ -> "."
-  setCurrentDirectory root
+  setCurrentDirectory (case args of (a:_) -> a; _ -> ".")
   lang <- agdaLanguage
-  withParser $ \parser -> do
+  withParser \parser -> do
     ok <- parserSetLanguage parser lang
     unless ok (error "tree-sitter: failed to set Agda language (ABI mismatch?)")
-    files <- sort <$> findAgda "."
-    items <- concat <$> mapM (scanFile parser) files
-    let psts = [ x | x@Pst{} <- items ]
-        hols = [ x | x@Hol{} <- items ]
-    let header s = B.stringUtf8 s <> B.charUtf8 '\n'
-        absent s = B.stringUtf8 s <> B.charUtf8 '\n'
-        body = header "## Postulates"
-            <> (if null psts then absent "NO POSTULATES" else mconcat (map emitPst psts))
-            <> B.charUtf8 '\n'
-            <> header "## Holes"
-            <> (if null hols then absent "NO HOLES" else mconcat (map emitHol hols))
-    B.hPutBuilder stdout body
+    psRef <- newIORef []
+    hsRef <- newIORef []
+    sort <$> findAgda "." >>= mapM_ (scanFile psRef hsRef parser)
+    psts <- reverse <$> readIORef psRef
+    hols <- reverse <$> readIORef hsRef
+    B.hPutBuilder stdout $
+      section "## Postulates" "NO POSTULATES" emitPst psts
+        <> B.char7 '\n'
+        <> section "## Holes" "NO HOLES" emitHol hols
