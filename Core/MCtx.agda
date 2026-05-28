@@ -39,13 +39,13 @@ data MCtx : Set where
   -- classification (Semantics/Marking/CtxMarking.agda) restricts where each
   -- mark may appear (e.g. ⦅▸⇒⦆ is only valid in the function position of
   -- an application).
-  _⦅≁_⦆            : MCtx → Typ → MCtx           -- Type inconsistency (mark↤sub⇑)
-  _⦅▸⇒⦆            : MCtx → MCtx                  -- Expected arrow type   (mark↦∘⇑)
-  _⦅▸+⦆            : MCtx → MCtx                  -- Expected sum type     (mark↦case⇑, mark↤case⇑)
-  _⦅▸×⦆            : MCtx → MCtx                  -- Expected product type (mark↦π₁⇑, mark↦π₂⇑)
-  _⦅▸∀⦆            : MCtx → MCtx                  -- Expected ∀ type       (mark↦<>⇑)
-  _⦅~⇒⦆            : MCtx → MCtx                  -- Lambda in non-arrow   (mark↦λ⇒, mark↤λ⇑)
-  _⦅~+⦆            : MCtx → MCtx                  -- Injection in non-sum  (mark↦ι₁, mark↦ι₂)
+  _⦅≁_⦆            : MCtx → Typ → MCtx           -- Type inconsistency (mark⇓sub⇑)
+  _⦅▸⇒⦆            : MCtx → MCtx                  -- Expected arrow type   (mark⇑∘⇑)
+  _⦅▸+⦆            : MCtx → MCtx                  -- Expected sum type     (mark⇑case⇑, mark⇓case⇑)
+  _⦅▸×⦆            : MCtx → MCtx                  -- Expected product type (mark⇑π₁⇑, mark⇑π₂⇑)
+  _⦅▸∀⦆            : MCtx → MCtx                  -- Expected ∀ type       (mark⇑<>⇑)
+  _⦅~⇒⦆            : MCtx → MCtx                  -- Lambda in non-arrow   (mark⇑λ⇒, mark⇓λ⇑)
+  _⦅~+⦆            : MCtx → MCtx                  -- Injection in non-sum  (mark⇑ι₁, mark⇑ι₂)
 
 infixr 5  λ:_⇒_
 infixr 5  λ⇒_
