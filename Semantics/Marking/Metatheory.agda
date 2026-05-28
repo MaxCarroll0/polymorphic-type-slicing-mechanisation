@@ -1,3 +1,6 @@
+-- Metatheory of error marking: totality of marking (Theorem 7.1 thm:mark-total) and erasure
+-- preservation (Theorem 7.2 thm:mark-erase).
+-- Dissertation: §7.1 Error Marking.
 module Semantics.Marking.Metatheory where
 
 open import Data.Nat hiding (_+_; _⊔_)
@@ -16,50 +19,51 @@ open import Semantics.Statics.Typing
 open import Semantics.Marking.Judgment
 open import Semantics.Marking.Erasure
 
+-- Dissertation: Theorem 7.2 thm:mark-erase (Erasure of Marking), §7.1.
 -- Well-formedness: erasure recovers original expression
 mutual
   mark-wf-syn : ∀ {n Γ e ě τ} →
-    n ； Γ ⊢ e ↬ ě ⇑ τ → erase ě ≡ e
-  mark-wf-syn mark↦*            = refl
-  mark-wf-syn mark↦□            = refl
-  mark-wf-syn (mark↦Var _)      = refl
-  mark-wf-syn (mark↦Var⇑ _)     = refl
-  mark-wf-syn (mark↦λ: _ d)     = cong (λ: _ ⇒_) (mark-wf-syn d)
-  mark-wf-syn (mark↦Λ d)        = cong Λ (mark-wf-syn d)
-  mark-wf-syn (mark↦∘ d₁ _ d₂)  = cong₂ _∘_ (mark-wf-syn d₁) (mark-wf-ana d₂)
-  mark-wf-syn (mark↦∘⇑ d₁ _ d₂) = cong₂ _∘_ (mark-wf-syn d₁) (mark-wf-ana d₂)
-  mark-wf-syn (mark↦<> d _ _)   = cong (_< _ >) (mark-wf-syn d)
-  mark-wf-syn (mark↦<>⇑ d _ _)  = cong (_< _ >) (mark-wf-syn d)
-  mark-wf-syn (mark↦& d₁ d₂)    = cong₂ _&_ (mark-wf-syn d₁) (mark-wf-syn d₂)
-  mark-wf-syn (mark↦def d₁ d₂)  = cong₂ (def_⊢_) (mark-wf-syn d₁) (mark-wf-syn d₂)
-  mark-wf-syn (mark↦π₁ d _)     = cong π₁ (mark-wf-syn d)
-  mark-wf-syn (mark↦π₁⇑ d _)    = cong π₁ (mark-wf-syn d)
-  mark-wf-syn (mark↦π₂ d _)     = cong π₂ (mark-wf-syn d)
-  mark-wf-syn (mark↦π₂⇑ d _)    = cong π₂ (mark-wf-syn d)
-  mark-wf-syn (mark↦case d _ d₁ d₂ _)
+    n , Γ ⊢ e ↬ ě ⇑ τ → erase ě ≡ e
+  mark-wf-syn mark⇑*            = refl
+  mark-wf-syn mark⇑□            = refl
+  mark-wf-syn (mark⇑Var _)      = refl
+  mark-wf-syn (mark⇑Var⇑ _)     = refl
+  mark-wf-syn (mark⇑λ: _ d)     = cong (λ: _ ⇒_) (mark-wf-syn d)
+  mark-wf-syn (mark⇑Λ d)        = cong Λ (mark-wf-syn d)
+  mark-wf-syn (mark⇑∘ d₁ _ d₂)  = cong₂ _∘_ (mark-wf-syn d₁) (mark-wf-ana d₂)
+  mark-wf-syn (mark⇑∘⇑ d₁ _ d₂) = cong₂ _∘_ (mark-wf-syn d₁) (mark-wf-ana d₂)
+  mark-wf-syn (mark⇑<> d _ _)   = cong (_< _ >) (mark-wf-syn d)
+  mark-wf-syn (mark⇑<>⇑ d _ _)  = cong (_< _ >) (mark-wf-syn d)
+  mark-wf-syn (mark⇑& d₁ d₂)    = cong₂ _&_ (mark-wf-syn d₁) (mark-wf-syn d₂)
+  mark-wf-syn (mark⇑def d₁ d₂)  = cong₂ (def_⊢_) (mark-wf-syn d₁) (mark-wf-syn d₂)
+  mark-wf-syn (mark⇑π₁ d _)     = cong π₁ (mark-wf-syn d)
+  mark-wf-syn (mark⇑π₁⇑ d _)    = cong π₁ (mark-wf-syn d)
+  mark-wf-syn (mark⇑π₂ d _)     = cong π₂ (mark-wf-syn d)
+  mark-wf-syn (mark⇑π₂⇑ d _)    = cong π₂ (mark-wf-syn d)
+  mark-wf-syn (mark⇑case d _ d₁ d₂ _)
     rewrite mark-wf-syn d | mark-wf-syn d₁ | mark-wf-syn d₂ = refl
-  mark-wf-syn (mark↦case⇑ d _ d₁ d₂)
+  mark-wf-syn (mark⇑case⇑ d _ d₁ d₂)
     rewrite mark-wf-syn d | mark-wf-syn d₁ | mark-wf-syn d₂ = refl
-  mark-wf-syn (mark↦case≁ d _ d₁ d₂ _)
+  mark-wf-syn (mark⇑case≁ d _ d₁ d₂ _)
     rewrite mark-wf-syn d | mark-wf-syn d₁ | mark-wf-syn d₂ = refl
-  mark-wf-syn (mark↦λ⇒ d)       = cong λ⇒_ (mark-wf-ana d)
-  mark-wf-syn (mark↦ι₁ d)       = cong ι₁ (mark-wf-ana d)
-  mark-wf-syn (mark↦ι₂ d)       = cong ι₂ (mark-wf-ana d)
+  mark-wf-syn (mark⇑λ⇒ d)       = cong λ⇒_ (mark-wf-ana d)
+  mark-wf-syn (mark⇑ι₁ d)       = cong ι₁ (mark-wf-syn d)
+  mark-wf-syn (mark⇑ι₂ d)       = cong ι₂ (mark-wf-syn d)
 
   mark-wf-ana : ∀ {n Γ e ě τ} →
-    n ； Γ ⊢ e ↬ ě ⇓ τ → erase ě ≡ e
-  mark-wf-ana (mark↤sub d _)    = mark-wf-syn d
-  mark-wf-ana (mark↤sub⇑ d _)   = mark-wf-syn d
-  mark-wf-ana (mark↤λ _ d)      = cong λ⇒_ (mark-wf-ana d)
-  mark-wf-ana (mark↤λ⇑ _ d)     = cong λ⇒_ (mark-wf-ana d)
-  mark-wf-ana (mark↤λ: _ _ _ d)  = cong (λ: _ ⇒_) (mark-wf-ana d)
-  mark-wf-ana (mark↤ι₁ _ d)     = cong ι₁ (mark-wf-ana d)
-  mark-wf-ana (mark↤ι₂ _ d)     = cong ι₂ (mark-wf-ana d)
-  mark-wf-ana (mark↤& _ d₁ d₂)  = cong₂ _&_ (mark-wf-ana d₁) (mark-wf-ana d₂)
-  mark-wf-ana (mark↤def d₁ d₂)  = cong₂ (def_⊢_) (mark-wf-syn d₁) (mark-wf-ana d₂)
-  mark-wf-ana (mark↤case d _ d₁ d₂)
+    n , Γ ⊢ e ↬ ě ⇓ τ → erase ě ≡ e
+  mark-wf-ana (mark⇓sub d _)    = mark-wf-syn d
+  mark-wf-ana (mark⇓sub⇑ d _)   = mark-wf-syn d
+  mark-wf-ana (mark⇓λ _ d)      = cong λ⇒_ (mark-wf-ana d)
+  mark-wf-ana (mark⇓λ⇑ _ d)     = cong λ⇒_ (mark-wf-ana d)
+  mark-wf-ana (mark⇓λ: _ _ _ d)  = cong (λ: _ ⇒_) (mark-wf-ana d)
+  mark-wf-ana (mark⇓ι₁ _ d)     = cong ι₁ (mark-wf-ana d)
+  mark-wf-ana (mark⇓ι₂ _ d)     = cong ι₂ (mark-wf-ana d)
+  mark-wf-ana (mark⇓& _ d₁ d₂)  = cong₂ _&_ (mark-wf-ana d₁) (mark-wf-ana d₂)
+  mark-wf-ana (mark⇓def d₁ d₂)  = cong₂ (def_⊢_) (mark-wf-syn d₁) (mark-wf-ana d₂)
+  mark-wf-ana (mark⇓case d _ d₁ d₂)
     rewrite mark-wf-syn d | mark-wf-ana d₁ | mark-wf-ana d₂ = refl
-  mark-wf-ana (mark↤case⇑ d _ d₁ d₂)
+  mark-wf-ana (mark⇓case⇑ d _ d₁ d₂)
     rewrite mark-wf-syn d | mark-wf-ana d₁ | mark-wf-ana d₂ = refl
 
 -- All type annotations in an expression are well-formed under n type variables
@@ -134,35 +138,36 @@ private
   ¬match₅ : ∀ {ρ : Typ} → ¬ (∃[ τ' ] ρ ≡ ∀· τ') → ∀ {τ'} → ρ ≢ ∀· τ'
   ¬match₅ ¬m eq = ¬m (_ , eq)
 
+-- Dissertation: Theorem 7.1 thm:mark-total (Totality of Marking), §7.1.
 -- Totality: every well-annotated expression can be marked
 -- As long as the annotations are well-scoped. TODO: add marks for type scoping issues
 mutual
   mark-total-syn : ∀ {n} (Γ : Assms) (e : Exp) → n ⊢wf-ann e →
-                   ∃[ ě ] ∃[ τ ] n ； Γ ⊢ e ↬ ě ⇑ τ
+                   ∃[ ě ] ∃[ τ ] n , Γ ⊢ e ↬ ě ⇑ τ
 
-  mark-total-syn Γ * wfa* = * , T* , mark↦*
-  mark-total-syn Γ □ wfa□ = □ , T□ , mark↦□
+  mark-total-syn Γ * wfa* = * , T* , mark⇑*
+  mark-total-syn Γ □ wfa□ = □ , T□ , mark⇑□
   mark-total-syn Γ ⟨ k ⟩ wfaVar
     with Γ at k in eq
-  ...  | just τ  = ⟨ k ⟩ , τ , mark↦Var eq
-  ...  | nothing = ⟨ k ⟩⇑ , T□ , mark↦Var⇑ eq
+  ...  | just τ  = ⟨ k ⟩ , τ , mark⇑Var eq
+  ...  | nothing = ⟨ k ⟩⇑ , T□ , mark⇑Var⇑ eq
   mark-total-syn Γ (λ: τ ⇒ e) (wfaλ: wfτ wfe)
     with mark-total-syn (τ ∷ Γ) e wfe
-  ...  | ě , τ₂ , d = (λ: τ ⇒ ě) , (τ ⇒ τ₂) , mark↦λ: wfτ d
+  ...  | ě , τ₂ , d = (λ: τ ⇒ ě) , (τ ⇒ τ₂) , mark⇑λ: wfτ d
 
   -- Analysis-only forms in synthesis position
   mark-total-syn Γ (λ⇒ e) (wfaλ⇒ wfe)
     with mark-total-ana Γ e T□ wfe
-  ...  | ě , d     = (λ⇒ ě) ⦅~⇒⦆ , T□ , mark↦λ⇒ d
+  ...  | ě , d     = (λ⇒ ě) ⦅~⇒⦆ , T□ , mark⇑λ⇒ d
   mark-total-syn Γ (ι₁ e) (wfaι₁ wfe)
-    with mark-total-ana Γ e T□ wfe
-  ...  | ě , d     = (ι₁ ě) ⦅~+⦆ , T□ , mark↦ι₁ d
+    with mark-total-syn Γ e wfe
+  ...  | ě , τ , d = ι₁ ě , τ + T□ , mark⇑ι₁ d
   mark-total-syn Γ (ι₂ e) (wfaι₂ wfe)
-    with mark-total-ana Γ e T□ wfe
-  ...  | ě , d     = ((ι₂ ě) ⦅~+⦆) , T□ , mark↦ι₂ d
+    with mark-total-syn Γ e wfe
+  ...  | ě , τ , d = ι₂ ě , T□ + τ , mark⇑ι₂ d
   mark-total-syn Γ (Λ e) (wfaΛ wfe)
     with mark-total-syn (shiftΓ _ Γ) e wfe
-  ...  | ě , τ , d = Λ ě , ∀· τ , mark↦Λ d
+  ...  | ě , τ , d = Λ ě , ∀· τ , mark⇑Λ d
 
   mark-total-syn Γ (e₁ ∘ e₂) (wfa∘ wf₁ wf₂)
     with mark-total-syn Γ e₁ wf₁
@@ -170,51 +175,51 @@ mutual
        with match⇒ (τ ⊔ T□ ⇒ T□)
   ...     | yes (τ₁ , τ₂ , eq)
           with mark-total-ana Γ e₂ τ₁ wf₂
-  ...        | ě₂ , d₂ = (ě₁ ∘ ě₂) , τ₂ , mark↦∘ d₁ eq d₂
+  ...        | ě₂ , d₂ = (ě₁ ∘ ě₂) , τ₂ , mark⇑∘ d₁ eq d₂
   mark-total-syn Γ (e₁ ∘ e₂) (wfa∘ wf₁ wf₂)
        | ě₁ , τ , d₁
           | no ¬m -- Note: corresponds to the match⇒ above, TODO: use parallel with to make this proof more readable in general...
           with mark-total-ana Γ e₂ T□ wf₂
   ...        | ě₂ , d₂
-               = ((ě₁ ⦅▸⇒⦆) ∘ ě₂) , T□ , mark↦∘⇑ d₁ (¬match₂ ¬m) d₂
+               = ((ě₁ ⦅▸⇒⦆) ∘ ě₂) , T□ , mark⇑∘⇑ d₁ (¬match₂ ¬m) d₂
 
   mark-total-syn Γ (e < σ >) (wfa<> wfe wfσ)
     with mark-total-syn Γ e wfe
   ...  | ě , τ , d
        with match∀ (τ ⊔ ∀· T□)
   ...     | yes (τ' , eq)
-            = (ě < σ >) , _ , mark↦<> d eq wfσ
+            = (ě < σ >) , _ , mark⇑<> d eq wfσ
   ...     | no ¬m
-            = ((ě ⦅▸∀⦆) < σ >) , T□ , mark↦<>⇑ d (¬match₅ ¬m) wfσ
+            = ((ě ⦅▸∀⦆) < σ >) , T□ , mark⇑<>⇑ d (¬match₅ ¬m) wfσ
 
   mark-total-syn Γ (e₁ & e₂) (wfa& wf₁ wf₂)
     with mark-total-syn Γ e₁ wf₁ | mark-total-syn Γ e₂ wf₂
   ...  | ě₁ , τ₁ , d₁            | ě₂ , τ₂ , d₂
-         = (ě₁ & ě₂) , (τ₁ × τ₂) , mark↦& d₁ d₂
+         = (ě₁ & ě₂) , (τ₁ × τ₂) , mark⇑& d₁ d₂
 
   mark-total-syn Γ (π₁ e) (wfaπ₁ wfe)
     with mark-total-syn Γ e wfe
   ...  | ě , τ , d
        with match× (τ ⊔ T□ T.× T□)
   ...     | yes (τ₁ , τ₂ , eq)
-            = π₁ ě , τ₁ , mark↦π₁ d eq
+            = π₁ ě , τ₁ , mark⇑π₁ d eq
   ...     | no ¬m
-            = π₁ (ě ⦅▸×⦆) , T□ , mark↦π₁⇑ d (¬match₄ ¬m)
+            = π₁ (ě ⦅▸×⦆) , T□ , mark⇑π₁⇑ d (¬match₄ ¬m)
 
   mark-total-syn Γ (π₂ e) (wfaπ₂ wfe)
     with mark-total-syn Γ e wfe
   ...  | ě , τ , d
        with match× (τ ⊔ T□ T.× T□)
   ...     | yes (τ₁ , τ₂ , eq)
-            = π₂ ě , τ₂ , mark↦π₂ d eq
+            = π₂ ě , τ₂ , mark⇑π₂ d eq
   ...     | no ¬m
-            = π₂ (ě ⦅▸×⦆) , T□ , mark↦π₂⇑ d (¬match₄ ¬m)
+            = π₂ (ě ⦅▸×⦆) , T□ , mark⇑π₂⇑ d (¬match₄ ¬m)
 
   mark-total-syn Γ (def e₁ ⊢ e₂) (wfadef wf₁ wf₂)
     with mark-total-syn Γ e₁ wf₁
   ...  | ě₁ , τ₁ , d₁
        with mark-total-syn (τ₁ ∷ Γ) e₂ wf₂
-  ...     | ě₂ , τ₂ , d₂ = (def ě₁ ⊢ ě₂) , τ₂ , mark↦def d₁ d₂
+  ...     | ě₂ , τ₂ , d₂ = (def ě₁ ⊢ ě₂) , τ₂ , mark⇑def d₁ d₂
 
   mark-total-syn Γ (case e of e₁ · e₂) (wfacase wfe wf₁ wf₂)
     with mark-total-syn Γ e wfe
@@ -224,7 +229,7 @@ mutual
          with mark-total-syn Γ e₁ wf₁ | mark-total-syn Γ e₂ wf₂
   ...       | ě₁ , _ , d₁             | ě₂ , _ , d₂
               = (case (ě ⦅▸+⦆) of ě₁ · ě₂) , T□
-                , mark↦case⇑ d (¬match₃ ¬m) d₁ d₂
+                , mark⇑case⇑ d (¬match₃ ¬m) d₁ d₂
   mark-total-syn Γ (case e of e₁ · e₂) (wfacase wfe wf₁ wf₂)
       | ě , τ , d
          | yes (τ₁ , τ₂ , eq)
@@ -232,40 +237,40 @@ mutual
   ...        | ě₁ , τ₁' , d₁                  | ě₂ , τ₂' , d₂
              with τ₁' ~? τ₂'
   ...           | yes c = (case ě of ě₁ · ě₂) , (τ₁' ⊔ τ₂')
-                          , mark↦case d eq d₁ d₂ c
+                          , mark⇑case d eq d₁ d₂ c
   ...           | no ¬c = (case ě of ě₁ · ě₂) , T□
-                          , mark↦case≁ d eq d₁ d₂ ¬c
+                          , mark⇑case≁ d eq d₁ d₂ ¬c
 
   -- analysis
   mark-total-ana : ∀ {n} (Γ : Assms) (e : Exp)  (τ : Typ)
                    → n ⊢wf-ann e →
-                   ∃[ ě ] n ； Γ ⊢ e ↬ ě ⇓ τ
+                   ∃[ ě ] n , Γ ⊢ e ↬ ě ⇓ τ
   mark-total-ana Γ (λ⇒ e) τ (wfaλ⇒ wfe)
     with match⇒ (τ ⊔ T□ ⇒ T□)
   ...  | yes (τ₁ , τ₂ , eq)
        with mark-total-ana (τ₁ ∷ Γ) e τ₂ wfe
-  ...     | ě , d = λ⇒ ě , mark↤λ eq d
+  ...     | ě , d = λ⇒ ě , mark⇓λ eq d
   mark-total-ana Γ (λ⇒ e) τ (wfaλ⇒ wfe)
        | no ¬m
        with mark-total-ana Γ e T□ wfe
-  ...     | ě , d = (λ⇒ ě) ⦅~⇒⦆ , mark↤λ⇑ (¬match₂ ¬m) d
+  ...     | ě , d = (λ⇒ ě) ⦅~⇒⦆ , mark⇓λ⇑ (¬match₂ ¬m) d
 
   -- Subsumption
   mark-total-ana Γ e τ wfa
     with mark-total-syn Γ e wfa
   ...  | ě , τ' , d'
        with τ ~? τ'
-  ...     | yes c  = ě , mark↤sub d' c
-  ...     | no  ¬c = (ě ⦅≁ τ ⦆) , mark↤sub⇑ d' ¬c
+  ...     | yes c  = ě , mark⇓sub d' c
+  ...     | no  ¬c = (ě ⦅≁ τ ⦆) , mark⇓sub⇑ d' ¬c
 
 -- Unicity: marking is deterministic. TODO
 postulate
   mark-unique-syn : ∀ {n Γ e ě₁ ě₂ τ₁ τ₂} →
-    n ； Γ ⊢ e ↬ ě₁ ⇑ τ₁ →
-    n ； Γ ⊢ e ↬ ě₂ ⇑ τ₂ →
+    n , Γ ⊢ e ↬ ě₁ ⇑ τ₁ →
+    n , Γ ⊢ e ↬ ě₂ ⇑ τ₂ →
     ě₁ ≡ ě₂ ∧ τ₁ ≡ τ₂
 
   mark-unique-ana : ∀ {n Γ e ě₁ ě₂ τ} →
-    n ； Γ ⊢ e ↬ ě₁ ⇓ τ →
-    n ； Γ ⊢ e ↬ ě₂ ⇓ τ →
+    n , Γ ⊢ e ↬ ě₁ ⇓ τ →
+    n , Γ ⊢ e ↬ ě₂ ⇓ τ →
     ě₁ ≡ ě₂
