@@ -4,7 +4,7 @@
 -- Dissertation: supports §4.1 Syntax & Relations and §4.2 Lattice Properties.
 module Core.Typ.Properties where
 
-open import Relation.Binary.PropositionalEquality using (_≡_; refl; subst; cong₂; cong)
+open import Relation.Binary.PropositionalEquality using (_≡_; refl; subst; cong₂; cong; sym; trans)
 open import Relation.Nullary using (yes; no; ¬_)
 open import Data.Empty using (⊥-elim)
 open import Data.Nat using (ℕ; zero; suc; _<_; _∸_; _≤_; z≤n; s≤s) renaming (_+_ to _ℕ+_; _≟_ to _≟ℕ_)
@@ -165,6 +165,22 @@ open import Core.Instances
 ⊔-ann-⇒-⊑ (⊑⇒ {τ₂ = b₁} {τ₂' = b₂} p q) r eq
   rewrite ⊔t-zeroᵣ {b₁} | ⊔t-zeroᵣ {b₂}
   with refl ← eq = _ , _ , refl , q
+
+private
+  ⇒-inj-snd : ∀ {a b c d : Typ} → a ⇒ b ≡ c ⇒ d → b ≡ d
+  ⇒-inj-snd refl = refl
+
+⊔-ann-⇒-cov-cod : ∀ {τ τ' τ_h τ_h' cod τ_a' τ_b'}
+  → τ ⊑t τ'
+  → τ ⊔ τ_h ⇒ □ ≡ τ_h ⇒ cod
+  → τ' ⊔ τ_h' ⇒ □ ≡ τ_a' ⇒ τ_b'
+  → cod ⊑t τ_b'
+⊔-ann-⇒-cov-cod ⊑□ eq-1 _
+  with refl ← eq-1 = ⊑□
+⊔-ann-⇒-cov-cod {τ_h = τ_h} {τ_h' = τ_h'}
+                (⊑⇒ {τ₁ = τ_l} {τ₂ = τ_r} {τ₁' = τ_l'} {τ₂' = τ_r'} p q) eq-1 eq-2
+  rewrite ⊔t-zeroᵣ {τ_r} | ⊔t-zeroᵣ {τ_r'}
+  with refl ← ⇒-inj-snd eq-1 | refl ← ⇒-inj-snd eq-2 = q
 
 -- Introduction rules dual to the matching monotonicity lemmas above.
 -- Where ⊔-+-⊑ etc. *eliminate* a precision proof (decomposing it into

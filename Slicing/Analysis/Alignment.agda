@@ -9,13 +9,9 @@ open import Semantics.Graduality using (static-gradual-ana-cls; static-gradual-s
 open import Slicing.Analysis.Analysis
 open import Slicing.Analysis.AnaSliceCalc
 
--- Context-weakening lifts derived from static-gradual-{ana,syn}-cls: weaken Γ while letting
--- the mode shrink, used to assemble lifted classifications inside AnaSlicing.
--- Dissertation: §8.6 supporting infrastructure.
+-- Context-weakening lifts from static-gradual-{ana,syn}-cls (Dissertation §8.6).
 module Slicing.Analysis.Alignment where
 
--- Context weakening with mode SHRINKAGE (not strict preservation): allows
--- ⇐mode τ_m to drop to ⇐mode τ_m' (τ_m' ⊑t τ_m) per the graduality theorems.
 weaken-ana-cls : ∀ {n Γ₁ Γ₂ C n_f Γ_f τ_p τ_m}
     → Γ₁ ⊑ Γ₂
     → n , Γ₂ ⊢ C at anaPos τ_p ▷ n_f , Γ_f [ ⇐mode τ_m ]
@@ -26,8 +22,6 @@ weaken-ana-cls Γ⊑ cls
 ... | _ , _ , .(⇐mode _) , _ , ⇐mode-⊑ τ_m'⊑ , derived =
       _ , τ_m'⊑ , _ , _ , derived
 
--- Synthesis analogue. Built from static-gradual-syn-cls, which allows
--- the synthesized type τ_p to shrink as well as the mode.
 weaken-syn-cls : ∀ {n Γ₁ Γ₂ C n_f Γ_f τ_p τ_m}
     → Γ₁ ⊑ Γ₂
     → n , Γ₂ ⊢ C at synPos τ_p ▷ n_f , Γ_f [ ⇐mode τ_m ]
@@ -37,11 +31,6 @@ weaken-syn-cls Γ⊑ cls
   with static-gradual-syn-cls Γ⊑ (⊑.refl {A = Ctx}) cls
 ... | _ , _ , _ , .(⇐mode _) , τ_p'⊑ , _ , ⇐mode-⊑ τ_m'⊑ , derived =
       _ , τ_p'⊑ , _ , τ_m'⊑ , _ , _ , derived
-
--- The two definitions below are PROVEN from weaken-ana-cls (itself
--- derived from static-gradual-ana-cls). They existentialize the mode
--- as ⇐mode τ_m' with τ_m' ⊑ ana-focus.↓ — the natural result of the
--- graduality theorems.
 
 acase₁-Cls-lifted : ∀ {n n_f Γ Γ' C τ₁ τ τ'}
                       {Cls' : n , (τ₁ ∷ Γ) ⊢ C at anaPos τ ▷ n_f , Γ' [ ⇐mode τ' ]}
@@ -82,9 +71,6 @@ acase₂-Cls-lifted {n = n} m =
       Γ⊑ : (□ ∷ (tlₛ (ana-γ inner)) .↓) ⊑ (hdₛ (ana-γ inner) .↓ ∷ (tlₛ (ana-γ inner)) .↓)
       Γ⊑ = ⊑∷ ⊑□ (⊑.refl {Assms})
   in weaken-ana-cls Γ⊑ inner-cls-decomp
-
--- Synthesis-side analogues: now PROVEN via weaken-syn-cls. Both type and
--- mode are existentialized (the natural outputs of static-gradual-syn-cls).
 
 scase₁-Cls-lifted : ∀ {n n_f Γ Γ' C τ₁ τ₁' τ}
                       {Cls' : n , (τ₁ ∷ Γ) ⊢ C at synPos τ₁' ▷ n_f , Γ' [ ⇐mode τ ]}

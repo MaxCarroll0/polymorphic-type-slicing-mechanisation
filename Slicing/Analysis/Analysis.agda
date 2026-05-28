@@ -16,22 +16,12 @@ open import Core.Typ.Substitution using (shift)
 
 module Slicing.Analysis.Analysis where
 
--- Helper: shifting an all-□ context is a no-op (used in ⊥-ana-valid sΛ case)
 private
   shift-□Assm : ∀ (a n : ℕ) → shiftΓ a (□Assm n) ≡ □Assm n
   shift-□Assm a zero    = refl
   shift-□Assm a (suc n) = cong (Typ.□ ∷_) (shift-□Assm a n)
 
--- AnaSlice: a slice of a SYNTHESISING context (outer synPos τ_p) where
--- the focus is being analysed (focus mode ⇐mode τ). The query υ : ⌊τ⌋
--- specifies how much of the focus type to "explain". `type : ⌊τ_p⌋` is
--- the slice's synthesised type (mirrors `Slicing.Synthesis.SynSlice.type`).
---
--- `focus : ⌊τ⌋` is the slice's enforced focus type, with `υ ⊑ₛ focus`
--- (focus is at least as large as the query). The slice may enforce
--- MORE than υ — e.g., in the function application case (s∘₂), the
--- function's match dom can force a larger focus than the user's υ.
--- This mirrors SynSlice's `valid : υ ⊑ₛ type` looseness.
+-- Slice at a synthesising outer position, where the focus is analysed.
 record AnaSlice {n : ℕ} {Γ₀ : Assms} {C : Ctx} {n' : ℕ} {Γ : Assms} {τ τ_p : Typ}
                 (_ : n , Γ₀ ⊢ C at synPos τ_p ▷ n' , Γ [ ⇐mode τ ]) (υ : ⌊ τ ⌋) : Set where
   field
@@ -44,12 +34,7 @@ record AnaSlice {n : ℕ} {Γ₀ : Assms} {C : Ctx} {n' : ℕ} {Γ : Assms} {τ 
               n , γ .↓ ⊢ κ .↓ at synPos (type .↓) ▷ n'' , Γ' [ ⇐mode (focus .↓) ]
 open AnaSlice public
 
--- AnaPosSlice: the stronger construct for outer analysis positions.
--- `υ_outer : ⌊τ_p⌋` is the minimal outer-analysis-type slice that
--- still enforces υ at the focus. Used recursively when a synPos rule
--- (s∘₂) has an inner classification at anaPos: AnaPosSlice on the
--- argument hands back both the slice and the minimal υ₁ ⊑ τ₁, which
--- is then fed as a query into the SynSlice on the function.
+-- Slice at an analysing outer position, jointly minimised over υ_outer.
 record AnaPosSlice {n : ℕ} {Γ₀ : Assms} {C : Ctx} {n' : ℕ} {Γ : Assms} {τ τ_p : Typ}
                    (_ : n , Γ₀ ⊢ C at anaPos τ_p ▷ n' , Γ [ ⇐mode τ ]) (υ : ⌊ τ ⌋) : Set where
   field
@@ -64,7 +49,6 @@ open AnaPosSlice public
   renaming (κ to ana-κ; γ to ana-γ; υ_outer to ana-υ_outer;
             focus to ana-focus; focus⊒ to ana-focus⊒; valid to ana-valid)
 
--- Precision and minimality for AnaSlice (outer synPos).
 private
   _⊑ana_ : ∀ {n Γ₀ C n' Γ τ τ_p} {Cls : n , Γ₀ ⊢ C at synPos τ_p ▷ n' , Γ [ ⇐mode τ ]} {υ₁ υ₂} →
              AnaSlice Cls υ₁ → AnaSlice Cls υ₂ → Set
@@ -117,15 +101,6 @@ instance
     ; isDecPartialOrder = ⊑ana-isDecPartialOrder
     }
 
--- Precision and minimality for AnaPosSlice (outer anaPos).
---
--- AnaPosSlice precision is on the TRIPLE (κ, γ, υ_outer). Including
--- υ_outer in the order means a minimal anaPos slice also enforces the
--- least outer-analysis-type slice that still explains υ at the focus.
--- This is what justifies, e.g., the function-application rule (minS∘₂):
--- the argument's `ana-υ_outer` is used to query the function side, so
--- minimality of υ_outer is required for the function-side slice to be
--- minimal as well.
 private
   _⊑ana-pos_ : ∀ {n Γ₀ C n' Γ τ τ_p} {Cls : n , Γ₀ ⊢ C at anaPos τ_p ▷ n' , Γ [ ⇐mode τ ]} {υ₁ υ₂} →
                  AnaPosSlice Cls υ₁ → AnaPosSlice Cls υ₂ → Set
@@ -186,17 +161,6 @@ instance
     ; isDecPartialOrder = ⊑ana-pos-isDecPartialOrder
     }
 
--- Bottom validity proofs.
---
--- ⊥-ana-valid (synPos input): returns ∃[ τp' ] τp' ⊑ τ_p with the lifted
--- classification at synPos τp'. The position type τp' cannot in general
--- be □: e.g. for outer rule sλ:, the lifted ctx □(λ:τ⇒C) = λ:□⇒□C has
--- synPos position □⇒τ_b' (never □). So the `type` field of ⊥-ana is no
--- longer ⊥ₛ but the structurally-derived position type.
---
--- ⊥-ana-pos-valid (anaPos input): the position-type CAN be □ — anaPos
--- rules accept arbitrary outer types via match equations, and □ ⊔ □kind
--- = □kind enables uniform descent.
 mutual
   ⊥-ana-valid : ∀ {n Γ₀ C n' Γ τ τ_p}
               → (Cls : n , Γ₀ ⊢ C at synPos τ_p ▷ n' , Γ [ ⇐mode τ ])
@@ -209,7 +173,6 @@ mutual
                   → ∃[ n'' ] ∃[ Γ' ]
                       n , (⊥ₛ {a = Γ₀}) .↓ ⊢ (⊥ₛ {a = C}) .↓ at anaPos ((⊥ₛ {a = τ_p}) .↓) ▷ n'' , Γ' [ ⇐mode ((⊥ₛ {a = τ}) .↓) ]
 
-  -- s○ is unreachable: s○ has [⇒mode] focus, our input is [⇐mode τ]
   ⊥-ana-valid (sλ: wf Cls') with ⊥-ana-valid Cls'
   ... | _ , _ , τb' , τb'⊑ , Cls'-lifted =
         _ , _ , _ , ⊑⇒ ⊑□ τb'⊑ , sλ: wf□ Cls'-lifted
@@ -286,7 +249,6 @@ mutual
   ... | _ , _ , _ , τ'⊑ , Cls'-lifted =
         _ , _ , _ , τ'⊑ , sdef₂ ⇑□ Cls'-lifted
 
-  -- a○: directly
   ⊥-ana-pos-valid a○ = _ , _ , a○
 
   ⊥-ana-pos-valid (aSub Cls' c) with ⊥-ana-valid Cls'
@@ -347,7 +309,6 @@ mutual
 ⊤-ana-pos : ∀ {n Γ₀ C n' Γ τ τ_p} (Cls : n , Γ₀ ⊢ C at anaPos τ_p ▷ n' , Γ [ ⇐mode τ ]) → AnaPosSlice Cls ⊤ₛ
 ⊤-ana-pos Cls = record { κ = ⊤ₛ ; γ = ⊤ₛ ; υ_outer = ⊤ₛ ; focus = ⊤ₛ ; focus⊒ = ⊑ₛ.refl {A = Typ} {x = ⊤ₛ} ; valid = _ , _ , Cls }
 
--- Minimality
 IsMinimal : ∀ {n Γ₀ C n' Γ τ τ_p} {Cls : n , Γ₀ ⊢ C at synPos τ_p ▷ n' , Γ [ ⇐mode τ ]} {υ} → AnaSlice Cls υ → Set
 IsMinimal {Cls = Cls} {υ = υ} s = ∀ (s' : AnaSlice Cls υ) → s' ⊑ana s → s ⊑ana s'
 
@@ -360,8 +321,6 @@ MinAnaSlice Cls υ = Σ[ s ∈ AnaSlice Cls υ ] IsMinimal s
 MinAnaPosSlice : ∀ {n Γ₀ C n' Γ τ τ_p} → (Cls : n , Γ₀ ⊢ C at anaPos τ_p ▷ n' , Γ [ ⇐mode τ ]) → ⌊ τ ⌋ → Set
 MinAnaPosSlice Cls υ = Σ[ s ∈ AnaPosSlice Cls υ ] IsMinimalPos s
 
--- Existence and monotonicity of minimal slices (postulated, matching
--- the SynSlice template).
 postulate
   minExists : ∀ {n Γ₀ C n' Γ τ τ_p} (Cls : n , Γ₀ ⊢ C at synPos τ_p ▷ n' , Γ [ ⇐mode τ ]) υ
             → ∃[ m ] IsMinimal {Cls = Cls} {υ = υ} m

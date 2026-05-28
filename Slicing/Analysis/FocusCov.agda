@@ -9,6 +9,7 @@ open import Semantics.Graduality using (mode-⊑; ⇐mode-⊑; ⇒mode-⊑;
                                           static-gradual-syn-cls; static-gradual-ana-cls)
 open import Core.Typ.Lift
 open import Core.Typ.Properties using (⊔-⇒-⊑; ⊔-×-⊑; ⊔-+-⊑; ⊔-∀-⊑; ⊔-ann-⇒-⊑;
+                                        ⊔-ann-⇒-cov-cod;
                                         sub-⊑; ⊔-mono-⊑)
 open import Core.Assms.Lift using (hdₛ; tlₛ)
 open import Core.Assms.Precision using (shiftΓ-⊑)
@@ -16,15 +17,11 @@ open import Slicing.Synthesis.Synthesis using (SynSlice_◂_; MinSynSlice_◂_; 
 open import Slicing.Analysis.Analysis
 open import Slicing.Analysis.AnaSliceCalc
 
--- Strengthened gradual lifts: lift-pos-cov / lift-syn-cov also witness focus coverage
--- (υ ⊑ τ_f) needed by AnaSlicing's algorithmic construction.
--- INCOMPLETE: minAλ: and minS∘₂ remain postulated pending further restructuring.
--- Dissertation: §8.6 supporting infrastructure.
+-- Gradual lifts with focus-coverage (υ ⊑ τ_f) for AnaSlicing (Dissertation §8.6).
 module Slicing.Analysis.FocusCov where
 
 private
   postulate
-    cov-witness : ∀ {τ : Typ} (υ : ⌊ τ ⌋) (τ_f : Typ) → υ .↓ ⊑t τ_f
     minS∘₂-cov : ∀ {n Γ Γ' C n_f τ_p τ}
                    {Cls : n , Γ ⊢ C at synPos τ_p ▷ n_f , Γ' [ ⇐mode τ ]}
                    {υ : ⌊ τ ⌋} (m : MinAna Cls υ)
@@ -57,8 +54,6 @@ mutual
                    (Γ_f_₁ ⊑ Γ') ∧ (τ_f ⊑ τ) ∧ (υ .↓ ⊑t τ_f) ∧
                    (n , Γ_₁ ⊢ C_₁ at synPos τ_p_₁ ▷ n_f_₁ , Γ_f_₁ [ ⇐mode τ_f ])
 
-  -- LEAF cases for anaPos:
-
   lift-pos-cov (minA○ υ) Γ⊑ ⊑○ τ_p⊑ pre =
     _ , _ , _ , Γ⊑ , τ_p⊑ , pre , a○
 
@@ -73,11 +68,6 @@ mutual
         _ , _ , _ , Γ_f⊑ , τ_f⊑ , cov ,
         aSub inner-cls (~-⊑-down con τ_p⊑ τ'⊑)
 
-  -- INDUCTIVE cases for anaPos:
-
-  -- minAλ⇒: aλ⇒ eq Cls'_inner. ana-υ_outer-of-m = unmatch⇒ eq <hd-binder> <body-υ>.
-  -- Inner classification at anaPos τ₂ in (τ₁ ∷ Γ). Inner-pre comes from
-  -- unmatch⇒-cov-cod (the body-υ.↓ ⊑t τ_b_₁ from the lifted cod).
   lift-pos-cov {τ_p = τ_p} (minAλ⇒ {τ₁ = τ₁} {τ₂ = τ₂} {eq = eq} m_inner)
                Γ⊑ (⊑λu C-inner⊑) τ_p⊑ pre
     with ⊔-⇒-⊑ τ_p⊑ eq
@@ -89,15 +79,17 @@ mutual
           lift-pos-cov m_inner (⊑∷ pa Γ⊑) C-inner⊑ pb inner-pre
     in _ , _ , _ , Γ_f⊑ , τ_f⊑ , cov , aλ⇒ eq-lifted inner-cls
 
-  -- minAλ:: outer-υ ⊔ τ₁⇒□ links to inner-υ via eq-orig + ⊔-ann-⇒-⊑;
-  -- focus coverage discharged through cov-witness for now.
-  lift-pos-cov {Cls = Cls} {υ = υ} (minAλ: m_inner outer-υ c-lifted eq-orig)
-               Γ⊑ C⊑ τ_p⊑ pre
-    with static-gradual-ana-cls Γ⊑ C⊑ τ_p⊑ Cls
-  ... | _ , _ , _ , Γ_f⊑ , ⇐mode-⊑ {τ₁ = τ_f} τ_f⊑ , inner-cls =
-        _ , _ , _ , Γ_f⊑ , τ_f⊑ , cov-witness υ τ_f , inner-cls
+  lift-pos-cov (minAλ: {c = c} {eq = eq} {wf = wf} m_inner outer-υ c-lifted eq-orig)
+               Γ⊑ (⊑λ τ_h⊑ C-inner⊑) τ_p⊑ pre
+    with ⊔-ann-⇒-⊑ τ_p⊑ τ_h⊑ eq
+  ... | _ , τ_b_₁ , eq-lifted , pb =
+    let inner-pre-extract = ⊔-ann-⇒-cov-cod pre eq-orig eq-lifted
+        inner-pre = subst (λ x → x .↓ ⊑t τ_b_₁) (ana-υ_outer-≡ m_inner) inner-pre-extract
+        _ , _ , _ , Γ_f⊑ , τ_f⊑ , cov , inner-cls =
+          lift-pos-cov m_inner (⊑∷ τ_h⊑ Γ⊑) C-inner⊑ pb inner-pre
+    in _ , _ , _ , Γ_f⊑ , τ_f⊑ , cov ,
+       aλ: (~-⊑-down c τ_p⊑ (⊑⇒ τ_h⊑ ⊑□)) eq-lifted (wf-⊑ wf τ_h⊑) inner-cls
 
-  -- minA&₁: outer a&₁ eq Cls' d₂. ana-υ_outer-of-m = unmatch× eq υ-fst ⊥ₛ.
   lift-pos-cov {τ_p = τ_p} (minA&₁ {τ₁ = τ₁} {τ₂ = τ₂} {eq = eq} {d₂ = d₂} m_inner)
                Γ⊑ (⊑&₁ C-inner⊑ e⊑) τ_p⊑ pre
     with ⊔-×-⊑ τ_p⊑ eq
@@ -109,7 +101,6 @@ mutual
     in _ , _ , _ , Γ_f⊑ , τ_f⊑ , cov ,
        a&₁ eq-lifted inner-cls (static-gradual-ana Γ⊑ e⊑ pb d₂)
 
-  -- minA&₂: symmetric to minA&₁.
   lift-pos-cov {τ_p = τ_p} (minA&₂ {τ₁ = τ₁} {τ₂ = τ₂} {eq = eq} {d₁ = d₁} m_inner)
                Γ⊑ (⊑&₂ e⊑ C-inner⊑) τ_p⊑ pre
     with ⊔-×-⊑ τ_p⊑ eq
@@ -121,7 +112,6 @@ mutual
     in _ , _ , _ , Γ_f⊑ , τ_f⊑ , cov ,
        a&₂ eq-lifted (static-gradual-ana Γ⊑ e⊑ pa d₁) inner-cls
 
-  -- minAι₁: outer aι₁ eq Cls'. ana-υ_outer-of-m = unmatch+ eq υ-fst ⊥ₛ.
   lift-pos-cov {τ_p = τ_p} (minAι₁ {τ₁ = τ₁} {τ₂ = τ₂} {eq = eq} m_inner)
                Γ⊑ (⊑ι₁ C-inner⊑) τ_p⊑ pre
     with ⊔-+-⊑ τ_p⊑ eq
@@ -132,7 +122,6 @@ mutual
           lift-pos-cov m_inner Γ⊑ C-inner⊑ pa inner-pre
     in _ , _ , _ , Γ_f⊑ , τ_f⊑ , cov , aι₁ eq-lifted inner-cls
 
-  -- minAι₂: symmetric to minAι₁.
   lift-pos-cov {τ_p = τ_p} (minAι₂ {τ₁ = τ₁} {τ₂ = τ₂} {eq = eq} m_inner)
                Γ⊑ (⊑ι₂ C-inner⊑) τ_p⊑ pre
     with ⊔-+-⊑ τ_p⊑ eq
@@ -143,8 +132,7 @@ mutual
           lift-pos-cov m_inner Γ⊑ C-inner⊑ pb inner-pre
     in _ , _ , _ , Γ_f⊑ , τ_f⊑ , cov , aι₂ eq-lifted inner-cls
 
-  -- minAcase₁: outer acase₁ D eq Cls' d₂. ana-υ_outer-of-m propagates from inner.
-  lift-pos-cov (minAcase₁ {D = D} {eq = eq} {d₂ = d₂} m_inner _ _ _)
+  lift-pos-cov (minAcase₁ {D = D} {eq = eq} {d₂ = d₂} m_inner _ _ _ _)
                Γ⊑ (⊑case₁ e⊑ C-inner⊑ e'⊑) τ_p⊑ pre
     with static-gradual-syn Γ⊑ e⊑ D
   ... | τ₀_₁ , D_₁ , τ₀⊑
@@ -155,8 +143,7 @@ mutual
     in _ , _ , _ , Γ_f⊑ , τ_f⊑ , cov ,
        acase₁ D_₁ eq_₁ inner-cls (static-gradual-ana (⊑∷ p₂ Γ⊑) e'⊑ τ_p⊑ d₂)
 
-  -- minAcase₂: symmetric to minAcase₁.
-  lift-pos-cov (minAcase₂ {D = D} {eq = eq} {d₁ = d₁} m_inner _ _ _)
+  lift-pos-cov (minAcase₂ {D = D} {eq = eq} {d₁ = d₁} m_inner _ _ _ _)
                Γ⊑ (⊑case₂ e⊑ e'⊑ C-inner⊑) τ_p⊑ pre
     with static-gradual-syn Γ⊑ e⊑ D
   ... | τ₀_₁ , D_₁ , τ₀⊑
@@ -167,29 +154,23 @@ mutual
     in _ , _ , _ , Γ_f⊑ , τ_f⊑ , cov ,
        acase₂ D_₁ eq_₁ (static-gradual-ana (⊑∷ p₁ Γ⊑) e'⊑ τ_p⊑ d₁) inner-cls
 
-  -- minAdef₁: outer adef₁ Cls' d₂. Cross into syn via lift-syn-cov.
   lift-pos-cov (minAdef₁ {d₂ = d₂} m_inner) Γ⊑ (⊑def₁ C-inner⊑ e⊑) τ_p⊑ pre
     with lift-syn-cov m_inner Γ⊑ C-inner⊑
   ... | _ , τ'⊑ , _ , _ , _ , Γ_f⊑ , τ_f⊑ , cov , inner-cls =
         _ , _ , _ , Γ_f⊑ , τ_f⊑ , cov ,
         adef₁ inner-cls (static-gradual-ana (⊑∷ τ'⊑ Γ⊑) e⊑ τ_p⊑ d₂)
 
-  -- minAdef₂: outer adef₂ D Cls'. ana-υ_outer-of-m propagates from inner.
-  lift-pos-cov (minAdef₂ {D = D} m_inner _ _ _) Γ⊑ (⊑def₂ e⊑ C-inner⊑) τ_p⊑ pre
+  lift-pos-cov (minAdef₂ {D = D} m_inner _ _ _ _) Γ⊑ (⊑def₂ e⊑ C-inner⊑) τ_p⊑ pre
     with static-gradual-syn Γ⊑ e⊑ D
   ... | τ'_₁ , D_₁ , τ'⊑ =
     let _ , _ , _ , Γ_f⊑ , τ_f⊑ , cov , inner-cls =
           lift-pos-cov m_inner (⊑∷ τ'⊑ Γ⊑) C-inner⊑ τ_p⊑ pre
     in _ , _ , _ , Γ_f⊑ , τ_f⊑ , cov , adef₂ D_₁ inner-cls
 
-  -- LEAF cases for synPos:
-
   lift-syn-cov {Cls = Cls} min□ Γ⊑ C⊑
     with static-gradual-syn-cls Γ⊑ C⊑ Cls
   ... | τ_p_₁ , _ , _ , _ , τ_p⊑ , Γ_f⊑ , ⇐mode-⊑ τ_f⊑ , inner-cls =
         _ , τ_p⊑ , _ , _ , _ , Γ_f⊑ , τ_f⊑ , ⊑□ , inner-cls
-
-  -- INDUCTIVE cases for synPos:
 
   lift-syn-cov (minSλ: {wf = wf} _ m_inner) Γ⊑ (⊑λ τ_h⊑ C-inner⊑)
     with lift-syn-cov m_inner (⊑∷ τ_h⊑ Γ⊑) C-inner⊑
@@ -205,9 +186,6 @@ mutual
         τ_b , pb , _ , _ , _ , Γ_f⊑ , τ_f⊑ , cov ,
         s∘₁ inner-cls eq_₁ (static-gradual-ana Γ⊑ e⊑ pa d₂)
 
-  -- minS∘₂: hardest case. The outer Cls'_inner is at anaPos τ₁, and it's the
-  -- argument analyzed against an inferred dom from D₁. This requires combining
-  -- a synthesis slice on D₁ and lift-pos-cov on Cls'_inner.
   lift-syn-cov m@(minS∘₂ {τ₀ = τ₀} {D₁ = D₁} {eq = eq} m_inner ss focus focus⊒ pkg)
                Γ⊑ C⊑@(⊑∘₂ e⊑ C-inner⊑) = minS∘₂-cov m Γ⊑ C⊑
 
