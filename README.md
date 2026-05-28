@@ -30,10 +30,10 @@ The Nix build itself always succeeds (so the log is recoverable even on a
 failing check); read `result/status` to confirm type-checking actually passed.
 
 ## Dev shell
+Use direnv with the .envrc or nix develop:
 
 ```
 nix develop
 ```
 
-Drops you into a shell with Agda and the standard library on `PATH`. From
-there, `agda all.agda` type-checks the whole project.
+Then, `agda all.agda` type-checks the whole project.
