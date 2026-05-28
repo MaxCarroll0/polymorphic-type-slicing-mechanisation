@@ -140,10 +140,6 @@ postulate
                                   {Cls : n , Γ₀ ⊢ C at anaPos τ_p ▷ n_f , Γ [ ⇐mode τ ]} {υ}
                                   (m : MinAnaPos Cls υ)
                                 → IsMinimalPos (extract-pos m)
-  extract-pos-minimal-binder : ∀ {n Γ₀ C n_f Γ τ τ_p}
-                                 {Cls : n , Γ₀ ⊢ C at anaPos τ_p ▷ n_f , Γ [ ⇐mode τ ]} {υ}
-                                 (m : MinAnaPos Cls υ)
-                               → IsMinimalPos (extract-pos m)
 
 mutual
   extract-minimal : ∀ {n Γ₀ C n_f Γ τ τ_p}
@@ -325,8 +321,43 @@ mutual
   ... | _ , _ , aSub () _
   extract-pos-minimal (minASub {Cls' = Cls'} m) =
     extract-pos-minimal-minASub (minASub m)
-  extract-pos-minimal (minAλ: m a b c) =
-    extract-pos-minimal-binder (minAλ: m a b c)
+  extract-pos-minimal (minAλ: {τ = τ} {τ₁ = τ₁} {τ₂ = τ₂} {Cls' = Cls'}
+                              m outer-υ-slot c-lifted eq-lifted)
+                       s' (κ⊑ , γ⊑ , υ⊑)
+    with s' .ana-κ                  | κ⊑                  | s' .ana-valid
+  ... | _ isSlice (⊑λ τ-prec p)     | ⊑λ binder-prec κ-body⊑ | _ , _ , aλ: c' eq' wf' s'-inner-cls'
+      with ⊔-ann-⇒-⊑ υ⊑ binder-prec eq-lifted
+  ... | _ , _ , derived-eq , τ_b⊑υ-cod
+      with refl ← trans (sym derived-eq) eq' =
+        let inner = extract-pos m
+            hd = hdₛ (ana-γ inner)
+            τ_b'⊑τ₂ = ⊑.trans {Typ} τ_b⊑υ-cod (ana-υ_outer inner .proof)
+            inner-s' : AnaPosSlice Cls' _
+            inner-s' = record
+              { κ       = ↑ p
+              ; γ       = ↑ (⊑∷ τ-prec (s' .ana-γ .proof))
+              ; υ_outer = ↑ τ_b'⊑τ₂
+              ; focus   = s' .ana-focus
+              ; focus⊒  = s' .ana-focus⊒
+              ; valid   = _ , _ , s'-inner-cls'
+              }
+            γ⊑-inner : _ ⊑a ana-γ inner .↓
+            γ⊑-inner = subst (_ ⊑a_) (sym (cons-decompₛ (ana-γ inner)))
+                              (⊑∷ binder-prec γ⊑)
+            ih-κ , ih-γ-raw , ih-υ = extract-pos-minimal m inner-s' (κ-body⊑ , γ⊑-inner , τ_b⊑υ-cod)
+            ih-γ-decomp : (hd .↓ ∷ tlₛ (ana-γ inner) .↓) ⊑a _
+            ih-γ-decomp = subst (_⊑a _) (cons-decompₛ (ana-γ inner)) ih-γ-raw
+            -- outer-υ.↓ ⊑ s'.υ_outer.↓ is genuinely false in the corner case
+            -- where τ has ⇒-shape, hd.↓ = □, and inner υ-cod = □ but s' picks
+            -- υ_outer = □ (then outer-υ = □⇒□ from ⊔-ann-⇒-⊑-intro-full).
+            outer-υ⊑ : outer-υ-slot .↓ ⊑t s' .ana-υ_outer .↓
+            outer-υ⊑ = {!!}
+        in ⊑λ (head-of ih-γ-decomp) ih-κ , tail-of ih-γ-decomp , outer-υ⊑
+        where
+          head-of : ∀ {a b c d} → (a ∷ b) ⊑a (c ∷ d) → a ⊑t c
+          head-of (⊑∷ p _) = p
+          tail-of : ∀ {a b c d} → (a ∷ b) ⊑a (c ∷ d) → b ⊑a d
+          tail-of (⊑∷ _ q) = q
   extract-pos-minimal (minAλ⇒ {τ = τ} {τ₁ = τ₁} {τ₂ = τ₂} {eq = eq} {Cls' = Cls'} m) s' (κ⊑ , γ⊑ , υ⊑)
     with s' .ana-κ                | κ⊑           | s' .ana-valid
   ... | _ isSlice (⊑λu p)          | ⊑λu κ-body⊑ | _ , _ , aλ⇒ s'-match-eq s'-inner-cls'
