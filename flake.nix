@@ -64,28 +64,41 @@
             $stdlib/standard-library.agda-lib
             EOF
 
-            mkdir -p "$out"
+            results="$out/TYPECHECK_RESULTS"
+            mkdir -p "$results"
             set +e
             agda \
               --library-file="$NIX_BUILD_TOP/libraries" \
               -W error --double-check \
-              all.agda 2>&1 | tee "$out/build.log"
+              all.agda 2>&1 | tee "$results/build.log"
             status=''${PIPESTATUS[0]}
             set -e
 
             ts=$(date -u +%FT%TZ)
             if [ "$status" -eq 0 ]; then
-              printf 'PASS  agda exit=0  %s\n' "$ts" > "$out/status"
+              printf 'PASS  agda exit=0  %s\n' "$ts" > "$results/status"
             else
-              printf 'FAIL  agda exit=%s  %s\n' "$status" "$ts" > "$out/status"
+              printf 'FAIL  agda exit=%s  %s\n' "$status" "$ts" > "$results/status"
             fi
+
+            report="$results/postulates_and_holes.txt"
+            {
+              echo "## Postulates"
+              p=$(grep -rEn '^[[:space:]]*postulate([[:space:]]|$)' --include='*.agda' . || true)
+              if [ -n "$p" ]; then echo "$p"; else echo "NO POSTULATES"; fi
+              echo
+              echo "## Holes"
+              h=$(grep -rEn '\{![^!]*!\}|(^|[[:space:]=(,])\?([[:space:]),;]|$)' --include='*.agda' . || true)
+              if [ -n "$h" ]; then echo "$h"; else echo "NO HOLES"; fi
+            } > "$report"
             runHook postBuild
           '';
 
           installPhase = ''
             runHook preInstall
+            mkdir -p "$out/out"
             find . \( -name '*.agda' -o -name '*.agda-lib' -o -name '*.agdai' \) \
-              -exec cp -p --parents -t "$out" {} +
+              -exec cp -p --parents -t "$out/out" {} +
             runHook postInstall
           '';
 
