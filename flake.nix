@@ -11,29 +11,6 @@
       forEachSystem =
         f:
         nixpkgs.lib.genAttrs nixpkgs.lib.systems.flakeExposed (system: f nixpkgs.legacyPackages.${system});
-
-      cleanSrc =
-        pkgs:
-        pkgs.lib.cleanSourceWith {
-          src = ./.;
-          filter =
-            path: type:
-            let
-              bn = baseNameOf (toString path);
-            in
-            !(builtins.elem bn [
-              "_build"
-              ".direnv"
-              ".claude"
-              "context"
-              "result"
-            ])
-            && !(pkgs.lib.hasPrefix "Scratch" bn)
-            && !(pkgs.lib.hasSuffix ".agdai" bn)
-            && !(pkgs.lib.hasSuffix "~" bn)
-            && !(pkgs.lib.hasPrefix "#" bn)
-            && !(pkgs.lib.hasPrefix ".#" bn);
-        };
     in
     {
       devShells = forEachSystem (pkgs: {
@@ -44,13 +21,34 @@
         };
       });
 
-      packages = forEachSystem (pkgs: {
-        default = pkgs.stdenvNoCC.mkDerivation {
-          pname = "type-slicing";
-          version = "0.1.0";
-          src = cleanSrc pkgs;
+      packages = forEachSystem (
+        pkgs:
+        let
+          tsAgda = pkgs.tree-sitter.buildGrammar {
+            language = "agda";
+            version = "0.0.0+e8d47a6";
+            src = pkgs.fetchFromGitHub {
+              owner = "tree-sitter";
+              repo = "tree-sitter-agda";
+              rev = "e8d47a6987effe34d5595baf321d82d3519a8527";
+              hash = "sha256-5h56+A7ZypckJ9mwht7XP/66oiehwAEQ4Z6WeVhQBvQ=";
+            };
+          };
+          tsAgdaLib = pkgs.linkFarm "treesit-agda-lib" [
+            {
+              name = "libtree-sitter-agda${pkgs.stdenv.hostPlatform.extensions.sharedLibrary}";
+              path = "${tsAgda}/parser";
+            }
+          ];
+          ghcWithTS = pkgs.haskellPackages.ghcWithPackages (p: [ p.hs-tree-sitter ]);
+        in
+        {
+          default = pkgs.stdenvNoCC.mkDerivation {
+            pname = "type-slicing";
+            version = "0.1.0";
+            src = ./.;
 
-          nativeBuildInputs = [ pkgs.agda ];
+            nativeBuildInputs = [ pkgs.agda ghcWithTS ];
 
           buildPhase = ''
             runHook preBuild
@@ -81,16 +79,12 @@
               printf 'FAIL  agda exit=%s  %s\n' "$status" "$ts" > "$results/status"
             fi
 
-            report="$results/postulates_and_holes.txt"
-            {
-              echo "## Postulates"
-              p=$(grep -rEn '^[[:space:]]*postulate([[:space:]]|$)' --include='*.agda' . || true)
-              if [ -n "$p" ]; then echo "$p"; else echo "NO POSTULATES"; fi
-              echo
-              echo "## Holes"
-              h=$(grep -rEn '\{![^!]*!\}|(^|[[:space:]=(,])\?([[:space:]),;]|$)' --include='*.agda' . || true)
-              if [ -n "$h" ]; then echo "$h"; else echo "NO HOLES"; fi
-            } > "$report"
+            cp ${./scripts/scan-postulates-and-holes.hs} "$NIX_BUILD_TOP/Scan.hs"
+            ghc -O -tmpdir "$NIX_BUILD_TOP" -odir "$NIX_BUILD_TOP" -hidir "$NIX_BUILD_TOP" \
+              -L${tsAgdaLib} -ltree-sitter-agda \
+              -optl-Wl,-rpath,${tsAgdaLib} \
+              "$NIX_BUILD_TOP/Scan.hs" -o "$NIX_BUILD_TOP/scan-postulates-and-holes"
+            "$NIX_BUILD_TOP/scan-postulates-and-holes" . > "$results/postulates_and_holes.txt"
             runHook postBuild
           '';
 
@@ -107,8 +101,9 @@
           meta = {
             description = "Type-check the Agda formalisation of type slicing";
           };
-        };
-      });
+          };
+        }
+      );
 
       checks = forEachSystem (pkgs: {
         default = self.packages.${pkgs.system}.default;
