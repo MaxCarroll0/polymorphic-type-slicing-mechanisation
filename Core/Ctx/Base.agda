@@ -1,3 +1,5 @@
+-- Typing-context syntax: one-hole expression contexts Ctx and their plugging operation plug C e.
+-- Dissertation: §4.4 Context Classification.
 module Core.Ctx.Base where
 
 open import Relation.Nullary using (¬_)

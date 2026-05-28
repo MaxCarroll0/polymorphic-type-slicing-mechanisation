@@ -1,3 +1,5 @@
+-- Syntax of marked expressions MExp: unmarked terms plus annotation marks such as ⦅≁_⦆, ⦅▸⇒⦆, ⦅~⇒⦆, etc.
+-- Dissertation: §7 Error Marking & Type Error Debugging (marking.tex).
 module Core.MExp where
 
 open import Data.Nat using (ℕ)

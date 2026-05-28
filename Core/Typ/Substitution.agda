@@ -1,3 +1,5 @@
+-- De Bruijn type substitution [τ ↦ τ'] used to instantiate ∀-bound type variables.
+-- Dissertation: supporting infrastructure for §4.1 (Syntax & Relations).
 module Core.Typ.Substitution where
 
 open import Data.Nat using (ℕ; zero; suc; _≟_; _<ᵇ_; _<_; _∸_) renaming (_+_ to _ℕ+_)

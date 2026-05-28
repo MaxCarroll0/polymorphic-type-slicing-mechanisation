@@ -1,9 +1,10 @@
+-- Ground types, used by the cast-insertion dynamics.
 module Semantics.Dynamics.Ground where
 
 open import Relation.Binary.PropositionalEquality using (_≡_; _≢_)
 open import Core.Typ using (Typ; □; *; _⇒_; _+_; _×_; ∀·)
 
--- Ground types: the "skeleton" forms — one level of structure with □ leaves
+-- Ground types: the "skeleton" forms - one level of structure with □ leaves
 data Ground : Typ → Set where
   ground*  :                Ground *
   ground⇒  :                Ground (□ ⇒ □)

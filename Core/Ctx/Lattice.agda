@@ -1,3 +1,5 @@
+-- Bi-Heyting lattice structure on the slice lattice of one-hole contexts.
+-- Dissertation: §4.2 Lattice Properties (Theorem 4.6 thm:slice-lattices, ctx instance).
 module Core.Ctx.Lattice where
 
 open import Data.Product using (_,_; proj₁; proj₂)

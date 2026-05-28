@@ -1,3 +1,4 @@
+-- Values of the internal language (closed canonical forms of IntExp).
 module Semantics.Dynamics.Values where
 
 open import Relation.Binary.PropositionalEquality using (_≢_)

@@ -1,3 +1,5 @@
+-- Mark-erasure operation: drops marks from a marked expression to recover the original Exp.
+-- Dissertation: §7.1 Error Marking (supporting `erase` for Theorem 7.2 thm:mark-erase).
 module Semantics.Marking.Erasure where
 
 open import Data.Nat using (ℕ)

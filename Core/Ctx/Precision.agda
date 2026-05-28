@@ -1,3 +1,6 @@
+-- Precision on one-hole contexts and the fact that plugging preserves precision
+-- (Lemma 4.10 lem:plug-precision).
+-- Dissertation: §4.4 Context Classification (context precision, core-calculus.tex).
 module Core.Ctx.Precision where
 
 open import Data.Product using (_,_; uncurry)
@@ -182,6 +185,7 @@ private
                       }
 
 -- Plug preserves precision
+-- Dissertation: Lemma 4.10 lem:plug-precision (Plug Preserves Precision), §4.4.
 plug-preserves-⊑ : ∀ {C C' e e'} → C ⊑c C' → e ⊑ e' → plug C e ⊑ plug C' e'
 plug-preserves-⊑ ⊑○ p               = p
 plug-preserves-⊑ (⊑λ q r) p         = E.⊑λ    q (plug-preserves-⊑ r p)

@@ -1,3 +1,5 @@
+-- Precision on typing assumptions Γ ⊑ Γ': domain inclusion plus pointwise precision on shared bindings.
+-- Dissertation: §4.1 Syntax & Relations ("Precision on Typing Assumptions" paragraph).
 module Core.Assms.Precision where
 
 open import Data.List using (List; []; _∷_; length)

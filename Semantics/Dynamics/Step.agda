@@ -1,3 +1,4 @@
+-- Small-step reduction relation for the internal language.
 module Semantics.Dynamics.Step where
 
 open import Data.Nat using (ℕ; zero)

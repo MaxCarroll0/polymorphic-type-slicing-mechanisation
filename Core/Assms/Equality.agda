@@ -1,3 +1,5 @@
+-- Decidable propositional equality of typing assumptions.
+-- Dissertation: supporting infrastructure for §4.1 (Syntax & Relations).
 module Core.Assms.Equality where
 
 open import Data.List using (List; []; _∷_)

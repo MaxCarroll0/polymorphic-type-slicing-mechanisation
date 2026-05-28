@@ -1,3 +1,5 @@
+-- Decidable propositional equality of expressions.
+-- Dissertation: supporting infrastructure for §4.1 (Syntax & Relations).
 module Core.Exp.Equality where
 
 open import Data.Nat using (ℕ) renaming (_≟_ to _≟ℕ_)

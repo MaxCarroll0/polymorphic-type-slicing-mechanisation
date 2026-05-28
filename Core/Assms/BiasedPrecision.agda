@@ -1,3 +1,5 @@
+-- Right-biased precision _≼a_ on assumptions, where □ is the top element (a dual order to the
+-- standard left-biased ⊑). Not currently used; intended for bounded slices. EXPLORATORY.
 module Core.Assms.BiasedPrecision where
 
 open import Data.List using ([]; _∷_)

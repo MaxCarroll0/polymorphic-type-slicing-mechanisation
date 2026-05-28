@@ -1,3 +1,5 @@
+-- Generic typeclass instances assembling the slice-category structure (HasPrecision, HasJoin,
+-- HasMeet, …), then specialised by each Core/*/Lattice.agda.
 module Core.Instances where
 
 open import Data.Product using (_×_; _,_; proj₁; proj₂)
@@ -176,7 +178,6 @@ infix 4 _≈?_ _≉_
 record HasMeet (A : Set) ⦃ hp : HasPrecision A ⦄ : Set where
   field
     _⊓_ : A → A → A
-    -- Closure required to lift to meets on slices of a term _⊓ₛ_
     closure : ∀ {a b c} → a ⊑ c → b ⊑ c → a ⊓ b ⊑ c
   infixl 6 _⊓_
 open HasMeet ⦃...⦄ public
@@ -184,12 +185,10 @@ open HasMeet ⦃...⦄ public
 record HasJoin (A : Set) ⦃ hp : HasPrecision A ⦄ : Set where
   field
     _⊔_ : A → A → A
-    -- In this case, closure equates to the LUB lattice property
     closure : ∀ {a b c} → a ⊑ c → b ⊑ c → a ⊔ b ⊑ c
   infixl 6 _⊔_
 open HasJoin ⦃...⦄ public
 
--- e (only for types/expression where we have a Meet Semilattice)
 -- TODO: Unify _⊑_ with _⊑ₛ_ by giving ⌊ a ⌋ a HasPrecision instance
 -- with _≈_ = _≈ₛ_ and _⊑_ = _⊑ₛ_
 

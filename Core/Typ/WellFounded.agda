@@ -1,5 +1,7 @@
--- Well-foundedness postulates for strict precision on type slices.
--- The type slice lattice ⌊ τ ⌋ is finite, so both strict orders are well-founded.
+-- Well-foundedness postulates for strict precision on type slices: the type slice lattice
+-- ⌊ τ ⌋ is finite, so both strict orders are well-founded.
+-- Dissertation: §4.2 Lattice Properties (Theorem 4.5 thm:slice-finite,
+-- Proposition 4.8 prop:slice-wf-up).
 module Core.Typ.WellFounded where
 
 open import Induction.WellFounded using (WellFounded; Acc; acc)
@@ -27,7 +29,7 @@ postulate
 postulate
   ⊐ₛ-wf : ∀ {τ : Typ} → WellFounded (λ (a b : ⌊ τ ⌋) → a .↓ ⊐ b .↓)
 
--- ⊏×⊐ is contained in "first proj's ⊏" — well-founded by InverseImage of ⊏ₛ-wf.
+-- ⊏×⊐ is contained in "first proj's ⊏" - well-founded by InverseImage of ⊏ₛ-wf.
 ⊏×⊐-wf : ∀ {τ₁ τ₂ : Typ}
   → WellFounded (λ (p q : ⌊ τ₁ ⌋ × ⌊ τ₂ ⌋) →
       proj₁ p .↓ ⊏ proj₁ q .↓

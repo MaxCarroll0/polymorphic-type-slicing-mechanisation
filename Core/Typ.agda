@@ -1,3 +1,4 @@
+-- Dissertation: §4.1 Syntax & Relations, §4.2 Lattice Properties.
 module Core.Typ where
 open import Agda.Builtin.FromNat using (Number; fromNat)
 

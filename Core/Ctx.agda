@@ -1,3 +1,4 @@
+-- Dissertation: §4.4 Context Classification, §4.2 Lattice Properties.
 module Core.Ctx where
 
 open import Core.Ctx.Base public hiding (_kind?_; diag; shallow-disequality)

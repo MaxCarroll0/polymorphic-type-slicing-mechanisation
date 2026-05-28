@@ -1,3 +1,5 @@
+-- Decidable propositional equality of one-hole contexts.
+-- Dissertation: supporting infrastructure for §4.4 (Context Classification).
 module Core.Ctx.Equality where
 
 open import Data.Product using (_,_; uncurry)

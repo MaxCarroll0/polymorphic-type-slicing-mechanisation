@@ -1,3 +1,5 @@
+-- Type syntax: Typ inductive datatype with □, *, sums, products, arrows, ∀ and type variables.
+-- Dissertation: §4.1 Syntax & Relations (core-calculus.tex).
 module Core.Typ.Base where
 
 open import Data.Nat using (ℕ; _≟_; suc)

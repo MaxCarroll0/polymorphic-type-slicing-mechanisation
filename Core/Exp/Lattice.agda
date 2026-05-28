@@ -1,3 +1,5 @@
+-- Bi-Heyting lattice structure on expression slices ⌊e⌋ (meets, joins, top, bottom).
+-- Dissertation: §4.2 Lattice Properties (Theorem 4.6 thm:slice-lattices, exp instance).
 module Core.Exp.Lattice where
 
 open import Data.Nat using (ℕ) renaming (_≟_ to _≟ℕ_)

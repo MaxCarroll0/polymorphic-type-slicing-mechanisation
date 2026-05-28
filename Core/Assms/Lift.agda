@@ -1,3 +1,6 @@
+-- Lifts assumption-list operations (cons, head/tail, lookup, update at an index, shift under
+-- a type-variable binder) to assumption slices, with monotonicity and bottom-update lemmas.
+-- Dissertation: supports §4.1 Syntax & Relations and §4.2 Lattice Properties.
 module Core.Assms.Lift where
 
 open import Data.Nat using (ℕ; zero; suc)

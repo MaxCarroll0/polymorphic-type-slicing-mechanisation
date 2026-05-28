@@ -1,4 +1,5 @@
--- Zone condition induction lemmas for the Kleene fixed-point iteration.
+-- Zone-condition induction lemmas for the Kleene fixed-point iteration on case expressions.
+-- Dissertation: supporting infrastructure for §8.6 (Fixed Point Algorithm for Case Expressions).
 module Slicing.Synthesis.ZoneInduction where
 
 open import Data.Product using (_,_; proj₁; proj₂; Σ-syntax; ∃-syntax) renaming (_×_ to _∧_)

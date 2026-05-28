@@ -1,3 +1,8 @@
+-- Typing assumptions: finite list of types (rather than the partial function used in the
+-- dissertation), so there is no syntactic way to omit an assumption; use □ for that role
+-- instead. This is slightly less general for non-minimal slices, but for minimal slices any
+-- variable assumed □ is equivalent to omitting it entirely.
+-- Dissertation: §4.1 Syntax & Relations.
 module Core.Assms.Base where
 
 open import Data.List using (List; []; _∷_; length; map)

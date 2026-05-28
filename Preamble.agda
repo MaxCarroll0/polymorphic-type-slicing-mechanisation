@@ -1,3 +1,4 @@
+-- TODO: use as a common preamble across modules.
 module Preamble where
 
 -- Data types

@@ -12,6 +12,8 @@ open import Core.Typ hiding (□)
 open import Core.Assms.Base
 open import Core.Assms.Precision
 
+-- Bi-Heyting lattice structure on the slice lattice of typing assumptions (per-position).
+-- Dissertation: §4.2 Lattice Properties (Theorem 4.6 thm:slice-lattices, assms instance).
 module Core.Assms.Lattice where
 
 -- Pointwise meet and join

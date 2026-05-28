@@ -1,3 +1,6 @@
+-- Type precision τ ⊑ τ', the type-slice carrier ⌊_⌋, and the proof that slices of the
+-- same type are mutually consistent (Lemma 4.4 lem:slices-consistent).
+-- Dissertation: §4.1 Syntax & Relations (precision); §4.2 Lattice Properties.
 module Core.Typ.Precision where
 
 open import Relation.Binary using (IsPartialOrder; IsDecPartialOrder; IsPreorder; IsEquivalence)
@@ -108,6 +111,7 @@ private
 ⊑to~  (⊑⇒ p₁ p₂)  =  ~⇒ (⊑to~ p₁) (⊑to~ p₂)
 ⊑to~  (⊑∀ p)      =  ~∀ (⊑to~ p)
 
+-- Dissertation: Lemma 4.4 lem:slices-consistent (Slices are Mutually Consistent), §4.2.
 -- Slices of the same type are consistent
 ⊑-consistent : ∀ {τ₁ τ₂ τ}
              → τ₁ ⊑t τ    →  τ₂ ⊑t τ     →  τ₁ ~ τ₂

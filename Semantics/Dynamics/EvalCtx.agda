@@ -1,3 +1,4 @@
+-- Evaluation contexts used to lift small-step reduction over compound expressions.
 module Semantics.Dynamics.EvalCtx where
 
 open import Core.Typ using (Typ)

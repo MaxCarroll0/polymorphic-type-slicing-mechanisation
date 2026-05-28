@@ -1,3 +1,4 @@
+-- Dissertation: §4 The Core Calculus.
 module Core where
 
   open import Core.Instances public

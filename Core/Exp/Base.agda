@@ -1,3 +1,5 @@
+-- Expression syntax: Exp inductive datatype for the external language (vars, λ, ∘, ×, +, case, Λ, def, etc.).
+-- Dissertation: §4.1 Syntax & Relations (core-calculus.tex).
 module Core.Exp.Base where
 
 open import Data.Nat using (ℕ; _≟_)

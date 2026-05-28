@@ -1,3 +1,6 @@
+-- Lifts expression constructors (pairing, projections, λ:, Λ, def, case, ι₁, ι₂) to expression
+-- slices, producing a sliced expression from sliced sub-expressions.
+-- Dissertation: supports §4.1 Syntax & Relations and §4.2 Lattice Properties.
 module Core.Exp.Lift where
 
 open import Core.Typ

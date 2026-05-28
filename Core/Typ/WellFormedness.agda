@@ -1,3 +1,5 @@
+-- Well-scopedness of types under a given number of free type variables.
+-- Dissertation: supporting infrastructure for §4.1 (Syntax & Relations).
 module Core.Typ.WellFormedness where
 
 open import Data.Nat using (ℕ; zero; suc; _<_; _≤_; s≤s; z≤n; _<ᵇ_; _∸_)

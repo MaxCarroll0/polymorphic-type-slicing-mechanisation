@@ -1,3 +1,5 @@
+-- Left/right injections L, R lifting slices of τ₁ (resp. τ₂) into slices of τ₁ ⊔ τ₂ when τ₁ ~ τ₂,
+-- with monotonicity and distributivity over ⊓ₛ / ⊔ₛ.
 module Core.Typ.Injection where
 
 open import Relation.Binary.PropositionalEquality using (_≡_; refl)

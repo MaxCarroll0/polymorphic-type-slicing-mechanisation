@@ -1,3 +1,4 @@
+-- Internal-language expression syntax (post-elaboration: cast forms, explicit type applications, etc.).
 module Core.IntExp where
 
 open import Data.Nat using (ℕ; zero; suc; _<ᵇ_; _∸_) renaming (_+_ to _ℕ+_; _≟_ to _≟ℕ_)

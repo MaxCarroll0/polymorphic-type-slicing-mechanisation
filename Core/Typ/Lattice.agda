@@ -1,3 +1,6 @@
+-- Bi-Heyting lattice structure on type slices ⌊τ⌋: meets, joins, top, bottom, and Heyting/
+-- co-Heyting (relative pseudo-)complements, mechanising Theorem 4.6 (thm:slice-lattices).
+-- Dissertation: §4.2 Lattice Properties.
 module Core.Typ.Lattice where
 
 open import Data.Nat using (ℕ) renaming (_≟_ to _≟ℕ_)
