@@ -10,6 +10,12 @@ open import Slicing.Synthesis.BoundedSynthesis
 open import Slicing.Synthesis.Decompositions
 open import Core.Assms.BiasedPrecision using (_≼a_; _≼ₛ_; ≼ₛ-⊔ₛ-closed; ≼ₛ-weaken-⊔ₛᵣ; ≼ₛ-weaken-⊔ₛₗ; ⊑-≼-trans)
 
+-- Decomposition lemmas for BoundedMinSynSlice: how a bounded-minimal product decomposes into
+-- bounded-minimal factors, where each factor receives the sibling's context as part of its
+-- bound. The product-style construction here motivates the BiasedPrecision interface (the bound
+-- can sit above either factor independently). Restrictions of these decompositions would feed
+-- into a completeness proof for the bounded sketch in Slicing.Synthesis.SynSliceCalc (and,
+-- analogously, the inductive calculus in Slicing.Synthesis.FixedAssmsCalc). EXPLORATORY.
 module Slicing.Synthesis.BoundedDecompositions where
 
 open ⊑ {A = Assms} using () renaming (refl to ⊑a-refl)
@@ -17,14 +23,14 @@ open ⊑ {A = Exp} using () renaming (refl to ⊑e-refl)
 
 bounded-min-prod-construction
   : ∀ {n Γ e₁ e₂ τ₁ τ₂}
-      {D₁ : n ； Γ ⊢ e₁ ↦ τ₁} {D₂ : n ； Γ ⊢ e₂ ↦ τ₂}
+      {D₁ : n , Γ ⊢ e₁ ⇑ τ₁} {D₂ : n , Γ ⊢ e₂ ⇑ τ₂}
       {υ₁ : ⌊ τ₁ ⌋} {υ₂ : ⌊ τ₂ ⌋} {Φ : ⌊ Γ ⌋}
       (m₁ : SynSlice D₁ ◂ υ₁) (m₂ : SynSlice D₂ ◂ υ₂)
     → (_≼ₛ_ {Γ = Γ} (Φ ⊔ₛ (m₂ ↓γₛ)) (m₁ ↓γₛ))
     → (_≼ₛ_ {Γ = Γ} (Φ ⊔ₛ (m₁ ↓γₛ)) (m₂ ↓γₛ))
     → BoundedIsMinimal (Φ ⊔ₛ (m₂ ↓γₛ)) m₁
     → BoundedIsMinimal (Φ ⊔ₛ (m₁ ↓γₛ)) m₂
-    → BoundedMinSynSlice (↦& D₁ D₂) (υ₁ ×ₛ υ₂) Φ
+    → BoundedMinSynSlice (⇑& D₁ D₂) (υ₁ ×ₛ υ₂) Φ
 bounded-min-prod-construction {D₁ = D₁} {D₂ = D₂} {Φ = Φ} m₁ m₂ Φγ₂≼γ₁ Φγ₁≼γ₂ min₁ min₂
   = m₁ &syn m₂ , Φ≼m×γ , bmin
   where
@@ -48,8 +54,8 @@ bounded-min-prod-construction {D₁ = D₁} {D₂ = D₂} {Φ = Φ} m₁ m₂ Φ
     bmin : BoundedIsMinimal Φ (m₁ &syn m₂)
     bmin s' Φ≼s'γ s'⊑m×
       with s' .syn | s' .valid | s' ↓σ⊑ | s' ↓ϕ⊑
-    ... | ↦□ | () | _ | _
-    ... | ↦& d₁' d₂' | ⊑× v₁ v₂ | ⊑& σ₁'⊑ σ₂'⊑ | ⊑× ϕ₁'⊑ ϕ₂'⊑
+    ... | ⇑□ | () | _ | _
+    ... | ⇑& d₁' d₂' | ⊑× v₁ v₂ | ⊑& σ₁'⊑ σ₂'⊑ | ⊑× ϕ₁'⊑ ϕ₂'⊑
       with subst (s' ↓ρ ⊑_) (&syn-↓ρ m₁ m₂) s'⊑m×
     ... | s'γ⊑γ⊔ , ⊑& σ₁'⊑m₁σ σ₂'⊑m₂σ
       = let 

@@ -17,29 +17,31 @@ import Slicing.Synthesis.Synthesis as SS
 open import Slicing.Synthesis.Decompositions
 open import Slicing.Synthesis.FixedAssmsSynthesis as Fix
 
+-- Counterexamples to candidate properties of synthesis and term-minimal slicing.
+-- Dissertation: §5.5, §5.6, §8.3, §8.6.
 module Slicing.Counterexamples where
 
--- Counterexample 1: ⊔syn does not preserve exactness
--- ↦□ allows arbitrary γ, so joining pollutes the assumptions.
+-- Dissertation: Counterexample 5.12 lem:exact-not-closed (Joins do not preserve exactness), §5.6.
+-- ⊔syn does not preserve exactness - ⇑□ allows arbitrary γ, so joining pollutes the assumptions.
 ¬⊔syn-closed
-  : ¬ (∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} {υ}
+  : ¬ (∀ {n Γ e τ} {D : n , Γ ⊢ e ⇑ τ} {υ}
          (s₁ s₂ : ExactSynSlice D ◂ υ)
        → (s₁ .proj₁ ⊔syn s₂ .proj₁) .type ⊑ₛ υ)
 
 module ⊔-closure-counterexample where
   open Eq using (refl)
-  D : 0 ； * ∷ [] ⊢ 0 ↦ *
-  D = ↦Var refl
+  D : 0 , * ∷ [] ⊢ 0 ⇑ *
+  D = ⇑Var refl
 
   υ : ⌊ Typ.* ⌋
   υ = ⊥ₛ
 
   s₁e : ExactSynSlice D ◂ υ
-  s₁e = (⊤ₛ ,ₛ ⊥ₛ) ⇑ ⊥ₛ ∈! ↦□
+  s₁e = (⊤ₛ ,ₛ ⊥ₛ) ⇑ ⊥ₛ ∈! ⇑□
   s₁ = s₁e .proj₁
 
   s₂e : ExactSynSlice D ◂ υ
-  s₂e = (⊥ₛ ,ₛ ⊤ₛ) ⇑ ⊥ₛ ∈! ↦Var refl
+  s₂e = (⊥ₛ ,ₛ ⊤ₛ) ⇑ ⊥ₛ ∈! ⇑Var refl
   s₂ = s₂e .proj₁
 
   ϕ⊔ = (s₁ ⊔syn s₂) .type
@@ -62,18 +64,18 @@ module ⊔-closure-counterexample where
   in ⊔-closed-counterexample ⋢
 
 
--- Counterexample 2: Even with minimality, ⊔syn still
---                   does not always synthesise exactly υ₁ ⊔ₛ υ₂
+-- Dissertation: Counterexample 5.13 lem:join-not-tight (Joins do not preserve exactness,
+-- even under minimality), §5.6.
 ¬⊔syn-preserves-join
-  : ¬ (∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} {υ₁ υ₂}
+  : ¬ (∀ {n Γ e τ} {D : n , Γ ⊢ e ⇑ τ} {υ₁ υ₂}
         ((s₁ , _) : ExactSynSlice D ◂ υ₁) ((s₂ , _) : ExactSynSlice D ◂ υ₂)
       → IsMinimal s₁ → IsMinimal s₂
       → (s₁ ⊔syn s₂) .type ⊑ₛ υ₁ ⊔ₛ υ₂)
 module ⊔-syn-preserves-join-counterexample where
   open Eq using (refl)
 
-  D : 0 ； * ⇒ * ∷ [] ⊢ 0 & 0 ↦ (* ⇒ *) × (* ⇒ *)
-  D = ↦& (↦Var refl) (↦Var refl)
+  D : 0 , * ⇒ * ∷ [] ⊢ 0 & 0 ⇑ (* ⇒ *) × (* ⇒ *)
+  D = ⇑& (⇑Var refl) (⇑Var refl)
 
   υ₁ : ⌊ (* ⇒ *) × (* ⇒ *) ⌋
   υ₁ = □ × (□ ⇒ *) isSlice ⊑× ⊑□ (⊑⇒ ⊑□ ⊑*)
@@ -83,23 +85,23 @@ module ⊔-syn-preserves-join-counterexample where
 
   s₁e : ExactSynSlice D ◂ υ₁
   s₁e = (↑ (⊑∷ (⊑⇒ ⊑□ ⊑*) ⊑[]) ,ₛ ↑ (⊑& ⊑□ ⊑Var))
-        ⇑ υ₁ ∈! ↦& ↦□ (↦Var refl)
+        ⇑ υ₁ ∈! ⇑& ⇑□ (⇑Var refl)
   s₁ = s₁e .proj₁
 
   s₂e : ExactSynSlice D ◂ υ₂
   s₂e = (↑ (⊑∷ (⊑⇒ ⊑* ⊑□) ⊑[]) ,ₛ ↑ (⊑& ⊑Var ⊑□))
-        ⇑ υ₂ ∈! ↦& (↦Var refl) ↦□
+        ⇑ υ₂ ∈! ⇑& (⇑Var refl) ⇑□
   s₂ = s₂e .proj₁
 
   min₁ : IsMinimal s₁
   min₁ s' ρₛ'⊒ρₛ with s' .syn | s' .valid
   min₁ _ (⊑∷ (⊑⇒ ⊑□ ⊑*) ⊑[]  , ⊑& ⊑□ ⊑Var)
-         | ↦& _ (↦Var refl)  | ⊑× _ (⊑⇒ _ _)
+         | ⇑& _ (⇑Var refl)  | ⊑× _ (⊑⇒ _ _)
          = refl , refl
   min₂ : IsMinimal s₂
   min₂ s' ρₛ'⊒ρₛ with s' .syn | s' .valid
   min₂ _ (⊑∷ (⊑⇒ ⊑* ⊑□) ⊑[]  , ⊑& ⊑Var ⊑□)
-         | ↦& (↦Var refl) _  | ⊑× (⊑⇒ _ _) _
+         | ⇑& (⇑Var refl) _  | ⊑× (⊑⇒ _ _) _
          = refl , refl
 
   -- Joined context: (□ ⇒ *) ⊔ (* ⇒ □) = * ⇒ *
@@ -132,7 +134,7 @@ module ⊔-syn-preserves-join-counterexample where
 -- Consequence: we cannot pick a canonical minimal ψ to make the zone
 -- iteration monotone (rules out ψ-monotonicity approach to case algorithm).
 ¬global-min-ψ-fixedassms
-  : ¬ (∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} {υ : ⌊ τ ⌋}
+  : ¬ (∀ {n Γ e τ} {D : n , Γ ⊢ e ⇑ τ} {υ : ⌊ τ ⌋}
        → Σ[ s ∈ Fix.FixedAssmsSynSlice D υ ] IsMinimal s
          ∧ (∀ (t : Fix.FixedAssmsSynSlice D υ) → IsMinimal t → s .Fix.type ⊑ₛ t .Fix.type))
 
@@ -141,8 +143,8 @@ module global-min-ψ-counterexample where
 
   Γ = ((* ⇒ □) ⇒ *) ∷ ((□ ⇒ *) ⇒ *) ∷ []
 
-  D : 0 ； Γ ⊢ case □ of 1 · 2 ↦ (* ⇒ *) ⇒ *
-  D = ↦case ↦□ refl (↦Var refl) (↦Var refl) (~⇒ (~⇒ ~?₁ ~?₂) ~*)
+  D : 0 , Γ ⊢ case □ of 1 · 2 ⇑ (* ⇒ *) ⇒ *
+  D = ⇑case ⇑□ refl (⇑Var refl) (⇑Var refl) (~⇒ (~⇒ ~?₁ ~?₂) ~*)
 
   υ : ⌊ (* ⇒ *) ⇒ * ⌋
   υ = ((□ ⇒ □) ⇒ □) isSlice (⊑⇒ (⊑⇒ ⊑□ ⊑□) ⊑□)
@@ -151,16 +153,16 @@ module global-min-ψ-counterexample where
   s₁ : Fix.FixedAssmsSynSlice D υ
   s₁ = ↑ (⊑case ⊑□ ⊑Var ⊑□)
      ⇑ ↑ (⊑⇒ (⊑⇒ ⊑* ⊑□) ⊑*)
-     ∈ ↦case ↦□ refl (↦Var refl) ↦□ ~?₁
+     ∈ ⇑case ⇑□ refl (⇑Var refl) ⇑□ ~?₁
      ⊒ ⊑⇒ (⊑⇒ ⊑□ ⊑□) ⊑□
 
   min₁ : IsMinimal s₁
   min₁ t t⊑s₁ with t .Fix.expₛ .proof | t⊑s₁
   ... | ⊑□ | ⊑□ with t .Fix.syn | t .Fix.valid
-  ...   | ↦□ | ()
+  ...   | ⇑□ | ()
   min₁ t t⊑s₁
       | ⊑case ⊑□ ⊑□ ⊑□ | ⊑case ⊑□ ⊑□ ⊑□ with t .Fix.syn | t .Fix.valid
-  ...   | ↦case ↦□ _ ↦□ ↦□ _ | ()
+  ...   | ⇑case ⇑□ _ ⇑□ ⇑□ _ | ()
   min₁ t t⊑s₁
       | ⊑case ⊑□ ⊑Var ⊑□ | ⊑case ⊑□ ⊑Var ⊑□ = refl
 
@@ -168,16 +170,16 @@ module global-min-ψ-counterexample where
   s₂ : Fix.FixedAssmsSynSlice D υ
   s₂ = ↑ (⊑case ⊑□ ⊑□ ⊑Var)
      ⇑ ↑ (⊑⇒ (⊑⇒ ⊑□ ⊑*) ⊑*)
-     ∈ ↦case ↦□ refl ↦□ (↦Var refl) ~?₂
+     ∈ ⇑case ⇑□ refl ⇑□ (⇑Var refl) ~?₂
      ⊒ ⊑⇒ (⊑⇒ ⊑□ ⊑□) ⊑□
 
   min₂ : IsMinimal s₂
   min₂ t t⊑s₂ with t .Fix.expₛ .proof | t⊑s₂
   ... | ⊑□ | ⊑□ with t .Fix.syn | t .Fix.valid
-  ...   | ↦□ | ()
+  ...   | ⇑□ | ()
   min₂ t t⊑s₂
       | ⊑case ⊑□ ⊑□ ⊑□ | ⊑case ⊑□ ⊑□ ⊑□ with t .Fix.syn | t .Fix.valid
-  ...   | ↦case ↦□ _ ↦□ ↦□ _ | ()
+  ...   | ⇑case ⇑□ _ ⇑□ ⇑□ _ | ()
   min₂ t t⊑s₂
       | ⊑case ⊑□ ⊑□ ⊑Var | ⊑case ⊑□ ⊑□ ⊑Var = refl
 
@@ -202,26 +204,28 @@ module global-min-ψ-counterexample where
        → Data.Empty.⊥
     go s _ s⊑ψ₁ s⊑ψ₂ with s .Fix.expₛ .proof
     ... | ⊑□ with s .Fix.syn | s .Fix.valid
-    ...   | ↦□ | ()
+    ...   | ⇑□ | ()
     go s _ s⊑ψ₁ s⊑ψ₂
         | ⊑case ⊑□ ⊑□ ⊑□ with s .Fix.syn | s .Fix.valid
-    ...   | ↦case ↦□ _ ↦□ ↦□ _ | ()
+    ...   | ⇑case ⇑□ _ ⇑□ ⇑□ _ | ()
     go s _ s⊑ψ₁ s⊑ψ₂
         | ⊑case ⊑□ ⊑Var ⊑□ with s .Fix.syn | s⊑ψ₂
-    ...   | ↦case ↦□ _ (↦Var refl) ↦□ _ | ⊑⇒ (⊑⇒ () _) _
+    ...   | ⇑case ⇑□ _ (⇑Var refl) ⇑□ _ | ⊑⇒ (⊑⇒ () _) _
     go s _ s⊑ψ₁ s⊑ψ₂
         | ⊑case ⊑□ ⊑□ ⊑Var with s .Fix.syn | s⊑ψ₁
-    ...   | ↦case ↦□ _ ↦□ (↦Var refl) _ | ⊑⇒ (⊑⇒ _ ()) _
+    ...   | ⇑case ⇑□ _ ⇑□ (⇑Var refl) _ | ⊑⇒ (⊑⇒ _ ()) _
     go s _ s⊑ψ₁ s⊑ψ₂
         | ⊑case ⊑□ ⊑Var ⊑Var with s .Fix.syn | s⊑ψ₂
-    ...   | ↦case ↦□ _ (↦Var refl) (↦Var refl) _ | ⊑⇒ (⊑⇒ () _) _
+    ...   | ⇑case ⇑□ _ (⇑Var refl) (⇑Var refl) _ | ⊑⇒ (⊑⇒ () _) _
 
+-- Dissertation: Counterexample 5.10 lem:prod-not-minimal (Paired minimal slices are not
+-- necessarily minimal), §5.5.
 -- Counterexample 4: Naive product of minimal sub-slices (via &syn) is NOT
 -- always minimal. Naive join of contexts over-approximates when
 -- sub-slices use overlapping variables with incompatible precision.
--- However, the converse does hole (Decompositions.min-prod-decomposability)
+-- However, the converse does hold (Decompositions.min-prod-decomposability)
 ¬&syn-preserves-minimality
-  : ¬ (∀ {n Γ e₁ e₂ τ₁ τ₂} {D₁ : n ； Γ ⊢ e₁ ↦ τ₁} {D₂ : n ； Γ ⊢ e₂ ↦ τ₂}
+  : ¬ (∀ {n Γ e₁ e₂ τ₁ τ₂} {D₁ : n , Γ ⊢ e₁ ⇑ τ₁} {D₂ : n , Γ ⊢ e₂ ⇑ τ₂}
           {υ₁ υ₂}
         → ((m₁ , _) : MinSynSlice D₁ ◂ υ₁) ((m₂ , _) : MinSynSlice D₂ ◂ υ₂)
         → IsMinimal (m₁ &syn m₂))
@@ -231,8 +235,8 @@ module &syn-minimality-counterexample where
   Γ = (* ⇒ *) ∷ (* ⇒ *) ∷ []
 
   -- D₁ = D₂
-  D₁ : 0 ； Γ ⊢ case □ of 1 · 2 ↦ * ⇒ *
-  D₁ = ↦case ↦□ refl (↦Var refl) (↦Var refl) (~⇒ ~* ~*)
+  D₁ : 0 , Γ ⊢ case □ of 1 · 2 ⇑ * ⇒ *
+  D₁ = ⇑case ⇑□ refl (⇑Var refl) (⇑Var refl) (~⇒ ~* ~*)
   D₂ = D₁
 
   υ : ⌊ * ⇒ * ⌋
@@ -242,34 +246,34 @@ module &syn-minimality-counterexample where
   -- m₁ : * ⇒ * ∷ □ ⊢ case □ of 1 · □
   m₁ : SynSlice D₁ ◂ υ
   m₁ = (↑ (⊑∷ (⊑⇒ ⊑* ⊑*) (⊑∷ ⊑□ ⊑[])) ,ₛ ↑ (⊑case ⊑□ ⊑Var ⊑□))
-       ⇑ ⊤ₛ ∈!₁ ↦case ↦□ refl (↦Var refl) ↦□ ~?₁
+       ⇑ ⊤ₛ ∈!₁ ⇑case ⇑□ refl (⇑Var refl) ⇑□ ~?₁
 
   -- m₂: uses both vars with components from each assumption
   -- m₂ : * ⇒ □ ∷ □ ⇒ * ⊢ case □ of 1 · 2
   m₂ : SynSlice D₂ ◂ υ
   m₂ = (↑ (⊑∷ (⊑⇒ ⊑* ⊑□) (⊑∷ (⊑⇒ ⊑□ ⊑*) ⊑[])) ,ₛ ↑ (⊑case ⊑□ ⊑Var ⊑Var))
-       ⇑ ⊤ₛ ∈!₁ ↦case ↦□ refl (↦Var refl) (↦Var refl) (~⇒ ~?₁ ~?₂)
+       ⇑ ⊤ₛ ∈!₁ ⇑case ⇑□ refl (⇑Var refl) (⇑Var refl) (~⇒ ~?₁ ~?₂)
 
   min₁ : IsMinimal m₁
   min₁ s s⊑m₁                                        with s .syn                     | s .valid
-  min₁ _ (_                         , ⊑□)               | ↦□                         | ()
-  min₁ _ (_                         , ⊑case _  ⊑□ ⊑□)   | ↦case _ _ ↦□          ↦□ _ | ()
-  min₁ _ (⊑∷ ⊑□         _           , ⊑case _  ⊑Var ⊑□) | ↦case _ _ (↦Var refl) ↦□ _ | ()
-  min₁ _ (⊑∷ (⊑⇒ ⊑□ _)  _           , ⊑case _  ⊑Var ⊑□) | ↦case _ _ (↦Var refl) ↦□ _ | ⊑⇒ () _
-  min₁ _ (⊑∷ (⊑⇒ _ ⊑□)  _           , ⊑case _  ⊑Var ⊑□) | ↦case _ _ (↦Var refl) ↦□ _ | ⊑⇒ _ ()
-  min₁ _ (⊑∷ (⊑⇒ ⊑* ⊑*) (⊑∷ ⊑□ ⊑[]) , ⊑case ⊑□ ⊑Var ⊑□) | ↦case _ _ (↦Var refl) ↦□ _ | ⊑⇒ ⊑* ⊑* = refl , refl
+  min₁ _ (_                         , ⊑□)               | ⇑□                         | ()
+  min₁ _ (_                         , ⊑case _  ⊑□ ⊑□)   | ⇑case _ _ ⇑□          ⇑□ _ | ()
+  min₁ _ (⊑∷ ⊑□         _           , ⊑case _  ⊑Var ⊑□) | ⇑case _ _ (⇑Var refl) ⇑□ _ | ()
+  min₁ _ (⊑∷ (⊑⇒ ⊑□ _)  _           , ⊑case _  ⊑Var ⊑□) | ⇑case _ _ (⇑Var refl) ⇑□ _ | ⊑⇒ () _
+  min₁ _ (⊑∷ (⊑⇒ _ ⊑□)  _           , ⊑case _  ⊑Var ⊑□) | ⇑case _ _ (⇑Var refl) ⇑□ _ | ⊑⇒ _ ()
+  min₁ _ (⊑∷ (⊑⇒ ⊑* ⊑*) (⊑∷ ⊑□ ⊑[]) , ⊑case ⊑□ ⊑Var ⊑□) | ⇑case _ _ (⇑Var refl) ⇑□ _ | ⊑⇒ ⊑* ⊑* = refl , refl
 
   min₂ : IsMinimal m₂
   min₂ s s⊑m₂                                                  with s .syn                              | s .valid
-  min₂ _ (_                                 , ⊑□)                 | ↦□                                  | ()
-  min₂ _ (_                                 , ⊑case _  ⊑□   ⊑□)   | ↦case _ _ ↦□          ↦□ _          | ()
-  min₂ _ (⊑∷ ⊑□ _                           , ⊑case _  ⊑Var ⊑□)   | ↦case _ _ (↦Var refl) ↦□ _          | ()
-  min₂ _ (⊑∷ (⊑⇒ _ ⊑□)  _                   , ⊑case _  ⊑Var ⊑□)   | ↦case _ _ (↦Var refl) ↦□ _          | ⊑⇒ _ ()
-  min₂ _ (⊑∷ _          (⊑∷ ⊑□         _)   , ⊑case _  ⊑□   ⊑Var) | ↦case _ _ ↦□          (↦Var refl) _ | ()
-  min₂ _ (⊑∷ _          (⊑∷ (⊑⇒ ⊑□ _)  _)   , ⊑case _  ⊑□   ⊑Var) | ↦case _ _ ↦□          (↦Var refl) _ | ⊑⇒ () _
-  min₂ _ (⊑∷ (⊑⇒ _  ⊑□) (⊑∷ ⊑□         ⊑[]) , ⊑case ⊑□ ⊑Var ⊑Var) | ↦case _ _ (↦Var refl) (↦Var refl) _ | ⊑⇒ _ ()
-  min₂ _ (⊑∷ ⊑□         (⊑∷ (⊑⇒ ⊑□ _)  ⊑[]) , ⊑case ⊑□ ⊑Var ⊑Var) | ↦case _ _ (↦Var refl) (↦Var refl) _ | ⊑⇒ () _
-  min₂ _ (⊑∷ (⊑⇒ ⊑* ⊑□) (⊑∷ (⊑⇒ ⊑□ ⊑*) ⊑[]) , ⊑case ⊑□ ⊑Var ⊑Var) | ↦case _ _ (↦Var refl) (↦Var refl) _ | ⊑⇒ ⊑* ⊑* = refl , refl
+  min₂ _ (_                                 , ⊑□)                 | ⇑□                                  | ()
+  min₂ _ (_                                 , ⊑case _  ⊑□   ⊑□)   | ⇑case _ _ ⇑□          ⇑□ _          | ()
+  min₂ _ (⊑∷ ⊑□ _                           , ⊑case _  ⊑Var ⊑□)   | ⇑case _ _ (⇑Var refl) ⇑□ _          | ()
+  min₂ _ (⊑∷ (⊑⇒ _ ⊑□)  _                   , ⊑case _  ⊑Var ⊑□)   | ⇑case _ _ (⇑Var refl) ⇑□ _          | ⊑⇒ _ ()
+  min₂ _ (⊑∷ _          (⊑∷ ⊑□         _)   , ⊑case _  ⊑□   ⊑Var) | ⇑case _ _ ⇑□          (⇑Var refl) _ | ()
+  min₂ _ (⊑∷ _          (⊑∷ (⊑⇒ ⊑□ _)  _)   , ⊑case _  ⊑□   ⊑Var) | ⇑case _ _ ⇑□          (⇑Var refl) _ | ⊑⇒ () _
+  min₂ _ (⊑∷ (⊑⇒ _  ⊑□) (⊑∷ ⊑□         ⊑[]) , ⊑case ⊑□ ⊑Var ⊑Var) | ⇑case _ _ (⇑Var refl) (⇑Var refl) _ | ⊑⇒ _ ()
+  min₂ _ (⊑∷ ⊑□         (⊑∷ (⊑⇒ ⊑□ _)  ⊑[]) , ⊑case ⊑□ ⊑Var ⊑Var) | ⇑case _ _ (⇑Var refl) (⇑Var refl) _ | ⊑⇒ () _
+  min₂ _ (⊑∷ (⊑⇒ ⊑* ⊑□) (⊑∷ (⊑⇒ ⊑□ ⊑*) ⊑[]) , ⊑case ⊑□ ⊑Var ⊑Var) | ⇑case _ _ (⇑Var refl) (⇑Var refl) _ | ⊑⇒ ⊑* ⊑* = refl , refl
 
   -- naive product join: m₁ &syn m₂:
   -- (* ⇒ *) ∷ (□ ⇒ *) ∷ [] ⊢ (case □ of 1 · □) & (case □ of 1 · 2)
@@ -277,9 +281,9 @@ module &syn-minimality-counterexample where
 
   -- Has strict sub-slice m': slicing ⟨2⟩ (the second case branch)
   -- Yet the result is still valid (ϕ ⊒ (* ⇒ *) × (* ⇒ *))
-  m' : SynSlice (↦& D₁ D₂) ◂ (υ ×ₛ υ)
+  m' : SynSlice (⇑& D₁ D₂) ◂ (υ ×ₛ υ)
   m' = (↑ (⊑∷ (⊑⇒ ⊑* ⊑*) (⊑∷ ⊑□ ⊑[])) ,ₛ ↑ (⊑& (⊑case ⊑□ ⊑Var ⊑□) (⊑case ⊑□ ⊑Var ⊑□)))
-       ⇑ ⊤ₛ ∈!₁ ↦& (↦case ↦□ refl (↦Var refl) ↦□ ~?₁) (↦case ↦□ refl (↦Var refl) ↦□ ~?₁)
+       ⇑ ⊤ₛ ∈!₁ ⇑& (⇑case ⇑□ refl (⇑Var refl) ⇑□ ~?₁) (⇑case ⇑□ refl (⇑Var refl) ⇑□ ~?₁)
 
 ¬&syn-preserves-minimality f
   with (min⊔ m' (⊑∷ (⊑⇒ ⊑* ⊑*) (⊑∷ ⊑□ ⊑[]) , ⊑& (⊑case ⊑□ ⊑Var ⊑□) (⊑case ⊑□ ⊑Var ⊑□)))
@@ -287,11 +291,11 @@ module &syn-minimality-counterexample where
         min⊔ = f (m₁ , min₁) (m₂ , min₂)
 ...  | ()
 
--- Counterexample 5: MinSynSlice ⇏ MinFixedAssmsSynSlice.
+-- Dissertation: Counterexample 8.3 lem:min-not-tmin (Minimal ⇏ Term-Minimal), §8.3.
 -- Consequence: min syn slices purely slicing the expression
 -- followed by slicing the context will not be complete
 ¬min-syn-is-min-fixedassms
-  : ¬ (∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} {υ}
+  : ¬ (∀ {n Γ e τ} {D : n , Γ ⊢ e ⇑ τ} {υ}
        → ((m , _) : MinSynSlice D ◂ υ)
        → (f : FixedAssmsSynSlice D υ)
        → f .expₛ .↓ ⊑ SS._↓σ m
@@ -305,7 +309,7 @@ module min-syn-not-fixedassms-counterexample where
   f' = record
     { expₛ = ↑ (⊑case ⊑□ ⊑Var ⊑□)
     ; type  = ⊤ₛ
-    ; syn   = ↦case ↦□ refl (↦Var refl) ↦□ ~?₁
+    ; syn   = ⇑case ⇑□ refl (⇑Var refl) ⇑□ ~?₁
     ; valid = ⊑ₛ.refl {A = Typ} {x = ⊤ₛ}
     }
 
@@ -318,6 +322,8 @@ module min-syn-not-fixedassms-counterexample where
         open &syn-minimality-counterexample
 ...  | ⊑case _ _ ()
 
+-- Dissertation: Counterexample 8.5 lem:dual-mono-fails (Upwards Non-Monotonicity of
+-- Term-Minimal Slices), §8.6.
 -- Counterexample 6: MinFixedAssmsSynSlice is NOT upward-closed in the query.
 -- Increasing the query can switch which branch matters, giving incomparable slices.
 --
@@ -327,7 +333,7 @@ module min-syn-not-fixedassms-counterexample where
 --
 -- Consequence: [co]-slice cannot lift case slices to larger queries.
 ¬upward-closure-min-fixedassms
-  : ¬ (∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} {υ' υ : ⌊ τ ⌋}
+  : ¬ (∀ {n Γ e τ} {D : n , Γ ⊢ e ⇑ τ} {υ' υ : ⌊ τ ⌋}
        → υ' ⊑ₛ υ
        → (s' : Fix.FixedAssmsSynSlice D υ') → IsMinimal s'
        → Σ[ s ∈ Fix.FixedAssmsSynSlice D υ ] IsMinimal s ∧ (s' .Fix.expₛ .↓ ⊑ s .Fix.expₛ .↓))
@@ -335,8 +341,8 @@ module min-syn-not-fixedassms-counterexample where
 module upward-closure-counterexample where
   open Eq using (refl)
 
-  D : 0 ； (* × *) ∷ [] ⊢ case □ of 1 · (* & □) ↦ * × *
-  D = ↦case ↦□ refl (↦Var refl) (↦& ↦* ↦□) (~× ~* ~?₁)
+  D : 0 , (* × *) ∷ [] ⊢ case □ of 1 · (* & □) ⇑ * × *
+  D = ⇑case ⇑□ refl (⇑Var refl) (⇑& ⇑* ⇑□) (~× ~* ~?₁)
 
   υ' : ⌊ * × * ⌋
   υ' = (* × □) isSlice (⊑× ⊑* ⊑□)
@@ -350,35 +356,35 @@ module upward-closure-counterexample where
   s' : Fix.FixedAssmsSynSlice D υ'
   s' = ↑ (⊑case ⊑□ ⊑□ (⊑& ⊑* ⊑□))
      ⇑ ↑ (⊑× ⊑* ⊑□)
-     ∈ ↦case ↦□ refl ↦□ (↦& ↦* ↦□) ~?₂
+     ∈ ⇑case ⇑□ refl ⇑□ (⇑& ⇑* ⇑□) ~?₂
      ⊒ ⊑× ⊑* ⊑□
 
   min' : IsMinimal s'
   min' t t⊑s' with t .Fix.expₛ .proof | t⊑s'
   ... | ⊑□ | ⊑□ with t .Fix.syn | t .Fix.valid
-  ...   | ↦□ | ()
+  ...   | ⇑□ | ()
   min' t t⊑s'
       | ⊑case ⊑□ ⊑□ ⊑□ | ⊑case ⊑□ ⊑□ ⊑□ with t .Fix.syn | t .Fix.valid
-  ...   | ↦case ↦□ _ ↦□ ↦□ _ | ()
+  ...   | ⇑case ⇑□ _ ⇑□ ⇑□ _ | ()
   min' t t⊑s'
       | ⊑case ⊑□ ⊑□ (⊑& ⊑□ ⊑□) | ⊑case ⊑□ ⊑□ (⊑& ⊑□ ⊑□) with t .Fix.syn | t .Fix.valid
-  ...   | ↦case ↦□ _ ↦□ (↦& ↦□ ↦□) _ | ⊑× () _
+  ...   | ⇑case ⇑□ _ ⇑□ (⇑& ⇑□ ⇑□) _ | ⊑× () _
   min' t t⊑s'
       | ⊑case ⊑□ ⊑□ (⊑& ⊑* ⊑□) | ⊑case ⊑□ ⊑□ (⊑& ⊑* ⊑□) = refl
 
   s : Fix.FixedAssmsSynSlice D υ
   s = ↑ (⊑case ⊑□ ⊑Var ⊑□)
     ⇑ ⊤ₛ
-    ∈ ↦case ↦□ refl (↦Var refl) ↦□ ~?₁
+    ∈ ⇑case ⇑□ refl (⇑Var refl) ⇑□ ~?₁
     ⊒ ⊑× ⊑* ⊑*
 
   min-s : IsMinimal s
   min-s t t⊑s with t .Fix.expₛ .proof | t⊑s
   ... | ⊑□ | ⊑□ with t .Fix.syn | t .Fix.valid
-  ...   | ↦□ | ()
+  ...   | ⇑□ | ()
   min-s t t⊑s
       | ⊑case ⊑□ ⊑□ ⊑□ | ⊑case ⊑□ ⊑□ ⊑□ with t .Fix.syn | t .Fix.valid
-  ...   | ↦case ↦□ _ ↦□ ↦□ _ | ()
+  ...   | ⇑case ⇑□ _ ⇑□ ⇑□ _ | ()
   min-s t t⊑s
       | ⊑case ⊑□ ⊑Var ⊑□ | ⊑case ⊑□ ⊑Var ⊑□ = refl
 
@@ -386,13 +392,13 @@ module upward-closure-counterexample where
   any-valid-⊒s : (t : Fix.FixedAssmsSynSlice D υ) → s .Fix.expₛ .↓ ⊑ t .Fix.expₛ .↓
   any-valid-⊒s t with t .Fix.expₛ .proof
   ... | ⊑□ with t .Fix.syn | t .Fix.valid
-  ...   | ↦□ | ()
+  ...   | ⇑□ | ()
   any-valid-⊒s t | ⊑case ⊑□ ⊑□ ⊑□ with t .Fix.syn | t .Fix.valid
-  ... | ↦case ↦□ _ ↦□ ↦□ _ | ()
+  ... | ⇑case ⇑□ _ ⇑□ ⇑□ _ | ()
   any-valid-⊒s t | ⊑case ⊑□ ⊑□ (⊑& ⊑□ ⊑□) with t .Fix.syn | t .Fix.valid
-  ... | ↦case ↦□ _ ↦□ (↦& ↦□ ↦□) _ | ⊑× () _
+  ... | ⇑case ⇑□ _ ⇑□ (⇑& ⇑□ ⇑□) _ | ⊑× () _
   any-valid-⊒s t | ⊑case ⊑□ ⊑□ (⊑& ⊑* ⊑□) with t .Fix.syn | t .Fix.valid
-  ... | ↦case ↦□ _ ↦□ (↦& ↦* ↦□) _ | ⊑× ⊑* ()
+  ... | ⇑case ⇑□ _ ⇑□ (⇑& ⇑* ⇑□) _ | ⊑× ⊑* ()
   any-valid-⊒s t | ⊑case ⊑□ ⊑Var ⊑□ = ⊑case ⊑□ ⊑Var ⊑□
   any-valid-⊒s t | ⊑case ⊑□ ⊑Var (⊑& _ _) = ⊑case ⊑□ ⊑Var ⊑□
 

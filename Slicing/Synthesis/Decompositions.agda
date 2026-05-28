@@ -11,6 +11,13 @@ open import Semantics.Statics
 open import Semantics.Graduality using (static-gradual-syn; syn-precision; static-gradual-ana)
 open import Slicing.Synthesis.Synthesis
 
+-- Decomposition lemmas for minimal synthesis slices at each elimination form, plus the
+-- minimality-preserving cases for products (Theorem 5.9) and bindings (Theorem 5.11).
+-- Suitable restrictions of these decompositions would underpin a completeness proof for any
+-- compositional description of minimal synthesis slices - in particular the inductive calculi
+-- in Slicing.Synthesis.FixedAssmsCalc and the bounded sketch in Slicing.Synthesis.SynSliceCalc -
+-- modulo trivial adjustments for the bound/context discipline each calculus enforces.
+-- Dissertation: §5.5 Decompositions.
 module Slicing.Synthesis.Decompositions where
 
 open ⊑ {A = Typ} using () renaming (refl to ⊑t-refl; trans to ⊑t-trans)
@@ -21,15 +28,15 @@ open ⊑ {A = Assms} using () renaming (refl to ⊑a-refl)
 -- MIN SLICE DECOMPOSITIONS
 
 -- Pair construction: given m₁ : D₁ ◂ υ₁ and m₂ : D₂ ◂ υ₂, form
--- a slice of ↦& D₁ D₂ ◂ (υ₁ ×ₛ υ₂) by joining assumptions (γ₁ ⊔ γ₂)
+-- a slice of ⇑& D₁ D₂ ◂ (υ₁ ×ₛ υ₂) by joining assumptions (γ₁ ⊔ γ₂)
 -- and re-deriving both components under the shared context.
 --   γₛ⊔ = γₛ₁ ⊔ₛ γₛ₂ ⊑ Γ   (join closure)
---   dᵢ' : γ⊔ ⊢ σᵢ ↦ ϕᵢ'    (static gradual guarantee)
+--   dᵢ' : γ⊔ ⊢ σᵢ ⇑ ϕᵢ'    (static gradual guarantee)
 --   υᵢ ⊑ ϕᵢ ⊑ ϕᵢ'          (valid of dᵢ + syn-precision)
-_&syn_   : ∀ {n Γ e₁ e₂ τ₁ τ₂} {D₁ : n ； Γ ⊢ e₁ ↦ τ₁}
-             {D₂ : n ； Γ ⊢ e₂ ↦ τ₂} {υ₁ υ₂}
+_&syn_   : ∀ {n Γ e₁ e₂ τ₁ τ₂} {D₁ : n , Γ ⊢ e₁ ⇑ τ₁}
+             {D₂ : n , Γ ⊢ e₂ ⇑ τ₂} {υ₁ υ₂}
            → SynSlice D₁ ◂ υ₁ → SynSlice D₂ ◂ υ₂
-           → SynSlice (↦& D₁ D₂) ◂ (υ₁ ×ₛ υ₂)
+           → SynSlice (⇑& D₁ D₂) ◂ (υ₁ ×ₛ υ₂)
 _&syn_ {D₁ = D₁} {D₂ = D₂}
        (ρₛ₁ ⇑ ϕ₁ ∈ d₁ ⊒ υ₁⊑ϕ₁) (ρₛ₂ ⇑ ϕ₂ ∈ d₂ ⊒ υ₂⊑ϕ₂)
   with static-gradual-syn (γₛ⊔ .proof) (sndₛ ρₛ₁ .proof) D₁
@@ -37,7 +44,7 @@ _&syn_ {D₁ = D₁} {D₂ = D₂}
   where γₛ⊔ = fstₛ ρₛ₁ ⊔ₛ fstₛ ρₛ₂
 ... | ϕ₁' , d₁' , ϕ₁'⊑τ₁ | ϕ₂' , d₂' , ϕ₂'⊑τ₂
   = (γₛ⊔ ,ₛ (σₛ₁ &ₛ σₛ₂)) ⇑ (↑ ϕ₁'⊑τ₁) ×ₛ (↑ ϕ₂'⊑τ₂)
-    ∈ ↦& d₁' d₂' ⊒ ⊑× υ₁⊑ϕ₁' υ₂⊑ϕ₂'
+    ∈ ⇑& d₁' d₂' ⊒ ⊑× υ₁⊑ϕ₁' υ₂⊑ϕ₂'
   where
     γₛ⊔ = fstₛ ρₛ₁ ⊔ₛ fstₛ ρₛ₂
     σₛ₁ = sndₛ ρₛ₁
@@ -49,7 +56,7 @@ _&syn_ {D₁ = D₁} {D₂ = D₂}
               (syn-precision (⊑ₛLat.y⊑ₛx⊔ₛy (fstₛ ρₛ₁) (fstₛ ρₛ₂))
                              ⊑e-refl d₂' d₂)
 
-&syn-↓ρ : ∀ {n Γ e₁ e₂ τ₁ τ₂} {D₁ : n ； Γ ⊢ e₁ ↦ τ₁} {D₂ : n ； Γ ⊢ e₂ ↦ τ₂}
+&syn-↓ρ : ∀ {n Γ e₁ e₂ τ₁ τ₂} {D₁ : n , Γ ⊢ e₁ ⇑ τ₁} {D₂ : n , Γ ⊢ e₂ ⇑ τ₂}
              {υ₁ υ₂}
            (s₁ : SynSlice D₁ ◂ υ₁) (s₂ : SynSlice D₂ ◂ υ₂)
          → (s₁ &syn s₂) ↓ρ ≡ (((s₁ ↓γₛ) ⊔ₛ (s₂ ↓γₛ)) .↓ , (s₁ ↓σ) & (s₂ ↓σ))
@@ -60,18 +67,19 @@ _&syn_ {D₁ = D₁} {D₂ = D₂}
   where γₛ⊔ = fstₛ ρₛ₁ ⊔ₛ fstₛ ρₛ₂
 ... | _ | _ = refl
 
+-- Dissertation: Theorem 5.9 thm:min-prod-decomp (Case: Products), §5.5.
 -- Minimal product slices decompose into minimal component slices.
 min-prod-decomposability
   : ∀ {n Γ e₁ e₂ τ₁ τ₂}
-      {D₁ : n ； Γ ⊢ e₁ ↦ τ₁} {D₂ : n ； Γ ⊢ e₂ ↦ τ₂}
+      {D₁ : n , Γ ⊢ e₁ ⇑ τ₁} {D₂ : n , Γ ⊢ e₂ ⇑ τ₂}
       {υ₁ : ⌊ τ₁ ⌋} {υ₂ : ⌊ τ₂ ⌋}
-      ((m× , _) : MinSynSlice (↦& D₁ D₂) ◂ (υ₁ ×ₛ υ₂))
+      ((m× , _) : MinSynSlice (⇑& D₁ D₂) ◂ (υ₁ ×ₛ υ₂))
     → Σ[ (m₁ , _) ∈ MinSynSlice D₁ ◂ υ₁ ]
       Σ[ (m₂ , _) ∈ MinSynSlice D₂ ◂ υ₂ ]
          m× ≈ m₁ &syn m₂
 min-prod-decomposability (m× , min)
   with m× .valid | m× ↓σ | m× ↓σ⊑ | m× ↓ϕ⊑ | m× .syn
-...  | ⊑× υ₁⊑ϕ₁ υ₂⊑ϕ₂ | σ₁ & σ₂ | ⊑& σ₁⊑e₁ σ₂⊑e₂ | ⊑× ϕ₁⊑τ₁ ϕ₂⊑τ₂ | ↦& d₁ d₂
+...  | ⊑× υ₁⊑ϕ₁ υ₂⊑ϕ₂ | σ₁ & σ₂ | ⊑& σ₁⊑e₁ σ₂⊑e₂ | ⊑× ϕ₁⊑τ₁ ϕ₂⊑τ₂ | ⇑& d₁ d₂
   = let s₁ = ((m× ↓γₛ) ,ₛ (σ₁ isSlice σ₁⊑e₁)) ⇑ ↑ ϕ₁⊑τ₁ ∈ d₁ ⊒ υ₁⊑ϕ₁
         s₂ = ((m× ↓γₛ) ,ₛ (σ₂ isSlice σ₂⊑e₂)) ⇑ ↑ ϕ₂⊑τ₂ ∈ d₂ ⊒ υ₂⊑ϕ₂
         m₁ , (γ₁⊑γ , σ₁'⊑σ₁) = minExists s₁
@@ -80,16 +88,16 @@ min-prod-decomposability (m× , min)
        , min ((m₁ ↓s) &syn (m₂ ↓s))
              (HasJoin.closure assms-join γ₁⊑γ γ₂⊑γ , ⊑& σ₁'⊑σ₁ σ₂'⊑σ₂)
 
-π₁syn : ∀ {n Γ e τ₁ τ₂} {D : n ； Γ ⊢ e ↦ τ₁ × τ₂}
+π₁syn : ∀ {n Γ e τ₁ τ₂} {D : n , Γ ⊢ e ⇑ τ₁ × τ₂}
           {υ₁ : ⌊ τ₁ ⌋} {υ₂ : ⌊ τ₂ ⌋}
         → SynSlice D ◂ (υ₁ ×ₛ υ₂)
-        → SynSlice (↦π₁ {τ₂ = τ₂} D ⊔□×□) ◂ υ₁
+        → SynSlice (⇑π₁ {τ₂ = τ₂} D ⊔□×□) ◂ υ₁
 π₁syn {τ₁ = τ₁} {τ₂ = τ₂} {D = D} s
   with s .valid | s ↓ϕ⊑ | s .syn
 ... | ⊑× υ₁⊑ϕ₁ _ | ⊑× {τ₁ = ϕ₁} {τ₂ = ϕ₂} ϕ₁⊑τ₁ ϕ₂⊑τ₂ | d
-  = (fstₛ (s ↓ρₛ) ,ₛ π₁ₛ (sndₛ (s ↓ρₛ))) ⇑ ↑ ϕ₁⊑τ₁ ∈ ↦π₁ d (⊔□×□ {ϕ₁} {ϕ₂}) ⊒ υ₁⊑ϕ₁
+  = (fstₛ (s ↓ρₛ) ,ₛ π₁ₛ (sndₛ (s ↓ρₛ))) ⇑ ↑ ϕ₁⊑τ₁ ∈ ⇑π₁ d (⊔□×□ {ϕ₁} {ϕ₂}) ⊒ υ₁⊑ϕ₁
 
-π₁syn-↓ρ : ∀ {n Γ e τ₁ τ₂} {D : n ； Γ ⊢ e ↦ τ₁ × τ₂}
+π₁syn-↓ρ : ∀ {n Γ e τ₁ τ₂} {D : n , Γ ⊢ e ⇑ τ₁ × τ₂}
               {υ₁ : ⌊ τ₁ ⌋} {υ₂ : ⌊ τ₂ ⌋}
               (s : SynSlice D ◂ (υ₁ ×ₛ υ₂))
             → (π₁syn s) ↓ρ ≡ (s ↓γ , π₁ (s ↓σ))
@@ -97,22 +105,22 @@ min-prod-decomposability (m× , min)
   with s .valid | s ↓ϕ⊑ | s .syn
 ... | ⊑× _ _ | ⊑× {τ₁ = ϕ₁} {τ₂ = ϕ₂} _ _ | d = refl
 
--- Projection decomposability: a minimal slice of ↦π₁ D ◂ υ (for υ ≢ □)
+-- Projection decomposability: a minimal slice of ⇑π₁ D ◂ υ (for υ ≢ □)
 -- decomposes into a minimal slice of D ◂ (υ ×ₛ ⊥ₛ).
 -- Case □: impossible with υ ≢ □.
--- Case ↦π₁ s x: invert to get sub-derivation s on e, build
+-- Case ⇑π₁ s x: invert to get sub-derivation s on e, build
 -- s× : SynSlice D ◂ (υ ×ₛ ⊥ₛ) from s, then show use minimality on π₁
 min-π₁-decomposability
-  : ∀ {n Γ e τ₁ τ₂} {D : n ； Γ ⊢ e ↦ τ₁ × τ₂}
+  : ∀ {n Γ e τ₁ τ₂} {D : n , Γ ⊢ e ⇑ τ₁ × τ₂}
       {υ : ⌊ τ₁ ⌋}
     → υ .↓ ≢ □
-    → ((mπ₁ , _) : MinSynSlice (↦π₁ D ⊔□×□) ◂ υ)
+    → ((mπ₁ , _) : MinSynSlice (⇑π₁ D ⊔□×□) ◂ υ)
     → Σ[ (m× , _) ∈ MinSynSlice D ◂ (υ ×ₛ ⊥ₛ) ]
         mπ₁ ≈ π₁syn m×
 min-π₁-decomposability {τ₁ = τ₁} {τ₂ = τ₂} {D = D} υ≢□ (mπ₁ , min)
   with mπ₁ .syn  | mπ₁ .valid | mπ₁ .type | mπ₁ ↓σ⊑
-... | ↦□ | ⊑□ | _ | _ = ⊥-elim (υ≢□ refl)
-... | ↦π₁ {τ = ϕ'} s x | υ⊑ϕ₁ | ϕ₁ isSlice ϕ₁⊑τ₁ | ⊑π₁ σ'⊑e
+... | ⇑□ | ⊑□ | _ | _ = ⊥-elim (υ≢□ refl)
+... | ⇑π₁ {τ = ϕ'} s x | υ⊑ϕ₁ | ϕ₁ isSlice ϕ₁⊑τ₁ | ⊑π₁ σ'⊑e
   with syn-precision (mπ₁ ↓γ⊑) σ'⊑e D s
 ... | ⊑× {τ₁ = ϕ₁'} {τ₂ = ϕ₂'} ϕ₁'⊑τ₁ ϕ₂'⊑τ₂
   rewrite ⊔t-zeroᵣ {ϕ₁'} | ⊔t-zeroᵣ {ϕ₂'} with refl ← x
@@ -127,16 +135,16 @@ min-π₁-decomposability {τ₁ = τ₁} {τ₂ = τ₂} {D = D} υ≢□ (mπ�
       = minExists s× .proj₂ .proj₁ , ⊑π₁ (minExists s× .proj₂ .proj₂)
 ... | ⊑□ rewrite ⊔t-zeroₗ {□ × □} with refl ← x with ⊑□ ← υ⊑ϕ₁ = ⊥-elim (υ≢□ refl)
 
-π₂syn : ∀ {n Γ e τ₁ τ₂} {D : n ； Γ ⊢ e ↦ τ₁ × τ₂}
+π₂syn : ∀ {n Γ e τ₁ τ₂} {D : n , Γ ⊢ e ⇑ τ₁ × τ₂}
           {υ₁ : ⌊ τ₁ ⌋} {υ₂ : ⌊ τ₂ ⌋}
         → SynSlice D ◂ (υ₁ ×ₛ υ₂)
-        → SynSlice (↦π₂ {τ₁ = τ₁} D ⊔□×□) ◂ υ₂
+        → SynSlice (⇑π₂ {τ₁ = τ₁} D ⊔□×□) ◂ υ₂
 π₂syn {τ₁ = τ₁} {τ₂ = τ₂} {D = D} s
   with s .valid | s ↓ϕ⊑ | s .syn
 ... | ⊑× _ υ₂⊑ϕ₂ | ⊑× {τ₁ = ϕ₁} {τ₂ = ϕ₂} ϕ₁⊑τ₁ ϕ₂⊑τ₂ | d
-  = (fstₛ (s ↓ρₛ) ,ₛ π₂ₛ (sndₛ (s ↓ρₛ))) ⇑ ↑ ϕ₂⊑τ₂ ∈ ↦π₂ d (⊔□×□ {ϕ₁} {ϕ₂}) ⊒ υ₂⊑ϕ₂
+  = (fstₛ (s ↓ρₛ) ,ₛ π₂ₛ (sndₛ (s ↓ρₛ))) ⇑ ↑ ϕ₂⊑τ₂ ∈ ⇑π₂ d (⊔□×□ {ϕ₁} {ϕ₂}) ⊒ υ₂⊑ϕ₂
 
-π₂syn-↓ρ : ∀ {n Γ e τ₁ τ₂} {D : n ； Γ ⊢ e ↦ τ₁ × τ₂}
+π₂syn-↓ρ : ∀ {n Γ e τ₁ τ₂} {D : n , Γ ⊢ e ⇑ τ₁ × τ₂}
               {υ₁ : ⌊ τ₁ ⌋} {υ₂ : ⌊ τ₂ ⌋}
               (s : SynSlice D ◂ (υ₁ ×ₛ υ₂))
             → (π₂syn s) ↓ρ ≡ (s ↓γ , π₂ (s ↓σ))
@@ -145,16 +153,16 @@ min-π₁-decomposability {τ₁ = τ₁} {τ₂ = τ₂} {D = D} υ≢□ (mπ�
 ... | ⊑× _ _ | ⊑× {τ₁ = ϕ₁} {τ₂ = ϕ₂} _ _ | d = refl
 
 min-π₂-decomposability
-  : ∀ {n Γ e τ₁ τ₂} {D : n ； Γ ⊢ e ↦ τ₁ × τ₂}
+  : ∀ {n Γ e τ₁ τ₂} {D : n , Γ ⊢ e ⇑ τ₁ × τ₂}
       {υ : ⌊ τ₂ ⌋}
     → υ .↓ ≢ □
-    → ((mπ₂ , _) : MinSynSlice (↦π₂ D ⊔□×□) ◂ υ)
+    → ((mπ₂ , _) : MinSynSlice (⇑π₂ D ⊔□×□) ◂ υ)
     → Σ[ (m× , _) ∈ MinSynSlice D ◂ (⊥ₛ ×ₛ υ) ]
         mπ₂ ≈ π₂syn m×
 min-π₂-decomposability {τ₁ = τ₁} {τ₂ = τ₂} {D = D} υ≢□ (mπ₂ , min)
   with mπ₂ .syn  | mπ₂ .valid | mπ₂ .type | mπ₂ ↓σ⊑
-... | ↦□ | ⊑□ | _ | _ = ⊥-elim (υ≢□ refl)
-... | ↦π₂ {τ = ϕ'} s x | υ⊑ϕ₂ | ϕ₂ isSlice ϕ₂⊑τ₂ | ⊑π₂ σ'⊑e
+... | ⇑□ | ⊑□ | _ | _ = ⊥-elim (υ≢□ refl)
+... | ⇑π₂ {τ = ϕ'} s x | υ⊑ϕ₂ | ϕ₂ isSlice ϕ₂⊑τ₂ | ⊑π₂ σ'⊑e
   with syn-precision (mπ₂ ↓γ⊑) σ'⊑e D s
 ... | ⊑× {τ₁ = ϕ₁'} {τ₂ = ϕ₂'} ϕ₁'⊑τ₁ ϕ₂'⊑τ₂
   rewrite ⊔t-zeroᵣ {ϕ₁'} | ⊔t-zeroᵣ {ϕ₂'} with refl ← x
@@ -171,32 +179,32 @@ min-π₂-decomposability {τ₁ = τ₁} {τ₂ = τ₂} {D = D} υ≢□ (mπ�
 
 -- Application
 ∘syn : ∀ {n Γ e₁ e₂ τ₁ τ₂}
-         {D₁ : n ； Γ ⊢ e₁ ↦ τ₁ ⇒ τ₂}
-         {D₂ : n ； Γ ⊢ e₂ ↤ τ₁}
+         {D₁ : n , Γ ⊢ e₁ ⇑ τ₁ ⇒ τ₂}
+         {D₂ : n , Γ ⊢ e₂ ⇓ τ₁}
          {υ : ⌊ τ₂ ⌋}
        → ⌊ e₂ ⌋ → SynSlice D₁ ◂ (⊥ₛ ⇒ₛ υ)
-       → SynSlice (↦∘ D₁ ⊔□⇒□ D₂) ◂ υ
+       → SynSlice (⇑∘ D₁ ⊔□⇒□ D₂) ◂ υ
 ∘syn {D₁ = D₁} {D₂ = D₂} argₛ s
   with s .valid | s ↓ϕ⊑ | s .syn
 ... | ⊑⇒ ⊑□ υ⊑ϕ₂ | ⊑⇒ {τ₁ = ϕ₁} {τ₂ = ϕ₂} ϕ₁⊑τ₁ ϕ₂⊑τ₂ | d
   = (fstₛ (s ↓ρₛ) ,ₛ ∘ₛ (sndₛ (s ↓ρₛ)) argₛ)
     ⇑ ↑ ϕ₂⊑τ₂
-    ∈ ↦∘ d (⊔□⇒□ {ϕ₁} {ϕ₂}) (static-gradual-ana (s ↓γ⊑) (argₛ .proof) ϕ₁⊑τ₁ D₂)
+    ∈ ⇑∘ d (⊔□⇒□ {ϕ₁} {ϕ₂}) (static-gradual-ana (s ↓γ⊑) (argₛ .proof) ϕ₁⊑τ₁ D₂)
     ⊒ υ⊑ϕ₂
 
 min-∘-decomposability
   : ∀ {n Γ e₁ e₂ τ₁ τ₂}
-      {D₁ : n ； Γ ⊢ e₁ ↦ τ₁ ⇒ τ₂}
-      {D₂ : n ； Γ ⊢ e₂ ↤ τ₁}
+      {D₁ : n , Γ ⊢ e₁ ⇑ τ₁ ⇒ τ₂}
+      {D₂ : n , Γ ⊢ e₂ ⇓ τ₁}
       {υ : ⌊ τ₂ ⌋}
     → υ .↓ ≢ □
-    → ((m∘ , _) : MinSynSlice (↦∘ D₁ ⊔□⇒□ D₂) ◂ υ)
+    → ((m∘ , _) : MinSynSlice (⇑∘ D₁ ⊔□⇒□ D₂) ◂ υ)
     → Σ[ (m⇒ , _) ∈ MinSynSlice D₁ ◂ (⊥ₛ ⇒ₛ υ) ]
         m∘ ≈ ∘syn ⊥ₛ m⇒
 min-∘-decomposability {D₁ = D₁} {D₂ = D₂} υ≢□ (m∘ , min)
   with m∘ .syn | m∘ .valid | m∘ .type | m∘ ↓σ⊑
-... | ↦□ | ⊑□ | _ | _ = ⊥-elim (υ≢□ refl)
-... | ↦∘ d₁ isfun da | υ⊑ϕ₂ | ϕ₂ isSlice ϕ₂⊑τ₂ | ⊑∘ σ₁⊑e₁ σ₂⊑e₂
+... | ⇑□ | ⊑□ | _ | _ = ⊥-elim (υ≢□ refl)
+... | ⇑∘ d₁ isfun da | υ⊑ϕ₂ | ϕ₂ isSlice ϕ₂⊑τ₂ | ⊑∘ σ₁⊑e₁ σ₂⊑e₂
   with syn-precision (m∘ ↓γ⊑) σ₁⊑e₁ D₁ d₁
 ... | ⊑⇒ {τ₁ = ϕ₁'} {τ₂ = ϕ₂'} ϕ₁'⊑τ₁ ϕ₂'⊑τ₂
   rewrite ⊔t-zeroᵣ {ϕ₁'} | ⊔t-zeroᵣ {ϕ₂'} with refl ← isfun
@@ -218,34 +226,34 @@ min-∘-decomposability {D₁ = D₁} {D₂ = D₂} υ≢□ (m∘ , min)
 -- type = [ϕ₁/0]ϕ' and υ₂ ⊑ₛ ϕ', so transitivity through sub-⊑ gives the result.
 --
 -- Equality (≈ₛ) is too strong: take τ' = Var 0, σ = * ⇒ *, υ .↓ = * ⇒ □.
--- Any υ' ⊑t Var 0 is either □ or Var 0, giving [0 ↦ σ_τ] υ' ∈ {□, σ_τ}.
+-- Any υ' ⊑t Var 0 is either □ or Var 0, giving [0 ⇑ σ_τ] υ' ∈ {□, σ_τ}.
 -- Neither equals * ⇒ □ unless σ_τ = * ⇒ □, which minimality doesn't guarantee
 -- (σ_τ is part of a globally minimal program slice, not independently minimized).
 <>syn : ∀ {n Γ e τ' σ}
-          {D : n ； Γ ⊢ e ↦ ∀· τ'}
+          {D : n , Γ ⊢ e ⇑ ∀· τ'}
           {wf : n ⊢wf σ} {υ₂ : ⌊ τ' ⌋}
           {υ : ⌊ [ zero ↦ σ ] τ' ⌋}
         → (ϕ₁ : ⌊ σ ⌋)
         → υ ⊑ₛ subₛ ϕ₁ υ₂
         → SynSlice D ◂ (∀·ₛ υ₂)
-        → SynSlice (↦<> D (⊔□∀□ {τ'}) wf) ◂ υ
+        → SynSlice (⇑<> D (⊔□∀□ {τ'}) wf) ◂ υ
 <>syn {D = D} {wf = wf} ϕ₁ υ⊑sub s
   with s ↓ϕ | s .valid | s ↓ϕ⊑ | s .syn
 ... | ∀· ϕ' | ⊑∀ υ'⊑ϕ' | ⊑∀ ϕ'⊑τ' | d
   = (fstₛ (s ↓ρₛ) ,ₛ <>ₛ (sndₛ (s ↓ρₛ)) ϕ₁)
     ⇑ ↑ (sub-⊑ zero (ϕ₁ .proof) ϕ'⊑τ')
-    ∈ ↦<> d (⊔□∀□ {ϕ'}) (wf-⊑ wf (ϕ₁ .proof))
+    ∈ ⇑<> d (⊔□∀□ {ϕ'}) (wf-⊑ wf (ϕ₁ .proof))
     ⊒ ⊑t-trans υ⊑sub (sub-⊑ zero ⊑t-refl υ'⊑ϕ')
 
 -- A min type app has an annotation ϕ₁ and a min syn slice of the typ fun
 -- where substituting ϕ₁ into the body gives a type at least as precise as υ
 min-<>-decomposability
   : ∀ {n Γ e τ' σ}
-      {D : n ； Γ ⊢ e ↦ ∀· τ'}
+      {D : n , Γ ⊢ e ⇑ ∀· τ'}
       {wf : n ⊢wf σ}
       {υ : ⌊ [ zero ↦ σ ] τ' ⌋}
     → υ .↓ ≢ □
-    → ((m<> , _) : MinSynSlice (↦<> D (⊔□∀□ {τ'}) wf) ◂ υ)
+    → ((m<> , _) : MinSynSlice (⇑<> D (⊔□∀□ {τ'}) wf) ◂ υ)
     → ∃[ υ' ] ∃[ ϕ₁ ]
       Σ[ (m∀ , _) ∈ MinSynSlice D ◂ (∀·ₛ υ') ]
       Σ[ υsub ∈ υ ⊑ₛ subₛ ϕ₁ υ' ]
@@ -253,8 +261,8 @@ min-<>-decomposability
         ∧ m<> ≈ <>syn ϕ₁ υsub m∀
 min-<>-decomposability {D = D} {wf = wf} υ≢□ (m<> , min)
   with m<> .syn | m<> .valid | m<> .type | m<> ↓σ⊑
-... | ↦□ | ⊑□ | _ | _ = ⊥-elim (υ≢□ refl)
-... | ↦<> d' isfun wf' | υ⊑ϕ | ϕ isSlice ϕ⊑τ | ⊑<> σ'⊑e σ_τ⊑σ
+... | ⇑□ | ⊑□ | _ | _ = ⊥-elim (υ≢□ refl)
+... | ⇑<> d' isfun wf' | υ⊑ϕ | ϕ isSlice ϕ⊑τ | ⊑<> σ'⊑e σ_τ⊑σ
   with syn-precision (m<> ↓γ⊑) σ'⊑e D d'
 ... | ⊑∀ {τ = ϕ''} ϕ''⊑τ'
   rewrite ⊔t-zeroᵣ {ϕ''} with refl ← isfun
@@ -272,28 +280,28 @@ min-<>-decomposability {D = D} {wf = wf} υ≢□ (m<> , min)
 ... | ⊑□ rewrite ⊔t-zeroₗ {∀· □} with refl ← isfun with ⊑□ ← υ⊑ϕ = ⊥-elim (υ≢□ refl)
 
 -- Type abstraction
--- Lift a SynSlice of D to a SynSlice of (↦Λ D) by wrapping with ↦Λ.
+-- Lift a SynSlice of D to a SynSlice of (⇑Λ D) by wrapping with ⇑Λ.
 
-Λsyn : ∀ {n Γ e τ} {D : suc n ； shiftΓ 1 Γ ⊢ e ↦ τ}
+Λsyn : ∀ {n Γ e τ} {D : suc n , shiftΓ 1 Γ ⊢ e ⇑ τ}
          {υ : ⌊ τ ⌋}
        → SynSlice D ◂ υ
-       → SynSlice (↦Λ D) ◂ (∀·ₛ υ)
+       → SynSlice (⇑Λ D) ◂ (∀·ₛ υ)
 Λsyn {Γ = Γ} {D = D} {υ = υ} s
   = unshiftΓₛ (s ↓γₛ) ,ₛ Λₛ (s ↓σₛ) ⇑ ∀·ₛ (s .type)
-    ∈ ↦Λ (subst (λ γ → _ ； γ ⊢ _ ↦ _) (Eq.sym (shift-unshiftΓₛ (s ↓γₛ))) (s .syn))
+    ∈ ⇑Λ (subst (λ γ → _ , γ ⊢ _ ⇑ _) (Eq.sym (shift-unshiftΓₛ (s ↓γₛ))) (s .syn))
     ⊒ ⊑∀ (s .valid)
 
--- A minimal slice of ↦Λ D ◂ ∀·ₛ υ yields a minimal slice of D ◂ υ.
+-- A minimal slice of ⇑Λ D ◂ ∀·ₛ υ yields a minimal slice of D ◂ υ.
 min-Λ-decomposability
   : ∀ {n Γ e τ}
-      {D : suc n ； shiftΓ 1 Γ ⊢ e ↦ τ}
+      {D : suc n , shiftΓ 1 Γ ⊢ e ⇑ τ}
       {υ : ⌊ τ ⌋}
-      ((mΛ , _) : MinSynSlice (↦Λ D) ◂ (∀·ₛ υ))
+      ((mΛ , _) : MinSynSlice (⇑Λ D) ◂ (∀·ₛ υ))
     → Σ[ (m , _) ∈ MinSynSlice D ◂ υ ]
         mΛ ≈ Λsyn m
 min-Λ-decomposability {D = D} (mΛ , min)
   with mΛ .syn | mΛ .valid | mΛ ↓σ⊑ | mΛ ↓ϕ⊑
-... | ↦Λ d | ⊑∀ υ⊑ϕ | ⊑Λ σ'⊑e | ⊑∀ ϕ⊑τ
+... | ⇑Λ d | ⊑∀ υ⊑ϕ | ⊑Λ σ'⊑e | ⊑∀ ϕ⊑τ
   = (m , min-m) , min (Λsyn m) Λm⊑mΛ
   where
     s = ((↑ (shiftΓ-⊑ (mΛ ↓γ⊑))) ,ₛ (↑ σ'⊑e)) ⇑ ↑ ϕ⊑τ ∈ d ⊒ υ⊑ϕ
@@ -304,27 +312,27 @@ min-Λ-decomposability {D = D} (mΛ , min)
             , ⊑Λ (minExists s .proj₂ .proj₂)
 
 -- Annotated lambdas
--- Lift a SynSlice of D to a SynSlice of (↦λ: wf D) by wrapping with ↦λ:.
+-- Lift a SynSlice of D to a SynSlice of (⇑λ: wf D) by wrapping with ⇑λ:.
 -- Given a slice of a function body, we can construct a slice of
 -- a function which some annotation ϕ₁, so long as the annotation
 -- assumes at least as much as the slice of the body used
-λ:syn : ∀ {n Γ e τ₁ τ₂} {wf : n ⊢wf τ₁} {D : n ； (τ₁ ∷ Γ) ⊢ e ↦ τ₂}
+λ:syn : ∀ {n Γ e τ₁ τ₂} {wf : n ⊢wf τ₁} {D : n , (τ₁ ∷ Γ) ⊢ e ⇑ τ₂}
           {υ₁ : ⌊ τ₁ ⌋} {υ₂ : ⌊ τ₂ ⌋}
         → (ϕ₁ : ⌊ τ₁ ⌋)
         → υ₁ ⊑ₛ ϕ₁
         → (s : SynSlice D ◂ υ₂)
         → hdₛ (s ↓γₛ) ⊑ₛ ϕ₁
-        → SynSlice (↦λ: wf D) ◂ (υ₁ ⇒ₛ υ₂)
+        → SynSlice (⇑λ: wf D) ◂ (υ₁ ⇒ₛ υ₂)
 λ:syn {wf = wf} {D = D} ϕ₁ υ₁⊑ϕ₁
       (((_ ∷ γ' , σ') isSlice (⊑∷ _ γ'⊑Γ , σ'⊑e)) ⇑ ϕ ∈ d ⊒ υ⊑ϕ) sγ₀⊑ϕ₁
   with static-gradual-syn (⊑∷ (ϕ₁ .proof) γ'⊑Γ) σ'⊑e D
 ... | ϕ₂ , d₂ , ϕ₂⊑τ₂
   = (↑ γ'⊑Γ) ,ₛ λ:ₛ ϕ₁ (σ' isSlice σ'⊑e)
     ⇑ ϕ₁ ⇒ₛ (↑ ϕ₂⊑τ₂)
-    ∈ ↦λ: (wf-⊑ wf (ϕ₁ .proof)) d₂
+    ∈ ⇑λ: (wf-⊑ wf (ϕ₁ .proof)) d₂
     ⊒ ⊑⇒ υ₁⊑ϕ₁ (⊑t-trans υ⊑ϕ (syn-precision (⊑∷ sγ₀⊑ϕ₁ ⊑a-refl) ⊑e-refl d₂ d))
 
-λ:syn-↓ρ : ∀ {n Γ e τ₁ τ₂} {wf : n ⊢wf τ₁} {D : n ； (τ₁ ∷ Γ) ⊢ e ↦ τ₂}
+λ:syn-↓ρ : ∀ {n Γ e τ₁ τ₂} {wf : n ⊢wf τ₁} {D : n , (τ₁ ∷ Γ) ⊢ e ⇑ τ₂}
               {υ₁ : ⌊ τ₁ ⌋} {υ₂ : ⌊ τ₂ ⌋}
             → (ϕ₁ : ⌊ τ₁ ⌋) (υ₁⊑ϕ₁ : υ₁ ⊑ₛ ϕ₁)
             → (s : SynSlice D ◂ υ₂) (h : hdₛ (s ↓γₛ) ⊑ₛ ϕ₁)
@@ -335,14 +343,14 @@ min-Λ-decomposability {D = D} (mΛ , min)
   with static-gradual-syn (⊑∷ (ϕ₁ .proof) γ'⊑Γ) σ'⊑e D
 ... | _ = refl
 
--- Minimal λ: slices decompose: a minimal slice of ↦λ: wf D ◂ (υ₁ ⇒ₛ υ₂)
+-- Minimal λ: slices decompose: a minimal slice of ⇑λ: wf D ◂ (υ₁ ⇒ₛ υ₂)
 -- contains a minimal slice of D ◂ υ₂ with υ₁ (or weaker) in the context
 -- Again, the converse is not valid:
 -- Take a naive slice reconstruction of the body:
--- x : * × * ⊢ case ? of a ↦ x | b ↦ * & *
--- with min slice x : □ × * ⊢ case ? of a ↦ x | b ↦ * & □
+-- x : * × * ⊢ case ? of a ⇑ x | b ⇑ * & *
+-- with min slice x : □ × * ⊢ case ? of a ⇑ x | b ⇑ * & □
 -- Yet when placed in a function is not min:
--- λ x : (* × *). case ? of a ↦ x | b ↦ * & □
+-- λ x : (* × *). case ? of a ⇑ x | b ⇑ * & □
 -- The arg forces a more precise context TODO: add to counterexamples
 
 -- However, decomposing a min lambda is possible as we know the minimal arg type (the sliced annotation)
@@ -351,9 +359,9 @@ min-Λ-decomposability {D = D} (mΛ , min)
 -- in preparation for this, but currently ϕ₁ ≈ υ₁ in reality
 min-λ:-decomposability
   : ∀ {n Γ e τ₁ τ₂}
-      {wf : n ⊢wf τ₁} {D : n ； (τ₁ ∷ Γ) ⊢ e ↦ τ₂}
+      {wf : n ⊢wf τ₁} {D : n , (τ₁ ∷ Γ) ⊢ e ⇑ τ₂}
       {υ₁ : ⌊ τ₁ ⌋} {υ₂ : ⌊ τ₂ ⌋}
-      ((mλ: , _) : MinSynSlice (↦λ: wf D) ◂ (υ₁ ⇒ₛ υ₂))
+      ((mλ: , _) : MinSynSlice (⇑λ: wf D) ◂ (υ₁ ⇒ₛ υ₂))
     → Σ[ (m₂ , _) ∈ MinSynSlice D ◂ υ₂ ]
       Σ[ ϕ₁ ∈ ⌊ τ₁ ⌋ ]
       Σ[ υ₁⊑ϕ₁ ∈ υ₁ ⊑ₛ ϕ₁ ]
@@ -361,7 +369,7 @@ min-λ:-decomposability
          mλ: ≈ (λ:syn ϕ₁ υ₁⊑ϕ₁ m₂ m₂γ₀⊑ϕ₁)
 min-λ:-decomposability {D = D} {υ₁ = υ₁} (mλ: , min)
   with mλ: .syn | mλ: .valid | mλ: ↓σ⊑ | mλ: ↓ϕ⊑
-... | ↦λ: wf' d | ⊑⇒ υ₁⊑ϕ₁ υ₂⊑ϕ₂ | ⊑λ α⊑τ₁ σ⊑e | ⊑⇒ ϕ₁⊑τ₁ ϕ₂⊑τ₂
+... | ⇑λ: wf' d | ⊑⇒ υ₁⊑ϕ₁ υ₂⊑ϕ₂ | ⊑λ α⊑τ₁ σ⊑e | ⊑⇒ ϕ₁⊑τ₁ ϕ₂⊑τ₂
   = (m₂ , min-m₂) , ↑ ϕ₁⊑τ₁ , υ₁⊑ϕ₁ , m₂γ₀⊑ϕ₁
     , min (λ:syn (↑ ϕ₁⊑τ₁) υ₁⊑ϕ₁ m₂ m₂γ₀⊑ϕ₁) λ:m⊑mλ:
   where
@@ -380,11 +388,11 @@ min-λ:-decomposability {D = D} {υ₁ = υ₁} (mλ: , min)
 -- Outer assumptions by joining those of s₁ and the tail of s₂
 -- As in annotated lambdas: head of s₂ must use at most the information provided
 -- by s₁, which in this case is a synthesized type rather than an annotation
-defsyn : ∀ {n Γ e' e τ' τ} {D₁ : n ； Γ ⊢ e' ↦ τ'}
-           {D₂ : n ； (τ' ∷ Γ) ⊢ e ↦ τ} {υ' υ}
+defsyn : ∀ {n Γ e' e τ' τ} {D₁ : n , Γ ⊢ e' ⇑ τ'}
+           {D₂ : n , (τ' ∷ Γ) ⊢ e ⇑ τ} {υ' υ}
          → (s₁ : SynSlice D₁ ◂ υ') → (s₂ : SynSlice D₂ ◂ υ)
          → hdₛ (s₂ ↓γₛ) ⊑ₛ s₁ .type
-         → SynSlice (↦def D₁ D₂) ◂ υ
+         → SynSlice (⇑def D₁ D₂) ◂ υ
 defsyn {D₁ = D₁} {D₂ = D₂}
        (ρₛ₁ ⇑ ϕ₁ ∈ d₁ ⊒ υ'⊑ϕ₁)
        (((_ ∷ γ₂ , σ₂) isSlice (⊑∷ _ γ₂⊑Γ , σ₂⊑e)) ⇑ ϕ₂ ∈ d₂ ⊒ υ⊑ϕ₂) sγ₀⊑ϕ₁
@@ -395,7 +403,7 @@ defsyn {D₁ = D₁} {D₂ = D₂}
   where γₛ⊔ = fstₛ ρₛ₁ ⊔ₛ (γ₂ isSlice γ₂⊑Γ)
 ... | ϕ , d₂' , ϕ⊑τ
   = (γₛ⊔ ,ₛ defₛ (sndₛ ρₛ₁) (σ₂ isSlice σ₂⊑e))
-    ⇑ ↑ ϕ⊑τ ∈ ↦def d₁' d₂'
+    ⇑ ↑ ϕ⊑τ ∈ ⇑def d₁' d₂'
     ⊒ ⊑t-trans υ⊑ϕ₂
         (syn-precision (⊑∷ (⊑t-trans sγ₀⊑ϕ₁
                               (syn-precision (⊑ₛLat.x⊑ₛx⊔ₛy (fstₛ ρₛ₁) (γ₂ isSlice γ₂⊑Γ))
@@ -404,13 +412,14 @@ defsyn {D₁ = D₁} {D₂ = D₂}
                        ⊑e-refl d₂' d₂)
   where γₛ⊔ = fstₛ ρₛ₁ ⊔ₛ (γ₂ isSlice γ₂⊑Γ)
 
+-- Dissertation: Theorem 5.11 thm:min-def-decomp (Case: Bindings), §5.5.
 -- Again requires the body's used assumptions to not exceed those provided by the binding
 min-def-decomposability
   : ∀ {n Γ e' e τ' τ}
-      {D₁ : n ； Γ ⊢ e' ↦ τ'} {D₂ : n ； (τ' ∷ Γ) ⊢ e ↦ τ}
+      {D₁ : n , Γ ⊢ e' ⇑ τ'} {D₂ : n , (τ' ∷ Γ) ⊢ e ⇑ τ}
       {υ : ⌊ τ ⌋}
     → υ .↓ ≢ □
-    → ((mdef , _) : MinSynSlice (↦def D₁ D₂) ◂ υ)
+    → ((mdef , _) : MinSynSlice (⇑def D₁ D₂) ◂ υ)
     → ∃[ υ' ]
       Σ[ (m₁ , _) ∈ MinSynSlice D₁ ◂ υ' ]
       Σ[ (m₂ , _) ∈ MinSynSlice D₂ ◂ υ ]
@@ -418,8 +427,8 @@ min-def-decomposability
         mdef ≈ (defsyn m₁ m₂ m₂γ₀⊑ϕ₁)
 min-def-decomposability {D₁ = D₁} {D₂ = D₂} υ≢□ (mdef , min)
   with mdef .syn | mdef .valid | mdef ↓σ⊑ | mdef ↓ϕ⊑
-... | ↦□ | ⊑□ | _ | _ = ⊥-elim (υ≢□ refl)
-... | ↦def d₁ d₂ | υ⊑ϕ | ⊑def σ₁⊑e' σ₂⊑e | ϕ⊑τ
+... | ⇑□ | ⊑□ | _ | _ = ⊥-elim (υ≢□ refl)
+... | ⇑def d₁ d₂ | υ⊑ϕ | ⊑def σ₁⊑e' σ₂⊑e | ϕ⊑τ
   = ↑ ϕ₁⊑τ' , (m₁ , min-m₁) , (m₂ , min-m₂) , m₂γ₀⊑ϕ₁
     , min (defsyn m₁ m₂ m₂γ₀⊑ϕ₁) defm⊑mdef
   where
@@ -451,14 +460,14 @@ min-def-decomposability {D₁ = D₁} {D₂ = D₂} υ≢□ (mdef , min)
 -- The result type is a join of the branch types, requiring consistency from c.
 -- The result query υ cannot be more precise than the queries on the branches
 casesyn : ∀ {n Γ e e₁ e₂ τ₁ τ₂ τ₁' τ₂'}
-            {D : n ； Γ ⊢ e ↦ τ₁ + τ₂}
-            {D₁ : n ； (τ₁ ∷ Γ) ⊢ e₁ ↦ τ₁'} {D₂ : n ； (τ₂ ∷ Γ) ⊢ e₂ ↦ τ₂'}
+            {D : n , Γ ⊢ e ⇑ τ₁ + τ₂}
+            {D₁ : n , (τ₁ ∷ Γ) ⊢ e₁ ⇑ τ₁'} {D₂ : n , (τ₂ ∷ Γ) ⊢ e₂ ⇑ τ₂'}
             {c : τ₁' ~ τ₂'} {υ : ⌊ τ₁' ⊔ τ₂' ⌋} {ς : ⌊ τ₁ + τ₂ ⌋} {υ₁ υ₂}
           → (s₀ : SynSlice D ◂ ς)
           → (s₁ : SynSlice D₁ ◂ υ₁) → hdₛ (s₁ ↓γₛ) ⊑ₛ fst+ₛ (s₀ .type)
           → (s₂ : SynSlice D₂ ◂ υ₂) → hdₛ (s₂ ↓γₛ) ⊑ₛ snd+ₛ (s₀ .type)
           → υ .↓ ⊑t s₁ .type .↓ ⊔ s₂ .type .↓
-          → SynSlice (↦case D (⊔□+□ {τ₁} {τ₂}) D₁ D₂ c) ◂ υ
+          → SynSlice (⇑case D (⊔□+□ {τ₁} {τ₂}) D₁ D₂ c) ◂ υ
 casesyn {D = D} {D₁ = D₁} {D₂ = D₂} {c = c}
         (ρₛ₀ ⇑ ϕ₀ ∈ d₀ ⊒ _)
         (((_ ∷ γ₁ , σ₁) isSlice (⊑∷ _ γ₁⊑Γ , σ₁⊑e₁)) ⇑ ϕ₁ ∈ d₁ ⊒ υ₁⊑ϕ₁) sγ₁⊑
@@ -476,7 +485,7 @@ casesyn {D = D} {D₁ = D₁} {D₂ = D₂} {c = c}
 ... | τl , dl , pl | τr , dr , pr
   = (γₛ⊔ ,ₛ caseₛ (sndₛ ρₛ₀) (↑ σ₁⊑e₁) (↑ σ₂⊑e₂))
     ⇑ ↑ (⊔-mono-⊑ c pl pr)
-    ∈ ↦case ds ms dl dr (~-⊑-down c pl pr)
+    ∈ ⇑case ds ms dl dr (~-⊑-down c pl pr)
     ⊒ ⊑t-trans υ⊑⊔ (⊔-mono-⊑ (~-⊑-down c pl pr) ϕ₁⊑pl ϕ₂⊑pr)
   where
     γₛ⊔ = (fstₛ ρₛ₀ ⊔ₛ (↑ γ₁⊑Γ)) ⊔ₛ (↑ γ₂⊑Γ)
@@ -500,12 +509,12 @@ casesyn {D = D} {D₁ = D₁} {D₂ = D₂} {c = c}
 -- Branch head constraints link to the scrutinee's synthesized type.
 min-case-decomposability
   : ∀ {n Γ e e₁ e₂ τ₁ τ₂ τ₁' τ₂'}
-      {D : n ； Γ ⊢ e ↦ τ₁ + τ₂}
-      {D₁ : n ； (τ₁ ∷ Γ) ⊢ e₁ ↦ τ₁'} {D₂ : n ； (τ₂ ∷ Γ) ⊢ e₂ ↦ τ₂'}
+      {D : n , Γ ⊢ e ⇑ τ₁ + τ₂}
+      {D₁ : n , (τ₁ ∷ Γ) ⊢ e₁ ⇑ τ₁'} {D₂ : n , (τ₂ ∷ Γ) ⊢ e₂ ⇑ τ₂'}
       {c : τ₁' ~ τ₂'}
       {υ : ⌊ τ₁' ⊔ τ₂' ⌋}
     → υ .↓ ≢ □
-    → ((mc , _) : MinSynSlice (↦case D (⊔□+□ {τ₁} {τ₂}) D₁ D₂ c) ◂ υ)
+    → ((mc , _) : MinSynSlice (⇑case D (⊔□+□ {τ₁} {τ₂}) D₁ D₂ c) ◂ υ)
     → ∃[ ς ] ∃[ υ₁ ] ∃[ υ₂ ]
       Σ[ (m₀ , _) ∈ MinSynSlice D ◂ ς ]
       Σ[ (m₁ , _) ∈ MinSynSlice D₁ ◂ υ₁ ]
@@ -516,8 +525,8 @@ min-case-decomposability
         mc ≈ casesyn m₀ m₁ m₁γ₀⊑ m₂ m₂γ₀⊑ υ⊑⊔
 min-case-decomposability {τ₁ = τ₁} {τ₂ = τ₂} {D = D} {D₁ = D₁} {D₂ = D₂} {c = c} υ≢□ (mc , min)
   with mc .syn | mc ↓σ⊑
-... | ↦□ | _ with ⊑□ ← mc .valid = ⊥-elim (υ≢□ refl)
-... | ↦case d₀ isfun d₁ d₂ c' | ⊑case σ₀⊑e σ₁⊑e₁ σ₂⊑e₂
+... | ⇑□ | _ with ⊑□ ← mc .valid = ⊥-elim (υ≢□ refl)
+... | ⇑case d₀ isfun d₁ d₂ c' | ⊑case σ₀⊑e σ₁⊑e₁ σ₂⊑e₂
   with syn-precision (mc ↓γ⊑) σ₀⊑e D d₀
 -- NOTE: both ⊑□ and ⊑+ cases are identical structurally, but with differing precision constructors
 ... | ⊑□ rewrite ⊔t-zeroₗ {□ + □} with refl ← isfun

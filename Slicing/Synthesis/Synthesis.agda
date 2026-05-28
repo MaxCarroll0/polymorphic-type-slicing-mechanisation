@@ -17,6 +17,9 @@ open import Core.Typ.Properties using (⊔t-zeroₗ; ⊔t-zeroᵣ; ⊔-×-⊑; �
 open import Data.Empty using (⊥-elim)
 open import Semantics.Statics
 open import Semantics.Graduality using (static-gradual-syn; syn-precision; static-gradual-ana; syn-unicity)
+-- SynSlice record (Definition 5.1), exact and minimal slices, join closure (Theorem 5.14),
+-- existence of minimal slices (Theorem 5.6), and monotonicity (Theorem 5.8).
+-- Dissertation: §5 Synthesis Slices.
 module Slicing.Synthesis.Synthesis where
 
 instance
@@ -26,13 +29,13 @@ instance
 -- A SynSlice of D on υ is a program slice which synthesises a type larger than υ
 -- Here υ is the 'query' and the slice provides enough information to explain the query: υ ⊑ type
 record SynSlice_◂_ {n : ℕ} {Γ : Assms} {e : Exp} {τ : Typ}
-                (D : n ； Γ ⊢ e ↦ τ) (υ : ⌊ τ ⌋) : Set where
+                (D : n , Γ ⊢ e ⇑ τ) (υ : ⌊ τ ⌋) : Set where
   constructor _⇑_∈_⊒_
 
   field
     progₛ  : ⌊ Γ , e ⌋
     type  : ⌊ τ ⌋
-    syn   : n ； progₛ .↓ .proj₁ ⊢ progₛ .↓ .proj₂ ↦ type .↓
+    syn   : n , progₛ .↓ .proj₁ ⊢ progₛ .↓ .proj₂ ⇑ type .↓
     valid : υ ⊑ₛ type
 
   ↓ρ = progₛ .↓
@@ -63,26 +66,26 @@ infix 10 SynSlice_◂_
 infix 10 _⇑_∈_⊒_
 
 -- Sometimes the slice is exact, explaining exactly the queried parts of the type
-ExactSynSlice_◂_ : ∀ {n Γ e τ} (D : n ； Γ ⊢ e ↦ τ) (υ : ⌊ τ ⌋) → Set
+ExactSynSlice_◂_ : ∀ {n Γ e τ} (D : n , Γ ⊢ e ⇑ τ) (υ : ⌊ τ ⌋) → Set
 ExactSynSlice_◂_ D υ = Σ[ s ∈ SynSlice D ◂ υ ] s .type ⊑ₛ υ
 
-exact : ∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} {υ} (s : SynSlice D ◂ υ) → {p : s .type ⊑ₛ υ} → ExactSynSlice D ◂ υ
+exact : ∀ {n Γ e τ} {D : n , Γ ⊢ e ⇑ τ} {υ} (s : SynSlice D ◂ υ) → {p : s .type ⊑ₛ υ} → ExactSynSlice D ◂ υ
 exact s {p} = s , p
 
 
 -- TODO: lift typing rules to slices for ease of use
 _⇑_∈!_ : ∀ {n : ℕ} {Γ : Assms} {e : Exp} {τ : Typ}
-           {D : n ； Γ ⊢ e ↦ τ} (ρₛ : ⌊ Γ , e ⌋) (υ : ⌊ τ ⌋)
-           (d : n ； fstₛ ρₛ .↓ ⊢ sndₛ ρₛ .↓ ↦ υ .↓) → ExactSynSlice D ◂ υ
+           {D : n , Γ ⊢ e ⇑ τ} (ρₛ : ⌊ Γ , e ⌋) (υ : ⌊ τ ⌋)
+           (d : n , fstₛ ρₛ .↓ ⊢ sndₛ ρₛ .↓ ⇑ υ .↓) → ExactSynSlice D ◂ υ
 _⇑_∈!_ {τ = τ} ρₛ υ d = ρₛ ⇑ υ ∈ d ⊒ ⊑ₛ.refl {x = υ} , ⊑ₛ.refl {x = υ}
 
 _⇑_∈!₁_ : ∀ {n : ℕ} {Γ : Assms} {e : Exp} {τ : Typ}
-           {D : n ； Γ ⊢ e ↦ τ} (ρₛ : ⌊ Γ , e ⌋) (υ : ⌊ τ ⌋)
-           (d : n ； fstₛ ρₛ .↓ ⊢ sndₛ ρₛ .↓ ↦ υ .↓) → SynSlice D ◂ υ
+           {D : n , Γ ⊢ e ⇑ τ} (ρₛ : ⌊ Γ , e ⌋) (υ : ⌊ τ ⌋)
+           (d : n , fstₛ ρₛ .↓ ⊢ sndₛ ρₛ .↓ ⇑ υ .↓) → SynSlice D ◂ υ
 _⇑_∈!₁_ ρₛ υ d = (ρₛ ⇑ υ ∈! d) .proj₁
 
 instance
-  syn-slice-precision : ∀ {n Γ e τ υ} {D : n ； Γ ⊢ e ↦ τ} → HasPrecision (SynSlice D ◂ υ)
+  syn-slice-precision : ∀ {n Γ e τ υ} {D : n , Γ ⊢ e ⇑ τ} → HasPrecision (SynSlice D ◂ υ)
   syn-slice-precision = record
     { _≈_               = _≈_ on _↓ρ
     ; _⊑_               = _⊑_ on _↓ρ
@@ -90,22 +93,22 @@ instance
     }
 
 
-⊥-syn : ∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} → SynSlice D ◂ ⊥ₛ
-⊥-syn = ⊥ₛ ⇑ ⊥ₛ ∈ ↦□ ⊒ ⊑□
+⊥-syn : ∀ {n Γ e τ} {D : n , Γ ⊢ e ⇑ τ} → SynSlice D ◂ ⊥ₛ
+⊥-syn = ⊥ₛ ⇑ ⊥ₛ ∈ ⇑□ ⊒ ⊑□
 
-⊤-syn : ∀ {n Γ e τ} (D : n ； Γ ⊢ e ↦ τ) → SynSlice D ◂ ⊤ₛ
+⊤-syn : ∀ {n Γ e τ} (D : n , Γ ⊢ e ⇑ τ) → SynSlice D ◂ ⊤ₛ
 ⊤-syn D = (⊤ₛ ⇑ ⊤ₛ ∈! D) .proj₁
 
 -- Minimality
 IsMinimal : ∀ {A} ⦃ hp : HasPrecision A ⦄ (a : A) → Set
 IsMinimal {A} a = ∀ (a' : A) → a' ⊑ a → a ≈ a'
 
-MinSynSlice_◂_ : ∀ {n Γ e τ} → (D : n ； Γ ⊢ e ↦ τ) → ⌊ τ ⌋ → Set
+MinSynSlice_◂_ : ∀ {n Γ e τ} → (D : n , Γ ⊢ e ⇑ τ) → ⌊ τ ⌋ → Set
 MinSynSlice D ◂ υ = Σ[ s ∈ SynSlice D ◂ υ ] IsMinimal s
 
-_↓s : ∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} {υ} → MinSynSlice D ◂ υ → SynSlice D ◂ υ
+_↓s : ∀ {n Γ e τ} {D : n , Γ ⊢ e ⇑ τ} {υ} → MinSynSlice D ◂ υ → SynSlice D ◂ υ
 _↓s = proj₁
-minimality : ∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} {υ} → ((s , _) : MinSynSlice D ◂ υ) → IsMinimal s
+minimality : ∀ {n Γ e τ} {D : n , Γ ⊢ e ⇑ τ} {υ} → ((s , _) : MinSynSlice D ◂ υ) → IsMinimal s
 minimality = proj₂
 
 -- Bounded minimality (BoundedIsMinimal, BoundedMinSynSlice)
@@ -116,23 +119,24 @@ minimality = proj₂
 --            Hence, it is a valid SynSlice
 
 static-gradual-syn-prog -- (simple helpers)
-  : ∀ {n Γ e τ} → (D : n ； Γ ⊢ e ↦ τ)
+  : ∀ {n Γ e τ} → (D : n , Γ ⊢ e ⇑ τ)
     → (ρₛ : ⌊ Γ , e ⌋) 
-    → Σ[ ϕ ∈ ⌊ τ ⌋ ] n ； fstₛ ρₛ .↓ ⊢ sndₛ ρₛ .↓ ↦ ϕ .↓
+    → Σ[ ϕ ∈ ⌊ τ ⌋ ] n , fstₛ ρₛ .↓ ⊢ sndₛ ρₛ .↓ ⇑ ϕ .↓
 static-gradual-syn-prog D ρₛ
   with static-gradual-syn ((fstₛ ρₛ) .proof) ((sndₛ ρₛ) .proof) D
 ...  | ϕt , (d , ϕt⊑τ) = ↑ ϕt⊑τ , d
 
 syn-precision-prog -- (simple helpers)
-  : ∀ {n Γ e τ} (D : n ； Γ ⊢ e ↦ τ)
+  : ∀ {n Γ e τ} (D : n , Γ ⊢ e ⇑ τ)
     → (ρₛ : ⌊ Γ , e ⌋) → ∀ {υ}
     → _
     → υ ⊑ τ
 syn-precision-prog D ρₛ
   = syn-precision ((fstₛ ρₛ) .proof) ((sndₛ ρₛ) .proof) D
 
+-- Dissertation: Theorem 5.14 thm:join-syn (Closure of Synthesis Slices under Join), §5.6.
 infixl 6 _⊔syn_
-_⊔syn_ : ∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} {υ₁ υ₂}
+_⊔syn_ : ∀ {n Γ e τ} {D : n , Γ ⊢ e ⇑ τ} {υ₁ υ₂}
          → SynSlice D ◂ υ₁ → SynSlice D ◂ υ₂ → SynSlice D ◂ υ₁ ⊔ₛ υ₂
 _⊔syn_ {τ = τ} {D = D} {υ₁} {υ₂}
        s₁@(ρₛ₁ ⇑ ϕ₁ ∈ d₁ ⊒ υ₁⊑ϕ₁) s₂@(ρₛ₂ ⇑ ϕ₂ ∈ d₂ ⊒ υ₂⊑ϕ₂)
@@ -159,7 +163,7 @@ _⊔syn_ {τ = τ} {D = D} {υ₁} {υ₂}
 -- Proof by induction on D, pattern matching on s₁.valid and s₂.valid.
 -- possibly untrue I think, consider an aliased term in multple ways and remove just one part of the alias? though maybe minimality rules this out
 --  ⊔syn-precise
---    : ∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} {υ₁ υ₂}
+--    : ∀ {n Γ e τ} {D : n , Γ ⊢ e ⇑ τ} {υ₁ υ₂}
 --      → (s₁ : SynSlice D ◂ υ₁) → (s₂ : SynSlice D ◂ υ₂)
 --      → IsMinimal s₁ → IsMinimal s₂
 --      → (s₁ ⊔syn s₂) .type ⊐ₛ υ₁ ⊔ₛ υ₂
@@ -175,7 +179,7 @@ _⊔syn_ {τ = τ} {D = D} {υ₁} {υ₂}
 -- TODO: Update comment to newest version
 -- TODO: Use IsMinSynSlice type
 -- ⊔syn-same
---   : ∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} {υ}
+--   : ∀ {n Γ e τ} {D : n , Γ ⊢ e ⇑ τ} {υ}
 --   → (s₁ s₂ : SynSlice D ◂ υ) → IsMinimal s₁ → IsMinimal s₂
 --   → (s₁ ⊔syn s₂) .type ≈ₛ υ
 -- ⊔syn-same {Γ = Γ} {e = e} {τ = τ} {D = D} {υ = υ} s₁ s₂ m₁ m₂
@@ -214,20 +218,20 @@ _⊔syn_ {τ = τ} {D = D} {υ₁} {υ₂}
 
 -- Well-foundedness of strict precision on SynSlices (finite lattice)
 private
-  _⊏ˢ_ : ∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} {υ : ⌊ τ ⌋}
+  _⊏ˢ_ : ∀ {n Γ e τ} {D : n , Γ ⊢ e ⇑ τ} {υ : ⌊ τ ⌋}
         → SynSlice D ◂ υ → SynSlice D ◂ υ → Set
   _⊏ˢ_ = ⊑._⊏_ ⦃ syn-slice-precision ⦄
 
 postulate
-  ⊏-wf-syn : ∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} {υ : ⌊ τ ⌋}
+  ⊏-wf-syn : ∀ {n Γ e τ} {D : n , Γ ⊢ e ⇑ τ} {υ : ⌊ τ ⌋}
             → WellFounded (_⊏ˢ_ {D = D} {υ = υ})
-  minimal? : ∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} {υ : ⌊ τ ⌋}
+  minimal? : ∀ {n Γ e τ} {D : n , Γ ⊢ e ⇑ τ} {υ : ⌊ τ ⌋}
            → (s : SynSlice D ◂ υ)
            → IsMinimal s ⊎ (Σ[ s' ∈ SynSlice D ◂ υ ] s' ⊏ˢ s)
 
--- Theorem 4: Every SynSlice has a minimal SynSlice below it.
--- By well-founded recursion on strict precision.
-minExists : ∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} {υ : ⌊ τ ⌋}
+-- Dissertation: Theorem 5.6 thm:min-exists (Existence of minimal slices), §5.3.
+-- Every SynSlice has a minimal SynSlice below it. By well-founded recursion on strict precision.
+minExists : ∀ {n Γ e τ} {D : n , Γ ⊢ e ⇑ τ} {υ : ⌊ τ ⌋}
             (s : SynSlice D ◂ υ)
             → Σ[ (m , _) ∈ MinSynSlice D ◂ υ ]
                  m ⊑ s
@@ -241,9 +245,10 @@ minExists {D = D} {υ = υ} s = go s (⊏-wf-syn s)
     let ((m , min-m) , m⊑s') = go s' (rs s'⊏s)
     in (m , min-m) , ⊑.trans {A = Assms ∧ Exp} m⊑s' (proj₁ s'⊏s)
 
--- Postulate 5: Monotonicity: more precise type slice → more precise minimal slice
+-- Dissertation: Theorem 5.8 thm:mono (Monotonicity of minimal slices), §5.3.
+-- Monotonicity: more precise type slice → more precise minimal slice
 postulate
-  mono : ∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} {υ₁ υ₂ : ⌊ τ ⌋}
+  mono : ∀ {n Γ e τ} {D : n , Γ ⊢ e ⇑ τ} {υ₁ υ₂ : ⌊ τ ⌋}
          → υ₁ ⊑ₛ υ₂
          → (m₂ : SynSlice D ◂ υ₂) → IsMinimal m₂
          → Σ[ m₁ ∈ SynSlice D ◂ υ₁ ] IsMinimal m₁ ∧ m₁ ↓ρ ⊑ m₂ ↓ρ
