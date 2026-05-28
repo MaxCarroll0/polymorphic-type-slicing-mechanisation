@@ -8,10 +8,9 @@ import Control.Monad
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Builder as B
-import qualified Data.ByteString.Char8 as BSC
 import Data.IORef
 import Data.List (isSuffixOf, sort)
-import Data.Word (Word32)
+import Data.Word (Word8, Word32)
 import Foreign
 import Foreign.C.ConstPtr (ConstPtr (..))
 import System.Directory
@@ -31,8 +30,13 @@ agdaLanguage = c_tree_sitter_agda >>= unsafeToLanguage . ConstPtr . castPtr
 type Pst = (FilePath, Int, ByteString, ByteString)
 type Hol = (FilePath, Int, ByteString)
 
+-- BSC.words splits on Haskell's isSpace which matches 0xA0 (NBSP); that byte
+-- also appears as a UTF-8 continuation byte, so byte-wise whitespace check.
+asciiWs :: Word8 -> Bool
+asciiWs w = w == 0x20 || w == 0x09 || w == 0x0a || w == 0x0d
+
 norm :: ByteString -> ByteString
-norm = BSC.unwords . BSC.words
+norm = BS.intercalate " " . filter (not . BS.null) . BS.splitWith asciiWs
 
 textOf :: ByteString -> Node -> IO ByteString
 textOf src n = do
