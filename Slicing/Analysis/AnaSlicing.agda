@@ -102,7 +102,7 @@ mutual
         Γ⊑outer = ⊑∷ (X .proof) (ss ↓s ↓γ⊑)
         _ , τ_p⊑ , _ , _ , _ , _ , τ_f⊑ , cov , Cls-lifted =
           lift-syn-cov m Γ⊑outer (inner .κ .proof)
-        typ' = _ isSlice (syn-cls-precision Γ⊑outer (inner .κ .proof) Cls-lifted Cls')
+        typ' = _ isSlice (syn-cls-precision Γ⊑outer (inner .κ .proof) (⇐mode-⊑ τ_f⊑) Cls-lifted Cls')
         focus' = _ isSlice τ_f⊑
     in minScase₁ m ss typ' focus' cov (_ , _ , Cls-lifted)
 
@@ -115,7 +115,7 @@ mutual
         Γ⊑outer = ⊑∷ (X .proof) (ss ↓s ↓γ⊑)
         _ , τ_p⊑ , _ , _ , _ , _ , τ_f⊑ , cov , Cls-lifted =
           lift-syn-cov m Γ⊑outer (inner .κ .proof)
-        typ' = _ isSlice (syn-cls-precision Γ⊑outer (inner .κ .proof) Cls-lifted Cls')
+        typ' = _ isSlice (syn-cls-precision Γ⊑outer (inner .κ .proof) (⇐mode-⊑ τ_f⊑) Cls-lifted Cls')
         focus' = _ isSlice τ_f⊑
     in minScase₂ m ss typ' focus' cov (_ , _ , Cls-lifted)
 
@@ -145,7 +145,7 @@ mutual
         Γ⊑outer = ⊑∷ (ψ .proof) (ss ↓s ↓γ⊑)
         _ , τ_p⊑ , _ , _ , _ , _ , τ_f⊑ , cov , Cls-lifted =
           lift-syn-cov m Γ⊑outer (inner .κ .proof)
-        typ' = _ isSlice (syn-cls-precision Γ⊑outer (inner .κ .proof) Cls-lifted Cls')
+        typ' = _ isSlice (syn-cls-precision Γ⊑outer (inner .κ .proof) (⇐mode-⊑ τ_f⊑) Cls-lifted Cls')
         focus' = _ isSlice τ_f⊑
     in minSdef₂ m ss typ' focus' cov (_ , _ , Cls-lifted)
 

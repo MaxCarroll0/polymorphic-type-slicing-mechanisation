@@ -586,7 +586,7 @@ mutual
          ; focus⊒  = ana-focus⊒ inner
          ; valid   = n_f , Γ_f , aλ⇒ match-eq inner-cls-2
          }
-  extract-pos {n = n} {υ = υ} (minA&₁ {τ = τ} {τ₁ = τ₁} {τ₂ = τ₂} {eq = eq} {d₂ = d₂} m) =
+  extract-pos {n = n} {υ = υ} (minA&₁ {τ = τ} {τ₁ = τ₁} {τ₂ = τ₂} {eq = eq} m) =
     let inner = extract-pos m
         υ-fst : ⌊ τ₁ ⌋
         υ-fst = ana-υ_outer inner
@@ -604,18 +604,16 @@ mutual
         inner-cls' = subst (λ x → n , (ana-γ inner .↓) ⊢ (ana-κ inner .↓)
                                           at anaPos x ▷ n_f , Γ_f [ ⇐mode (ana-focus inner .↓) ])
                            υ-fst≡fst inner-cls
-        d₂' = static-gradual-ana (ana-γ inner .proof) (⊑.refl {A = Exp})
-                (snd×ₛ outer-υ eq .proof) d₂
     in record
-         { κ       = ((ana-κ inner .↓) &₁ _) isSlice
-                       ⊑&₁ (ana-κ inner .proof) (⊑.refl {A = Exp})
+         { κ       = ((ana-κ inner .↓) &₁ □) isSlice
+                       ⊑&₁ (ana-κ inner .proof) ⊑□
          ; γ       = ana-γ inner
          ; υ_outer = outer-υ
          ; focus   = ana-focus inner
          ; focus⊒  = ana-focus⊒ inner
-         ; valid   = n_f , Γ_f , a&₁ match-eq inner-cls' d₂'
+         ; valid   = n_f , Γ_f , a&₁ match-eq inner-cls' (⇓Sub ⇑□ ~?₁)
          }
-  extract-pos {n = n} {υ = υ} (minA&₂ {τ = τ} {τ₁ = τ₁} {τ₂ = τ₂} {eq = eq} {d₁ = d₁} m) =
+  extract-pos {n = n} {υ = υ} (minA&₂ {τ = τ} {τ₁ = τ₁} {τ₂ = τ₂} {eq = eq} m) =
     let inner = extract-pos m
         υ-snd : ⌊ τ₂ ⌋
         υ-snd = ana-υ_outer inner
@@ -633,16 +631,14 @@ mutual
         inner-cls' = subst (λ x → n , (ana-γ inner .↓) ⊢ (ana-κ inner .↓)
                                           at anaPos x ▷ n_f , Γ_f [ ⇐mode (ana-focus inner .↓) ])
                            υ-snd≡snd inner-cls
-        d₁' = static-gradual-ana (ana-γ inner .proof) (⊑.refl {A = Exp})
-                (fst×ₛ' outer-υ eq .proof) d₁
     in record
-         { κ       = (_ &₂ (ana-κ inner .↓)) isSlice
-                       ⊑&₂ (⊑.refl {A = Exp}) (ana-κ inner .proof)
+         { κ       = (□ &₂ (ana-κ inner .↓)) isSlice
+                       ⊑&₂ ⊑□ (ana-κ inner .proof)
          ; γ       = ana-γ inner
          ; υ_outer = outer-υ
          ; focus   = ana-focus inner
          ; focus⊒  = ana-focus⊒ inner
-         ; valid   = n_f , Γ_f , a&₂ match-eq d₁' inner-cls'
+         ; valid   = n_f , Γ_f , a&₂ match-eq (⇓Sub ⇑□ ~?₁) inner-cls'
          }
   extract-pos {n = n} {υ = υ} (minAι₁ {τ = τ} {τ₁ = τ₁} {τ₂ = τ₂} {eq = eq} m) =
     let inner = extract-pos m
