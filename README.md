@@ -26,8 +26,8 @@ standard library and writes:
 - `result/TYPECHECK_RESULTS/build.log` — full Agda output
 - `result/TYPECHECK_RESULTS/status` — `PASS …` or `FAIL …` with the agda exit code
 - `result/TYPECHECK_RESULTS/postulates_and_holes.txt` — every `postulate` block
-  and hole (`{! … !}`, `?`) with `file:line`, or `NO POSTULATES` / `NO HOLES`
-- `result/out/` — checked sources and generated `.agdai` interfaces
+  and hole (`{! … !}`, `?`)
+- `result/out/` — checked sources and built `.agdai` interfaces
 
 The Nix build itself always succeeds (so the log is recoverable even on a
 failing check); read `result/TYPECHECK_RESULTS/status` to confirm type-checking
