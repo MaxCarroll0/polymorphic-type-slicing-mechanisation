@@ -10,16 +10,19 @@ open import Semantics.Statics
 open import Semantics.Graduality using (static-gradual-syn; syn-precision)
 open import Slicing.Synthesis.Synthesis using (IsMinimal)
 
+-- Term-minimal slices: the SynSlice specialisation that holds the assumption context fixed.
+-- Definitions 8.1, 8.2. Theorem 8.4 (existence)
+-- Dissertation: §8.2 Term Slices, §8.3 Term-Minimality.
 module Slicing.Synthesis.FixedAssmsSynthesis where
 
 -- Fixed-context synthesis slice: full context, minimal expression
 record FixedAssmsSynSlice {n : ℕ} {Γ : Assms} {e : Exp} {τ : Typ}
-                    (D : n ； Γ ⊢ e ↦ τ) (υ : ⌊ τ ⌋) : Set where
+                    (D : n , Γ ⊢ e ⇑ τ) (υ : ⌊ τ ⌋) : Set where
   constructor _⇑_∈_⊒_
   field
     expₛ  : ⌊ e ⌋
     type  : ⌊ τ ⌋
-    syn   : n ； Γ ⊢ expₛ .↓ ↦ type .↓
+    syn   : n , Γ ⊢ expₛ .↓ ⇑ type .↓
     valid : υ ⊑ₛ type
 
   ↓σ = expₛ .↓
@@ -40,7 +43,7 @@ infix 10 FixedAssmsSynSlice
 infix 10 _⇑_∈_⊒_
 
 instance
-  fixedassms-syn-slice-precision : ∀ {n Γ e τ υ} {D : n ； Γ ⊢ e ↦ τ}
+  fixedassms-syn-slice-precision : ∀ {n Γ e τ υ} {D : n , Γ ⊢ e ⇑ τ}
     → HasPrecision (FixedAssmsSynSlice D υ)
   fixedassms-syn-slice-precision = record
     { _≈_               = _≈_ on _↓σ
@@ -49,30 +52,30 @@ instance
         (HasPrecision.isDecPartialOrder exp-precision)
     }
 
-⊥-fixedassms-syn : ∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} → FixedAssmsSynSlice D ⊥ₛ
-⊥-fixedassms-syn = ⊥ₛ ⇑ ⊥ₛ ∈ ↦□ ⊒ ⊑□
+⊥-fixedassms-syn : ∀ {n Γ e τ} {D : n , Γ ⊢ e ⇑ τ} → FixedAssmsSynSlice D ⊥ₛ
+⊥-fixedassms-syn = ⊥ₛ ⇑ ⊥ₛ ∈ ⇑□ ⊒ ⊑□
 
-⊤-fixedassms-syn : ∀ {n Γ e τ} (D : n ； Γ ⊢ e ↦ τ) → FixedAssmsSynSlice D ⊤ₛ
+⊤-fixedassms-syn : ∀ {n Γ e τ} (D : n , Γ ⊢ e ⇑ τ) → FixedAssmsSynSlice D ⊤ₛ
 ⊤-fixedassms-syn {τ = τ} D = (⊤ₛ ⇑ ⊤ₛ ∈ D ⊒ ⊑ₛ.refl {A = Typ} {x = ⊤ₛ {a = τ}})
 
-MinFixedAssmsSynSlice : ∀ {n Γ e τ} → (D : n ； Γ ⊢ e ↦ τ) → ⌊ τ ⌋ → Set
+MinFixedAssmsSynSlice : ∀ {n Γ e τ} → (D : n , Γ ⊢ e ⇑ τ) → ⌊ τ ⌋ → Set
 MinFixedAssmsSynSlice D υ = Σ[ s ∈ FixedAssmsSynSlice D υ ] IsMinimal s
 
-ExactFixedAssmsSynSlice : ∀ {n Γ e τ} (D : n ； Γ ⊢ e ↦ τ) (υ : ⌊ τ ⌋) → Set
+ExactFixedAssmsSynSlice : ∀ {n Γ e τ} (D : n , Γ ⊢ e ⇑ τ) (υ : ⌊ τ ⌋) → Set
 ExactFixedAssmsSynSlice D υ = Σ[ s ∈ FixedAssmsSynSlice D υ ] s .type ⊑ₛ υ
 
 open ⊑ {A = Assms} using () renaming (refl to ⊑a-refl)
 
 static-gradual-syn-exp
-  : ∀ {n Γ e τ} → (D : n ； Γ ⊢ e ↦ τ)
+  : ∀ {n Γ e τ} → (D : n , Γ ⊢ e ⇑ τ)
     → (σₛ : ⌊ e ⌋)
-    → Σ[ ϕ ∈ ⌊ τ ⌋ ] n ； Γ ⊢ σₛ .↓ ↦ ϕ .↓
+    → Σ[ ϕ ∈ ⌊ τ ⌋ ] n , Γ ⊢ σₛ .↓ ⇑ ϕ .↓
 static-gradual-syn-exp {Γ = Γ} D σₛ
   with static-gradual-syn (⊑a-refl {x = Γ}) (σₛ .proof) D
 ...  | ϕt , (d , ϕt⊑τ) = ↑ ϕt⊑τ , d
 
 syn-precision-exp
-  : ∀ {n Γ e τ} (D : n ； Γ ⊢ e ↦ τ)
+  : ∀ {n Γ e τ} (D : n , Γ ⊢ e ⇑ τ)
     → (σₛ : ⌊ e ⌋) → ∀ {υ}
     → _
     → υ ⊑ τ
@@ -80,7 +83,7 @@ syn-precision-exp {Γ = Γ} D σₛ
   = syn-precision (⊑a-refl {x = Γ}) (σₛ .proof) D
 
 infixl 6 _⊔fixsyn_
-_⊔fixsyn_ : ∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} {υ₁ υ₂}
+_⊔fixsyn_ : ∀ {n Γ e τ} {D : n , Γ ⊢ e ⇑ τ} {υ₁ υ₂}
            → FixedAssmsSynSlice D υ₁ → FixedAssmsSynSlice D υ₂
            → FixedAssmsSynSlice D (υ₁ ⊔ₛ υ₂)
 _⊔fixsyn_ {τ = τ} {D = D} {υ₁} {υ₂}
@@ -103,21 +106,21 @@ _⊔fixsyn_ {τ = τ} {D = D} {υ₁} {υ₂}
 
 -- Well-foundedness of strict precision on FixedAssmsSynSlices (finite lattice)
 private
-  _⊏ᶠ_ : ∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} {υ : ⌊ τ ⌋}
+  _⊏ᶠ_ : ∀ {n Γ e τ} {D : n , Γ ⊢ e ⇑ τ} {υ : ⌊ τ ⌋}
         → FixedAssmsSynSlice D υ → FixedAssmsSynSlice D υ → Set
   _⊏ᶠ_ = ⊑._⊏_ ⦃ fixedassms-syn-slice-precision ⦄
 
 postulate
-  ⊏-wf-fixedassms : ∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} {υ : ⌊ τ ⌋}
+  ⊏-wf-fixedassms : ∀ {n Γ e τ} {D : n , Γ ⊢ e ⇑ τ} {υ : ⌊ τ ⌋}
     → WellFounded (_⊏ᶠ_ {D = D} {υ = υ})
-  minimal?-fixedassms : ∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} {υ : ⌊ τ ⌋}
+  minimal?-fixedassms : ∀ {n Γ e τ} {D : n , Γ ⊢ e ⇑ τ} {υ : ⌊ τ ⌋}
     → (s : FixedAssmsSynSlice D υ)
     → IsMinimal s ⊎ (Σ[ s' ∈ FixedAssmsSynSlice D υ ] s' ⊏ᶠ s)
 
 -- Every FixedAssmsSynSlice has a minimal element below it.
 -- By well-founded recursion on strict expression precision.
 minFixedAssmsExists
-  : ∀ {n Γ e τ} {D : n ； Γ ⊢ e ↦ τ} {υ : ⌊ τ ⌋}
+  : ∀ {n Γ e τ} {D : n , Γ ⊢ e ⇑ τ} {υ : ⌊ τ ⌋}
     (s : FixedAssmsSynSlice D υ)
     → Σ[ (m , _) ∈ MinFixedAssmsSynSlice D υ ]
          m ⊑ s

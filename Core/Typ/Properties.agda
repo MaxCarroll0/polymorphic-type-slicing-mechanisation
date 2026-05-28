@@ -1,3 +1,7 @@
+-- Algebraic properties of types and their slices: lattice identities (□ as zero, idempotency),
+-- monotonicity of join/match decompositions, substitution and shifting compatibility, and
+-- well-formedness preservation.
+-- Dissertation: supports §4.1 Syntax & Relations and §4.2 Lattice Properties.
 module Core.Typ.Properties where
 
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; subst; cong₂; cong)
@@ -185,8 +189,43 @@ unshift-shift-⊑ {c} {a} {τ} {τ'} p =
   subst (λ x → unshift c a τ' ⊑t x) (unshift-shift τ) (unshift-⊑ c a p)
 
 -- shift is a right inverse of unshift (when τ ⊑ shift τ').
-postulate
-  shift-unshift : ∀ {c a} (τ : Typ) {τ' : Typ} → τ ⊑t shift c a τ' → shift c a (unshift c a τ) ≡ τ
+shift-unshift : ∀ {c a} (τ : Typ) {τ' : Typ} → τ ⊑t shift c a τ' → shift c a (unshift c a τ) ≡ τ
+shift-unshift □ _ = refl
+shift-unshift * _ = refl
+shift-unshift {c} {a} ⟨ k ⟩ {⟨ k' ⟩} p with k' <? c
+shift-unshift {c} {a} ⟨ k ⟩ {⟨ k' ⟩} ⊑Var | yes k'<c with k' <? c
+shift-unshift {c} {a} ⟨ k ⟩ {⟨ k' ⟩} ⊑Var | yes k'<c | yes _ with k' <? c
+shift-unshift {c} {a} ⟨ k ⟩ {⟨ k' ⟩} ⊑Var | yes k'<c | yes _ | yes _ = refl
+shift-unshift {c} {a} ⟨ k ⟩ {⟨ k' ⟩} ⊑Var | yes k'<c | yes _ | no nk = ⊥-elim (nk k'<c)
+shift-unshift {c} {a} ⟨ k ⟩ {⟨ k' ⟩} ⊑Var | yes k'<c | no nk = ⊥-elim (nk k'<c)
+shift-unshift {c} {a} ⟨ .(k' ℕ+ a) ⟩ {⟨ k' ⟩} ⊑Var | no k'≮c with (k' ℕ+ a) <? c
+shift-unshift {c} {a} ⟨ .(k' ℕ+ a) ⟩ {⟨ k' ⟩} ⊑Var | no k'≮c | yes p<c =
+  ⊥-elim (k'≮c (≤-trans (s≤s (m≤m+n k' a)) p<c))
+shift-unshift {c} {a} ⟨ .(k' ℕ+ a) ⟩ {⟨ k' ⟩} ⊑Var | no k'≮c | no _ with ((k' ℕ+ a) ∸ a) <? c
+shift-unshift {c} {a} ⟨ .(k' ℕ+ a) ⟩ {⟨ k' ⟩} ⊑Var | no k'≮c | no _ | yes p<c =
+  ⊥-elim (k'≮c (subst (_< c) (m+n∸n≡m k' a) p<c))
+shift-unshift {c} {a} ⟨ .(k' ℕ+ a) ⟩ {⟨ k' ⟩} ⊑Var | no k'≮c | no _ | no _ =
+  cong ⟨_⟩ (cong (_ℕ+ a) (m+n∸n≡m k' a))
+shift-unshift {c} {a} (τ₁ ⇒ τ₂) {τ₁' ⇒ τ₂'} (⊑⇒ p q) =
+  cong₂ _⇒_ (shift-unshift τ₁ {τ₁'} p) (shift-unshift τ₂ {τ₂'} q)
+shift-unshift {c} {a} (τ₁ + τ₂) {τ₁' + τ₂'} (⊑+ p q) =
+  cong₂ _+_ (shift-unshift τ₁ {τ₁'} p) (shift-unshift τ₂ {τ₂'} q)
+shift-unshift {c} {a} (τ₁ × τ₂) {τ₁' × τ₂'} (⊑× p q) =
+  cong₂ _×_ (shift-unshift τ₁ {τ₁'} p) (shift-unshift τ₂ {τ₂'} q)
+shift-unshift {c} {a} (∀· τ) {∀· τ'} (⊑∀ p) = cong ∀· (shift-unshift τ {τ'} p)
+-- Absurd cases: compound τ with variable τ' has no precision proof
+shift-unshift {c} {a} (τ + τ₁) {⟨ k' ⟩} p with k' <? c
+... | yes _ with () ← p
+... | no _ with () ← p
+shift-unshift {c} {a} (τ × τ₁) {⟨ k' ⟩} p with k' <? c
+... | yes _ with () ← p
+... | no _ with () ← p
+shift-unshift {c} {a} (τ ⇒ τ₁) {⟨ k' ⟩} p with k' <? c
+... | yes _ with () ← p
+... | no _ with () ← p
+shift-unshift {c} {a} (∀· τ) {⟨ k' ⟩} p with k' <? c
+... | yes _ with () ← p
+... | no _ with () ← p
 
 -- Substitution preserves precision
 sub-⊑ : ∀ (k : ℕ) {σ₁ σ₂ τ₁ τ₂} → σ₁ ⊑t σ₂ → τ₁ ⊑t τ₂ → [ k ↦ σ₁ ] τ₁ ⊑t [ k ↦ σ₂ ] τ₂
