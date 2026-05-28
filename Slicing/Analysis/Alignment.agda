@@ -1,4 +1,3 @@
-{-# OPTIONS --allow-unsolved-metas --allow-incomplete-matches #-}
 open import Data.Nat hiding (_+_; _⊔_; _≟_)
 open import Data.List using (_∷_)
 open import Relation.Binary.PropositionalEquality using (_≡_; subst; sym)

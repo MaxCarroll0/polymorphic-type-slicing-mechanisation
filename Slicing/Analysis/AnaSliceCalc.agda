@@ -168,6 +168,18 @@ mutual
                      [ ⇐mode (focus .↓) ])
               → MinAna (scase₂ D eq d₁ Cls' con) υ
 
+    minSι₁    : ∀ {n Γ n_f Γ' C τ_inner τ}
+                  {Cls' : n , Γ ⊢ C at synPos τ_inner ▷ n_f , Γ' [ ⇐mode τ ]}
+              → {υ : ⌊ τ ⌋}
+              → MinAna Cls' υ
+              → MinAna (sι₁ Cls') υ
+
+    minSι₂    : ∀ {n Γ n_f Γ' C τ_inner τ}
+                  {Cls' : n , Γ ⊢ C at synPos τ_inner ▷ n_f , Γ' [ ⇐mode τ ]}
+              → {υ : ⌊ τ ⌋}
+              → MinAna Cls' υ
+              → MinAna (sι₂ Cls') υ
+
     minSπ₁    : ∀ {n Γ n_f Γ' C τ_inner τ₁ τ₂ τ}
                   {Cls' : n , Γ ⊢ C at synPos τ_inner ▷ n_f , Γ' [ ⇐mode τ ]}
                   {eq : τ_inner ⊔ □ × □ ≡ τ₁ × τ₂}
@@ -507,6 +519,31 @@ mutual
          ; focus  = focus
          ; focus⊒ = focus⊒
          ; valid  = n-f' , Γ-f' , scase₂ ⇑□ refl ⇑□ Cls-lifted ~?₂
+         }
+  -- ι₁ C / ι₂ C: outer sι₁ / sι₂ Cls'. Inner at synPos τ_inner; outer at
+  -- synPos (τ_inner + □) / (□ + τ_inner). κ wraps inner with ι₁/ι₂; type
+  -- pairs inner.type with ⊥ₛ.
+  extract (minSι₁ m) =
+    let inner = extract m
+        _ , _ , inner-cls = inner .valid
+    in record
+         { κ      = (ι₁ (inner .κ .↓)) isSlice ⊑ι₁ (inner .κ .proof)
+         ; γ      = inner .γ
+         ; type   = (inner .type) +ₛ ⊥ₛ
+         ; focus  = inner .focus
+         ; focus⊒ = inner .focus⊒
+         ; valid  = _ , _ , sι₁ inner-cls
+         }
+  extract (minSι₂ m) =
+    let inner = extract m
+        _ , _ , inner-cls = inner .valid
+    in record
+         { κ      = (ι₂ (inner .κ .↓)) isSlice ⊑ι₂ (inner .κ .proof)
+         ; γ      = inner .γ
+         ; type   = ⊥ₛ +ₛ (inner .type)
+         ; focus  = inner .focus
+         ; focus⊒ = inner .focus⊒
+         ; valid  = _ , _ , sι₂ inner-cls
          }
   -- π₁ C: outer sπ₁ Cls' eq. Inner at synPos τ_inner; outer at synPos τ₁
   -- (the first projection of the matched product). Outer type slice is
@@ -983,6 +1020,8 @@ mutual
   syn-γ-of-m (minS&₂ m)                    = syn-γ-of-m m
   syn-γ-of-m (minScase₁ m _ _ _ _ _)   = tlₛ (syn-γ-of-m m)
   syn-γ-of-m (minScase₂ m _ _ _ _ _)   = tlₛ (syn-γ-of-m m)
+  syn-γ-of-m (minSι₁ m)                    = syn-γ-of-m m
+  syn-γ-of-m (minSι₂ m)                    = syn-γ-of-m m
   syn-γ-of-m (minSπ₁ m)                    = syn-γ-of-m m
   syn-γ-of-m (minSπ₂ m)                    = syn-γ-of-m m
   syn-γ-of-m (minSΛ m)                     = unshiftΓₛ (syn-γ-of-m m)
@@ -1011,6 +1050,10 @@ mutual
   syn-κ-of-m (minScase₂ m _ _ _ _ _) =
     (case _ of₂ _ · (syn-κ-of-m m .↓)) isSlice
       ⊑case₂ (⊑.refl {A = Exp}) (⊑.refl {A = Exp}) (syn-κ-of-m m .proof)
+  syn-κ-of-m (minSι₁ m)                    =
+    (ι₁ (syn-κ-of-m m .↓)) isSlice ⊑ι₁ (syn-κ-of-m m .proof)
+  syn-κ-of-m (minSι₂ m)                    =
+    (ι₂ (syn-κ-of-m m .↓)) isSlice ⊑ι₂ (syn-κ-of-m m .proof)
   syn-κ-of-m (minSπ₁ m)                    =
     (π₁ (syn-κ-of-m m .↓)) isSlice ⊑π₁ (syn-κ-of-m m .proof)
   syn-κ-of-m (minSπ₂ m)                    =
@@ -1032,6 +1075,8 @@ mutual
   syn-focus-of-m (minS&₂ m)                = syn-focus-of-m m
   syn-focus-of-m (minScase₁ _ _ _ focus _ _) = focus
   syn-focus-of-m (minScase₂ _ _ _ focus _ _) = focus
+  syn-focus-of-m (minSι₁ m)                = syn-focus-of-m m
+  syn-focus-of-m (minSι₂ m)                = syn-focus-of-m m
   syn-focus-of-m (minSπ₁ m)                = syn-focus-of-m m
   syn-focus-of-m (minSπ₂ m)                = syn-focus-of-m m
   syn-focus-of-m (minSΛ m)                 = syn-focus-of-m m

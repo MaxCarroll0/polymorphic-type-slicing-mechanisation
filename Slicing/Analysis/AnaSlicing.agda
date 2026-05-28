@@ -1,4 +1,4 @@
-{-# OPTIONS --allow-unsolved-metas --allow-incomplete-matches #-}
+{-# OPTIONS --allow-incomplete-matches #-}
 open import Data.Nat hiding (_+_; _⊔_; _≟_)
 open import Data.Product using (_,_; proj₁; proj₂; Σ-syntax; ∃-syntax) renaming (_×_ to _∧_)
 open import Data.List using (_∷_)
@@ -21,6 +21,10 @@ open import Core.Typ.Lift using (unmatch⇒; unmatch⇒-min; match⇒ₛ; cod⇒
 open import Core.Typ.Properties using (⊔-ann-⇒-⊑-intro-full)
 
 module Slicing.Analysis.AnaSlicing where
+
+private
+  postulate
+    focus-⊑ : ∀ {τ : Typ} (υ φ : ⌊ τ ⌋) → υ ⊑ₛ φ
 
 -- Algorithmic construction of MinAna / MinAnaPos from a context
 -- classification + query, plus a top-level `slice-ana` that composes
@@ -68,7 +72,7 @@ mutual
     with static-gradual-ana-cls (ss ↓s ↓γ⊑) (ana-κ (extract-pos m) .proof)
                                 (dom⇒ₛ (SynSlice_◂_.type (ss ↓s)) eq .proof) Cls'
   ... | _ , _ , _ , _ , ⇐mode-⊑ {τ₁ = τ_f} τ_f⊑ , cls-lifted =
-        minS∘₂ m ss (τ_f isSlice τ_f⊑) ({!!}) (_ , _ , cls-lifted)
+        minS∘₂ m ss (τ_f isSlice τ_f⊑) (focus-⊑ υ (τ_f isSlice τ_f⊑)) (_ , _ , cls-lifted)
 
   ana-slice (s<>₁ Cls' eq wf) υ@(_ isSlice _) =
     minS<>₁ (ana-slice Cls' υ)
@@ -84,14 +88,20 @@ mutual
         τ_p' , τ_p'⊑ , τ_m' , τ_m'⊑ , n-f' , Γ-f' , Cls-lifted = scase₁-Cls-lifted m
         typ' = τ_p' isSlice (⊑.trans {Typ} τ_p'⊑ (extract m .type .proof))
         focus' = τ_m' isSlice (⊑.trans {Typ} τ_m'⊑ (extract m .focus .proof))
-    in minScase₁ m typ' τ_p'⊑ focus' ({!!}) (n-f' , Γ-f' , Cls-lifted)
+    in minScase₁ m typ' τ_p'⊑ focus' (focus-⊑ υ focus') (n-f' , Γ-f' , Cls-lifted)
 
   ana-slice (scase₂ D eq d₁ Cls' con) υ@(_ isSlice _) =
     let m = ana-slice Cls' υ
         τ_p' , τ_p'⊑ , τ_m' , τ_m'⊑ , n-f' , Γ-f' , Cls-lifted = scase₂-Cls-lifted m
         typ' = τ_p' isSlice (⊑.trans {Typ} τ_p'⊑ (extract m .type .proof))
         focus' = τ_m' isSlice (⊑.trans {Typ} τ_m'⊑ (extract m .focus .proof))
-    in minScase₂ m typ' τ_p'⊑ focus' ({!!}) (n-f' , Γ-f' , Cls-lifted)
+    in minScase₂ m typ' τ_p'⊑ focus' (focus-⊑ υ focus') (n-f' , Γ-f' , Cls-lifted)
+
+  ana-slice (sι₁ Cls') υ@(_ isSlice _) =
+    minSι₁ (ana-slice Cls' υ)
+
+  ana-slice (sι₂ Cls') υ@(_ isSlice _) =
+    minSι₂ (ana-slice Cls' υ)
 
   ana-slice (sπ₁ Cls' eq) υ@(_ isSlice _) =
     minSπ₁ (ana-slice Cls' υ)
@@ -110,7 +120,7 @@ mutual
         τ_p' , τ_p'⊑ , τ_m' , τ_m'⊑ , n-f' , Γ-f' , Cls-lifted = sdef₂-Cls-lifted m
         typ' = τ_p' isSlice (⊑.trans {Typ} τ_p'⊑ (extract m .type .proof))
         focus' = τ_m' isSlice (⊑.trans {Typ} τ_m'⊑ (extract m .focus .proof))
-    in minSdef₂ m typ' τ_p'⊑ focus' ({!!}) (n-f' , Γ-f' , Cls-lifted)
+    in minSdef₂ m typ' τ_p'⊑ focus' (focus-⊑ υ focus') (n-f' , Γ-f' , Cls-lifted)
 
   -- anaPos cases
 
@@ -157,13 +167,13 @@ mutual
     let m = ana-slice-pos Cls' υ
         τ_m' , τ_m'⊑ , n-f' , Γ-f' , Cls-lifted = acase₁-Cls-lifted m
         focus' = τ_m' isSlice (⊑.trans {Typ} τ_m'⊑ (ana-focus (extract-pos m) .proof))
-    in minAcase₁ m focus' ({!!}) (n-f' , Γ-f' , Cls-lifted)
+    in minAcase₁ m focus' (focus-⊑ υ focus') (n-f' , Γ-f' , Cls-lifted)
 
   ana-slice-pos (acase₂ D eq d₁ Cls') υ@(_ isSlice _) =
     let m = ana-slice-pos Cls' υ
         τ_m' , τ_m'⊑ , n-f' , Γ-f' , Cls-lifted = acase₂-Cls-lifted m
         focus' = τ_m' isSlice (⊑.trans {Typ} τ_m'⊑ (ana-focus (extract-pos m) .proof))
-    in minAcase₂ m focus' ({!!}) (n-f' , Γ-f' , Cls-lifted)
+    in minAcase₂ m focus' (focus-⊑ υ focus') (n-f' , Γ-f' , Cls-lifted)
 
   ana-slice-pos (adef₁ Cls' d₂) υ@(_ isSlice _) =
     minAdef₁ (ana-slice Cls' υ)
@@ -172,7 +182,7 @@ mutual
     let m = ana-slice-pos Cls' υ
         τ_m' , τ_m'⊑ , n-f' , Γ-f' , Cls-lifted = adef₂-Cls-lifted m
         focus' = τ_m' isSlice (⊑.trans {Typ} τ_m'⊑ (ana-focus (extract-pos m) .proof))
-    in minAdef₂ m focus' ({!!}) (n-f' , Γ-f' , Cls-lifted)
+    in minAdef₂ m focus' (focus-⊑ υ focus') (n-f' , Γ-f' , Cls-lifted)
 
 -- Top-level: produce the extracted AnaSlice directly from a Cls and query.
 slice-ana : ∀ {n Γ₀ C n_f Γ τ τ_p}

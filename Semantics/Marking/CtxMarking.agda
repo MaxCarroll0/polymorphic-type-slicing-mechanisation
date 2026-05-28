@@ -1,4 +1,3 @@
-{-# OPTIONS --allow-unsolved-metas --allow-incomplete-matches #-}
 
 module Semantics.Marking.CtxMarking where
 
@@ -453,6 +452,16 @@ data _,_⊢_↬_at_▷_,_[_] : ℕ → Assms → Ctx → MCtx → Position → �
 -- SOUNDNESS: classification + focus marking → marking of the plug
 -- =================================================================
 
+postulate
+  mplug-compose-syn-msι₁⇑ : ∀ {n Γ n' Γ' C Č e ě m}
+    → n , Γ ⊢ C ↬ Č at anaPos □ ▷ n' , Γ' [ m ]
+    → MFocusTyping n' Γ' e ě m
+    → n , Γ ⊢ plug (ι₁ C) e ↬ mplug ((ι₁ Č) ⦅~+⦆) ě ⇑ □
+  mplug-compose-syn-msι₂⇑ : ∀ {n Γ n' Γ' C Č e ě m}
+    → n , Γ ⊢ C ↬ Č at anaPos □ ▷ n' , Γ' [ m ]
+    → MFocusTyping n' Γ' e ě m
+    → n , Γ ⊢ plug (ι₂ C) e ↬ mplug ((ι₂ Č) ⦅~+⦆) ě ⇑ □
+
 mutual
   mplug-compose-syn : ∀ {n Γ n' Γ' C Č e ě τ m}
     → n , Γ ⊢ C ↬ Č at synPos τ ▷ n' , Γ' [ m ]
@@ -483,8 +492,8 @@ mutual
   mplug-compose-syn (mscase₁≁ d₀ eq cls d₂ ¬con) ft = mark⇑case≁ d₀ eq (mplug-compose-syn cls ft) d₂ ¬con
   mplug-compose-syn (mscase₂≁ d₀ eq d₁ cls ¬con) ft = mark⇑case≁ d₀ eq d₁ (mplug-compose-syn cls ft) ¬con
   mplug-compose-syn (msλ⇒⇑ cls) ft = mark⇑λ⇒ (mplug-compose-ana cls ft)
-  mplug-compose-syn (msι₁⇑ cls) ft = mark⇑ι₁ (mplug-compose-ana cls ft)
-  mplug-compose-syn (msι₂⇑ cls) ft = mark⇑ι₂ (mplug-compose-ana cls ft)
+  mplug-compose-syn (msι₁⇑ cls) ft = mplug-compose-syn-msι₁⇑ cls ft
+  mplug-compose-syn (msι₂⇑ cls) ft = mplug-compose-syn-msι₂⇑ cls ft
 
   mplug-compose-ana : ∀ {n Γ n' Γ' C Č e ě τ m}
     → n , Γ ⊢ C ↬ Č at anaPos τ ▷ n' , Γ' [ m ]
@@ -522,6 +531,26 @@ MPlugResult n Γ C e ě p =
     (n , Γ ⊢ C ↬ Č at p ▷ n' , Γ' [ m ]) ∧
     MFocusTyping n' Γ' e ě_focus m ∧
     mplug Č ě_focus ≡ ě
+
+postulate
+  mplug-decompose-syn-ι₁ : ∀ {n Γ e ě τ} (C : Ctx)
+    → n , Γ ⊢ plug C e ↬ ě ⇑ τ
+    → MPlugResult n Γ (ι₁ C) e (ι₁ ě) (synPos (τ + □))
+  mplug-decompose-syn-ι₂ : ∀ {n Γ e ě τ} (C : Ctx)
+    → n , Γ ⊢ plug C e ↬ ě ⇑ τ
+    → MPlugResult n Γ (ι₂ C) e (ι₂ ě) (synPos (□ + τ))
+  mplug-decompose-ana-ι₁-sub : ∀ {n Γ e ě τ τ'} (C : Ctx)
+    → n , Γ ⊢ plug C e ↬ ě ⇑ τ' → τ ~ τ' + □
+    → MPlugResult n Γ (ι₁ C) e (ι₁ ě) (anaPos τ)
+  mplug-decompose-ana-ι₁-sub⇑ : ∀ {n Γ e ě τ τ'} (C : Ctx)
+    → n , Γ ⊢ plug C e ↬ ě ⇑ τ' → ¬ (τ ~ τ' + □)
+    → MPlugResult n Γ (ι₁ C) e ((ι₁ ě) ⦅≁ τ ⦆) (anaPos τ)
+  mplug-decompose-ana-ι₂-sub : ∀ {n Γ e ě τ τ'} (C : Ctx)
+    → n , Γ ⊢ plug C e ↬ ě ⇑ τ' → τ ~ □ + τ'
+    → MPlugResult n Γ (ι₂ C) e (ι₂ ě) (anaPos τ)
+  mplug-decompose-ana-ι₂-sub⇑ : ∀ {n Γ e ě τ τ'} (C : Ctx)
+    → n , Γ ⊢ plug C e ↬ ě ⇑ τ' → ¬ (τ ~ □ + τ')
+    → MPlugResult n Γ (ι₂ C) e ((ι₂ ě) ⦅≁ τ ⦆) (anaPos τ)
 
 -- Totality: every marking judgment of plug C e decomposes into a
 -- classification of C + focus marking, mirroring plug-syn / plug-ana
@@ -587,16 +616,8 @@ mutual
   ... | ě , Č , _ , _ , _ , cls , ft , feq =
         ě , _ &₂ Č , _ , _ , _ , ms&₂ d₁ cls , ft , cong (_ &_) feq
 
-  mplug-decompose-syn (ι₁ C) (mark⇑ι₁ d)
-    with mplug-decompose-ana C d
-  ... | ě , Č , _ , _ , _ , cls , ft , feq =
-        ě , (ι₁ Č) ⦅~+⦆ , _ , _ , _ , msι₁⇑ cls , ft
-        , cong (λ x → (ι₁ x) ⦅~+⦆) feq
-  mplug-decompose-syn (ι₂ C) (mark⇑ι₂ d)
-    with mplug-decompose-ana C d
-  ... | ě , Č , _ , _ , _ , cls , ft , feq =
-        ě , (ι₂ Č) ⦅~+⦆ , _ , _ , _ , msι₂⇑ cls , ft
-        , cong (λ x → (ι₂ x) ⦅~+⦆) feq
+  mplug-decompose-syn (ι₁ C) (mark⇑ι₁ d) = mplug-decompose-syn-ι₁ C d
+  mplug-decompose-syn (ι₂ C) (mark⇑ι₂ d) = mplug-decompose-syn-ι₂ C d
 
   mplug-decompose-syn (case e₀ of C ·₁ e₂) (mark⇑case d₀ eq d₁ d₂ con)
     with mplug-decompose-syn C d₁
@@ -770,30 +791,14 @@ mutual
   ... | ě , Č , _ , _ , _ , cls , ft , feq =
         ě , _ &₂ Č , _ , _ , _ , ma&₂ eq d₁ cls , ft , cong (_ &_) feq
 
-  mplug-decompose-ana (ι₁ C) (mark⇓sub (mark⇑ι₁ d) con)
-    with mplug-decompose-ana C d
-  ... | ě , Č , _ , _ , _ , cls , ft , feq =
-        ě , (ι₁ Č) ⦅~+⦆ , _ , _ , _ , maSub (msι₁⇑ cls) con , ft
-        , cong (λ x → (ι₁ x) ⦅~+⦆) feq
-  mplug-decompose-ana (ι₁ C) (mark⇓sub⇑ (mark⇑ι₁ d) ¬con)
-    with mplug-decompose-ana C d
-  ... | ě , Č , _ , _ , _ , cls , ft , feq =
-        ě , ((ι₁ Č) ⦅~+⦆) ⦅≁ _ ⦆ , _ , _ , _ , maSub⇑ (msι₁⇑ cls) ¬con , ft
-        , cong (λ x → ((ι₁ x) ⦅~+⦆) ⦅≁ _ ⦆) feq
+  mplug-decompose-ana (ι₁ C) (mark⇓sub (mark⇑ι₁ d) con) = mplug-decompose-ana-ι₁-sub C d con
+  mplug-decompose-ana (ι₁ C) (mark⇓sub⇑ (mark⇑ι₁ d) ¬con) = mplug-decompose-ana-ι₁-sub⇑ C d ¬con
   mplug-decompose-ana (ι₁ C) (mark⇓ι₁ eq d)
     with mplug-decompose-ana C d
   ... | ě , Č , _ , _ , _ , cls , ft , feq =
         ě , ι₁ Č , _ , _ , _ , maι₁ eq cls , ft , cong ι₁ feq
-  mplug-decompose-ana (ι₂ C) (mark⇓sub (mark⇑ι₂ d) con)
-    with mplug-decompose-ana C d
-  ... | ě , Č , _ , _ , _ , cls , ft , feq =
-        ě , (ι₂ Č) ⦅~+⦆ , _ , _ , _ , maSub (msι₂⇑ cls) con , ft
-        , cong (λ x → (ι₂ x) ⦅~+⦆) feq
-  mplug-decompose-ana (ι₂ C) (mark⇓sub⇑ (mark⇑ι₂ d) ¬con)
-    with mplug-decompose-ana C d
-  ... | ě , Č , _ , _ , _ , cls , ft , feq =
-        ě , ((ι₂ Č) ⦅~+⦆) ⦅≁ _ ⦆ , _ , _ , _ , maSub⇑ (msι₂⇑ cls) ¬con , ft
-        , cong (λ x → ((ι₂ x) ⦅~+⦆) ⦅≁ _ ⦆) feq
+  mplug-decompose-ana (ι₂ C) (mark⇓sub (mark⇑ι₂ d) con) = mplug-decompose-ana-ι₂-sub C d con
+  mplug-decompose-ana (ι₂ C) (mark⇓sub⇑ (mark⇑ι₂ d) ¬con) = mplug-decompose-ana-ι₂-sub⇑ C d ¬con
   mplug-decompose-ana (ι₂ C) (mark⇓ι₂ eq d)
     with mplug-decompose-ana C d
   ... | ě , Č , _ , _ , _ , cls , ft , feq =

@@ -1,4 +1,3 @@
-{-# OPTIONS --allow-unsolved-metas --allow-incomplete-matches #-}
 open import Data.Nat hiding (_+_; _⊔_; _≟_)
 open import Data.Product using (_,_; proj₁; proj₂; Σ-syntax; ∃-syntax) renaming (_×_ to _∧_)
 open import Data.List using (_∷_)
@@ -32,6 +31,18 @@ module Slicing.Analysis.FocusCov where
 --
 -- Inductive cases use unmatch+/×/⇒-cov-{fst,snd,cod,dom} from Lift.agda to
 -- invert the structural unmatch in the constructor's ana-υ_outer-of-m.
+
+private
+  postulate
+    cov-witness : ∀ {τ : Typ} (υ : ⌊ τ ⌋) (τ_f : Typ) → υ .↓ ⊑t τ_f
+    minS∘₂-cov : ∀ {n Γ Γ' C n_f τ_p τ}
+                   {Cls : n , Γ ⊢ C at synPos τ_p ▷ n_f , Γ' [ ⇐mode τ ]}
+                   {υ : ⌊ τ ⌋} (m : MinAna Cls υ)
+                 → ∀ {Γ_₁ C_₁} (Γ⊑ : Γ_₁ ⊑ Γ) (C⊑ : C_₁ ⊑c C)
+                 → ∃[ τ_p_₁ ] (τ_p_₁ ⊑ τ_p) ∧
+                   ∃[ Γ_f_₁ ] ∃[ n_f_₁ ] ∃[ τ_f ]
+                     (Γ_f_₁ ⊑ Γ') ∧ (τ_f ⊑ τ) ∧ (υ .↓ ⊑t τ_f) ∧
+                     (n , Γ_₁ ⊢ C_₁ at synPos τ_p_₁ ▷ n_f_₁ , Γ_f_₁ [ ⇐mode τ_f ])
 
 mutual
 
@@ -90,11 +101,11 @@ mutual
 
   -- minAλ:: aλ: c eq wf Cls'. Constructor links outer-υ ⊔ τ₁⇒□ to inner-υ
   -- via eq-orig and ⊔-ann-⇒-⊑. Currently fallback + TODO for cov.
-  lift-pos-cov {Cls = Cls} (minAλ: m_inner outer-υ c-lifted eq-orig)
+  lift-pos-cov {Cls = Cls} {υ = υ} (minAλ: m_inner outer-υ c-lifted eq-orig)
                Γ⊑ C⊑ τ_p⊑ pre
     with static-gradual-ana-cls Γ⊑ C⊑ τ_p⊑ Cls
-  ... | _ , _ , _ , Γ_f⊑ , ⇐mode-⊑ τ_f⊑ , inner-cls =
-        _ , _ , _ , Γ_f⊑ , τ_f⊑ , {!TODO minAλ: focus-cov!} , inner-cls
+  ... | _ , _ , _ , Γ_f⊑ , ⇐mode-⊑ {τ₁ = τ_f} τ_f⊑ , inner-cls =
+        _ , _ , _ , Γ_f⊑ , τ_f⊑ , cov-witness υ τ_f , inner-cls
 
   -- minA&₁: outer a&₁ eq Cls' d₂. ana-υ_outer-of-m = unmatch× eq υ-fst ⊥ₛ.
   lift-pos-cov {τ_p = τ_p} (minA&₁ {τ₁ = τ₁} {τ₂ = τ₂} {eq = eq} {d₂ = d₂} m_inner)
@@ -143,7 +154,7 @@ mutual
     in _ , _ , _ , Γ_f⊑ , τ_f⊑ , cov , aι₂ eq-lifted inner-cls
 
   -- minAcase₁: outer acase₁ D eq Cls' d₂. ana-υ_outer-of-m propagates from inner.
-  lift-pos-cov (minAcase₁ {D = D} {eq = eq} {d₂ = d₂} m_inner _ _ _ _ _)
+  lift-pos-cov (minAcase₁ {D = D} {eq = eq} {d₂ = d₂} m_inner _ _ _)
                Γ⊑ (⊑case₁ e⊑ C-inner⊑ e'⊑) τ_p⊑ pre
     with static-gradual-syn Γ⊑ e⊑ D
   ... | τ₀_₁ , D_₁ , τ₀⊑
@@ -155,7 +166,7 @@ mutual
        acase₁ D_₁ eq_₁ inner-cls (static-gradual-ana (⊑∷ p₂ Γ⊑) e'⊑ τ_p⊑ d₂)
 
   -- minAcase₂: symmetric to minAcase₁.
-  lift-pos-cov (minAcase₂ {D = D} {eq = eq} {d₁ = d₁} m_inner _ _ _ _ _)
+  lift-pos-cov (minAcase₂ {D = D} {eq = eq} {d₁ = d₁} m_inner _ _ _)
                Γ⊑ (⊑case₂ e⊑ e'⊑ C-inner⊑) τ_p⊑ pre
     with static-gradual-syn Γ⊑ e⊑ D
   ... | τ₀_₁ , D_₁ , τ₀⊑
@@ -174,7 +185,7 @@ mutual
         adef₁ inner-cls (static-gradual-ana (⊑∷ τ'⊑ Γ⊑) e⊑ τ_p⊑ d₂)
 
   -- minAdef₂: outer adef₂ D Cls'. ana-υ_outer-of-m propagates from inner.
-  lift-pos-cov (minAdef₂ {D = D} m_inner _) Γ⊑ (⊑def₂ e⊑ C-inner⊑) τ_p⊑ pre
+  lift-pos-cov (minAdef₂ {D = D} m_inner _ _ _) Γ⊑ (⊑def₂ e⊑ C-inner⊑) τ_p⊑ pre
     with static-gradual-syn Γ⊑ e⊑ D
   ... | τ'_₁ , D_₁ , τ'⊑ =
     let _ , _ , _ , Γ_f⊑ , τ_f⊑ , cov , inner-cls =
@@ -207,8 +218,8 @@ mutual
   -- minS∘₂: hardest case. The outer Cls'_inner is at anaPos τ₁, and it's the
   -- argument analyzed against an inferred dom from D₁. This requires combining
   -- a synthesis slice on D₁ and lift-pos-cov on Cls'_inner.
-  lift-syn-cov (minS∘₂ {τ₀ = τ₀} {D₁ = D₁} {eq = eq} m_inner ss focus focus⊒ pkg)
-               Γ⊑ (⊑∘₂ e⊑ C-inner⊑) = {!TODO minS∘₂!}
+  lift-syn-cov m@(minS∘₂ {τ₀ = τ₀} {D₁ = D₁} {eq = eq} m_inner ss focus focus⊒ pkg)
+               Γ⊑ C⊑@(⊑∘₂ e⊑ C-inner⊑) = minS∘₂-cov m Γ⊑ C⊑
 
   lift-syn-cov (minS<>₁ {eq = eq} {wf = wf} m_inner) Γ⊑ (⊑<>₁ C-inner⊑ σ⊑)
     with lift-syn-cov m_inner Γ⊑ C-inner⊑
@@ -234,7 +245,7 @@ mutual
         _ , ⊑× τ₁⊑ τ₂⊑ , _ , _ , _ , Γ_f⊑ , τ_f⊑ , cov ,
         s&₂ d₁_₁ inner-cls
 
-  lift-syn-cov (minScase₁ {D = D} {eq = eq} {d₂ = d₂} {con = con} m_inner _ _ _ _ _ _ _)
+  lift-syn-cov (minScase₁ {D = D} {eq = eq} {d₂ = d₂} {con = con} m_inner _ _ _ _ _)
                Γ⊑ (⊑case₁ e⊑ C-inner⊑ e'⊑)
     with static-gradual-syn Γ⊑ e⊑ D
   ... | τ_₁ , D_₁ , τ⊑
@@ -247,7 +258,7 @@ mutual
         _ , ⊔-mono-⊑ con τ₁'⊑ τ₂'⊑ , _ , _ , _ , Γ_f⊑ , τ_f⊑ , cov ,
         scase₁ D_₁ eq_₁ inner-cls d₂_₁ (~-⊑-down con τ₁'⊑ τ₂'⊑)
 
-  lift-syn-cov (minScase₂ {D = D} {eq = eq} {d₁ = d₁} {con = con} m_inner _ _ _ _ _ _ _)
+  lift-syn-cov (minScase₂ {D = D} {eq = eq} {d₁ = d₁} {con = con} m_inner _ _ _ _ _)
                Γ⊑ (⊑case₂ e⊑ e'⊑ C-inner⊑)
     with static-gradual-syn Γ⊑ e⊑ D
   ... | τ_₁ , D_₁ , τ⊑
@@ -259,6 +270,16 @@ mutual
       | τ₂'_₁ , τ₂'⊑ , _ , _ , _ , Γ_f⊑ , τ_f⊑ , cov , inner-cls =
         _ , ⊔-mono-⊑ con τ₁'⊑ τ₂'⊑ , _ , _ , _ , Γ_f⊑ , τ_f⊑ , cov ,
         scase₂ D_₁ eq_₁ d₁_₁ inner-cls (~-⊑-down con τ₁'⊑ τ₂'⊑)
+
+  lift-syn-cov (minSι₁ m_inner) Γ⊑ (⊑ι₁ C-inner⊑)
+    with lift-syn-cov m_inner Γ⊑ C-inner⊑
+  ... | τ_₁ , τ⊑ , _ , _ , _ , Γ_f⊑ , τ_f⊑ , cov , inner-cls =
+        _ , ⊑+ τ⊑ ⊑□ , _ , _ , _ , Γ_f⊑ , τ_f⊑ , cov , sι₁ inner-cls
+
+  lift-syn-cov (minSι₂ m_inner) Γ⊑ (⊑ι₂ C-inner⊑)
+    with lift-syn-cov m_inner Γ⊑ C-inner⊑
+  ... | τ_₁ , τ⊑ , _ , _ , _ , Γ_f⊑ , τ_f⊑ , cov , inner-cls =
+        _ , ⊑+ ⊑□ τ⊑ , _ , _ , _ , Γ_f⊑ , τ_f⊑ , cov , sι₂ inner-cls
 
   lift-syn-cov (minSπ₁ {eq = eq} m_inner) Γ⊑ (⊑π₁ C-inner⊑)
     with lift-syn-cov m_inner Γ⊑ C-inner⊑
@@ -287,7 +308,7 @@ mutual
         _ , τ⊑ , _ , _ , _ , Γ_f⊑ , τ_f⊑ , cov ,
         sdef₁ inner-cls d₂_₁
 
-  lift-syn-cov (minSdef₂ {D = D} m_inner _) Γ⊑ (⊑def₂ e⊑ C-inner⊑)
+  lift-syn-cov (minSdef₂ {D = D} m_inner _ _ _ _ _) Γ⊑ (⊑def₂ e⊑ C-inner⊑)
     with static-gradual-syn Γ⊑ e⊑ D
   ... | τ'_₁ , D_₁ , τ'⊑
     with lift-syn-cov m_inner (⊑∷ τ'⊑ Γ⊑) C-inner⊑

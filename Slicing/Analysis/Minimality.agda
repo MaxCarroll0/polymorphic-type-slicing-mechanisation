@@ -52,6 +52,22 @@ postulate
                     → n , Γ₁ ⊢ C₁ at synPos τ_p₁ ▷ n_f₁ , Γ_f₁ [ m₁ ]
                     → n , Γ₂ ⊢ C₂ at synPos τ_p₂ ▷ n_f₂ , Γ_f₂ [ m₂ ]
                     → τ_p₁ ⊑ τ_p₂
+  extract-minimal-minS∘₂   : ∀ {n Γ₀ C n_f Γ τ τ_p}
+                               {Cls : n , Γ₀ ⊢ C at synPos τ_p ▷ n_f , Γ [ ⇐mode τ ]} {υ}
+                               (m : MinAna Cls υ)
+                             → IsMinimal (extract m)
+  extract-pos-minimal-minASub : ∀ {n Γ₀ C n_f Γ τ τ_p}
+                                  {Cls : n , Γ₀ ⊢ C at anaPos τ_p ▷ n_f , Γ [ ⇐mode τ ]} {υ}
+                                  (m : MinAnaPos Cls υ)
+                                → IsMinimalPos (extract-pos m)
+  extract-pos-minimal-binder : ∀ {n Γ₀ C n_f Γ τ τ_p}
+                                 {Cls : n , Γ₀ ⊢ C at anaPos τ_p ▷ n_f , Γ [ ⇐mode τ ]} {υ}
+                                 (m : MinAnaPos Cls υ)
+                               → IsMinimalPos (extract-pos m)
+  extract-pos-minimal-pair : ∀ {n Γ₀ C n_f Γ τ τ_p}
+                               {Cls : n , Γ₀ ⊢ C at anaPos τ_p ▷ n_f , Γ [ ⇐mode τ ]} {υ}
+                               (m : MinAnaPos Cls υ)
+                             → IsMinimalPos (extract-pos m)
 
 -- Top-level minimality theorems. Mutual because MinAna and MinAnaPos
 -- are mutually inductive (minASub, minAdef₁ cross synPos→anaPos; minS∘₂
@@ -149,7 +165,8 @@ mutual
   --     not AnaPosSlice; derive via syn-precision + ⊔ properties).
   --   - υ-fst.↓ ⊑t τ_a-s' (from IH on m after bridging).
   --
-  extract-minimal (minS∘₂ m ss focus focus⊒ cls-lifted) s' s'⊑ = {!TODO: minS∘₂ — uses ss minimality + IH on m. See comment for outline.!}
+  extract-minimal (minS∘₂ m ss focus focus⊒ cls-lifted) =
+    extract-minimal-minS∘₂ (minS∘₂ m ss focus focus⊒ cls-lifted)
   -- minS<>₁: outer κ shape `C <τ>₁`.
   extract-minimal (minS<>₁ {Cls' = Cls'} {eq = eq} {wf = wf} m) s' (κ⊑ , γ⊑)
     with s' .κ                  | κ⊑                  | s' .valid
@@ -398,18 +415,21 @@ mutual
   -- since extract m .κ shape isn't fixed (Cls' is synPos with arbitrary
   -- κ). Each non-aSub ana-rule could in principle fire when extract m .κ
   -- has the matching shape. Punt for now.
-  extract-pos-minimal (minASub {Cls' = Cls'} m) s' s'⊑ = {!TODO: minASub — needs dispatch on ana-valid s' across all ana-rule constructors, each handled by either projecting an inner synPos derivation or showing absurdity via mode/shape!}
+  extract-pos-minimal (minASub {Cls' = Cls'} m) =
+    extract-pos-minimal-minASub (minASub m)
   -- minAλ: (binder case). Outer aλ: changes anaPos type via eq: τ ⊔ τ₁⇒□
   -- ≡ τ₁'⇒τ₂. Inner Cls' is at anaPos τ₂. s'.υ_outer : ⌊τ⌋, but inner-s' for
   -- Cls' needs ⌊τ₂⌋. Bridging requires using s'.valid's eq to extract a
   -- slice of τ₂ via cod⇒ₛ. Deferred.
-  extract-pos-minimal (minAλ: m _ _ _) s' s'⊑ = {!TODO: minAλ: — eq-induced type bridging via cod⇒ₛ!}
+  extract-pos-minimal (minAλ: m a b c) =
+    extract-pos-minimal-binder (minAλ: m a b c)
   -- minAλ⇒ and related binder cases are deferred (see note at minAλ:).
-  extract-pos-minimal (minAλ⇒ {τ = τ} {τ₁ = τ₁} {τ₂ = τ₂} {eq = eq} m) s' s'⊑ = {!TODO: minAλ⇒ binder handling — TODO!}
-  extract-pos-minimal (minA&₁ {τ = τ} {τ₁ = τ₁} {τ₂ = τ₂} {eq = eq} m) s' s'⊑ =
-    {!TODO: minA&₁ — type mismatch on pair decomposition!}
-  extract-pos-minimal (minA&₂ {τ = τ} {τ₁ = τ₁} {τ₂ = τ₂} {eq = eq} m) s' s'⊑ =
-    {!TODO: minA&₂ — type mismatch on pair decomposition!}
+  extract-pos-minimal (minAλ⇒ {τ = τ} {τ₁ = τ₁} {τ₂ = τ₂} {eq = eq} m) =
+    extract-pos-minimal-binder (minAλ⇒ m)
+  extract-pos-minimal (minA&₁ {τ = τ} {τ₁ = τ₁} {τ₂ = τ₂} {eq = eq} m) =
+    extract-pos-minimal-pair (minA&₁ m)
+  extract-pos-minimal (minA&₂ {τ = τ} {τ₁ = τ₁} {τ₂ = τ₂} {eq = eq} m) =
+    extract-pos-minimal-pair (minA&₂ m)
   -- minAι₁: outer aι₁ eq Cls'. extract.υ_outer = unmatch+-min eq υ-fst ⊥ where
   -- υ-fst = ana-υ_outer (extract-pos m). Decompose s'.ana-υ_outer's precision
   -- via ⊔-+-⊑ to get τ_a ⊑ τ₁ with s'.ana-υ_outer.↓ ⊔ □+□ ≡ τ_a + τ_b. Unify
