@@ -209,6 +209,13 @@ mutual
               → (outer-υ .↓ ~ (hdₛ (ana-γ (extract-pos m))) .↓ ⇒ □)
               → (outer-υ .↓ ⊔ (hdₛ (ana-γ (extract-pos m))) .↓ ⇒ □
                    ≡ (hdₛ (ana-γ (extract-pos m))) .↓ ⇒ (ana-υ_outer (extract-pos m)) .↓)
+              -- outer-υ is the minimum among valid alternatives. Provided by
+              -- AnaSlicing via ⊔-ann-⇒-⊑-intro-min, used by Minimality.
+              → (∀ {υ' τ_s τ_s' τ_b'}
+                  → τ_s ⊑t (hdₛ (ana-γ (extract-pos m))) .↓
+                  → υ' ⊔ τ_s ⇒ □ ≡ τ_s' ⇒ τ_b'
+                  → (ana-υ_outer (extract-pos m)) .↓ ⊑t τ_b'
+                  → outer-υ .↓ ⊑t υ')
               → MinAnaPos (aλ: c eq wf Cls') υ
 
     minAλ⇒    : ∀ {n Γ n_f Γ' C τ τ₁ τ₂ τ'}
@@ -526,7 +533,7 @@ mutual
          ; valid   = _ , _ , aSub inner-cls ~?₂
          }
 
-  extract-pos {n = n} (minAλ: {wf = wf} m outer-υ c-lifted eq-lifted) =
+  extract-pos {n = n} (minAλ: {wf = wf} m outer-υ c-lifted eq-lifted _) =
     let inner = extract-pos m
         hd⊑ = hdₛ (ana-γ inner) .proof
         n_f , Γ_f , inner-cls = ana-valid inner
@@ -780,7 +787,7 @@ mutual
   ana-υ_outer-of-m min□Pos                     = ⊥ₛ
   ana-υ_outer-of-m (minA○ υ)                   = υ
   ana-υ_outer-of-m (minASub _)                 = ⊥ₛ
-  ana-υ_outer-of-m (minAλ: _ outer-υ _ _)      = outer-υ
+  ana-υ_outer-of-m (minAλ: _ outer-υ _ _ _)    = outer-υ
   ana-υ_outer-of-m (minAλ⇒ {eq = eq} m)        =
     unmatch⇒ eq (hdₛ (ana-γ-of-m m)) (ana-υ_outer-of-m m)
   ana-υ_outer-of-m (minA&₁ {eq = eq} m)        =
@@ -800,7 +807,7 @@ mutual
   ana-γ-of-m min□Pos                       = ⊥ₛ
   ana-γ-of-m (minA○ _)                     = ⊥ₛ
   ana-γ-of-m (minASub m)                   = syn-γ-of-m m
-  ana-γ-of-m (minAλ: m _ _ _) = tlₛ (ana-γ-of-m m)
+  ana-γ-of-m (minAλ: m _ _ _ _) = tlₛ (ana-γ-of-m m)
   ana-γ-of-m (minAλ⇒ m)                    = tlₛ (ana-γ-of-m m)
   ana-γ-of-m (minA&₁ m)                    = ana-γ-of-m m
   ana-γ-of-m (minA&₂ m)                    = ana-γ-of-m m
@@ -815,7 +822,7 @@ mutual
   ana-κ-of-m min□Pos                       = ⊥ₛ
   ana-κ-of-m (minA○ _)                     = ⊥ₛ
   ana-κ-of-m (minASub m)                   = syn-κ-of-m m
-  ana-κ-of-m (minAλ: m _ _ _) =
+  ana-κ-of-m (minAλ: m _ _ _ _) =
     (λ: _ ⇒ ana-κ-of-m m .↓) isSlice
       ⊑λ (hdₛ (ana-γ-of-m m) .proof) (ana-κ-of-m m .proof)
   ana-κ-of-m (minAλ⇒ m)                    =
@@ -844,7 +851,7 @@ mutual
   ana-focus-of-m min□Pos                   = ⊥ₛ
   ana-focus-of-m (minA○ υ)                 = υ
   ana-focus-of-m (minASub m)               = syn-focus-of-m m
-  ana-focus-of-m (minAλ: m _ _ _) = ana-focus-of-m m
+  ana-focus-of-m (minAλ: m _ _ _ _) = ana-focus-of-m m
   ana-focus-of-m (minAλ⇒ m)                = ana-focus-of-m m
   ana-focus-of-m (minA&₁ m)                = ana-focus-of-m m
   ana-focus-of-m (minA&₂ m)                = ana-focus-of-m m
@@ -961,7 +968,7 @@ mutual
   ana-γ-≡ min□Pos = refl
   ana-γ-≡ (minA○ _) = refl
   ana-γ-≡ (minASub m) = syn-γ-≡ m
-  ana-γ-≡ (minAλ: m _ _ _) = cong tlₛ (ana-γ-≡ m)
+  ana-γ-≡ (minAλ: m _ _ _ _) = cong tlₛ (ana-γ-≡ m)
   ana-γ-≡ (minAλ⇒ m) = cong tlₛ (ana-γ-≡ m)
   ana-γ-≡ (minA&₁ m) = ana-γ-≡ m
   ana-γ-≡ (minA&₂ m) = ana-γ-≡ m
@@ -975,7 +982,7 @@ mutual
   ana-υ_outer-≡ min□Pos = refl
   ana-υ_outer-≡ (minA○ _) = refl
   ana-υ_outer-≡ (minASub _) = refl
-  ana-υ_outer-≡ (minAλ: _ _ _ _) = refl
+  ana-υ_outer-≡ (minAλ: _ _ _ _ _) = refl
   ana-υ_outer-≡ (minAλ⇒ {eq = eq} m) = cong₂ (λ γ υ → unmatch⇒ eq (hdₛ γ) υ) (ana-γ-≡ m) (ana-υ_outer-≡ m)
   ana-υ_outer-≡ (minA&₁ {eq = eq} m) = cong (λ υ → unmatch× eq υ ⊥ₛ) (ana-υ_outer-≡ m)
   ana-υ_outer-≡ (minA&₂ {eq = eq} m) = cong (λ υ → unmatch× eq ⊥ₛ υ) (ana-υ_outer-≡ m)
@@ -989,7 +996,7 @@ mutual
   ana-focus-≡ min□Pos = refl
   ana-focus-≡ (minA○ _) = refl
   ana-focus-≡ (minASub m) = syn-focus-≡ m
-  ana-focus-≡ (minAλ: m _ _ _) = ana-focus-≡ m
+  ana-focus-≡ (minAλ: m _ _ _ _) = ana-focus-≡ m
   ana-focus-≡ (minAλ⇒ m) = ana-focus-≡ m
   ana-focus-≡ (minA&₁ m) = ana-focus-≡ m
   ana-focus-≡ (minA&₂ m) = ana-focus-≡ m

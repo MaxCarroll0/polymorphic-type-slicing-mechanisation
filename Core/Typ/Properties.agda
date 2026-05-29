@@ -9,7 +9,7 @@ open import Relation.Nullary using (yes; no; ¬_)
 open import Data.Empty using (⊥-elim)
 open import Data.Nat using (ℕ; zero; suc; _<_; _∸_; _≤_; z≤n; s≤s) renaming (_+_ to _ℕ+_; _≟_ to _≟ℕ_)
 open import Data.Nat.Properties using (m+n∸n≡m; m≤m+n; ≤-trans; <-trans; _<?_; <⇒≢; ≮⇒≥)
-open import Data.Product using (∃; _,_; ∃-syntax)
+open import Data.Product using (∃; _,_; ∃-syntax; proj₁; proj₂)
 open import Data.Product using () renaming (_×_ to _∧_)
 
 
@@ -91,6 +91,86 @@ open import Core.Instances
   = □ , ⊑□ , refl , ~?₂
 ⊔-ann-⇒-⊑-intro-full () _ _ | diff | no _
 
+private
+  ⊑□-≡ : ∀ {τ} → τ ⊑t □ → τ ≡ □
+  ⊑□-≡ ⊑□ = refl
+
+  -- When intro-min returns □⇒τ_b (non-⊑□ body), this proves it is ⊑ any valid
+  -- alternative υ for the annotated-lambda join. τ_b ≠ □ is the witness that
+  -- selects this branch.
+  □⇒-fits : ∀ {υ τ_s τ_s' τ_b' τ_b}
+      → υ ⊔ τ_s ⇒ □ ≡ τ_s' ⇒ τ_b'
+      → τ_b ⊑t τ_b'
+      → ¬ (τ_b ≡ □)
+      → (□ ⇒ τ_b) ⊑t υ
+  □⇒-fits {□} {τ_s} eq-υ τ_b⊑ τ_b≢□
+    rewrite ⊔t-zeroₗ {τ_s ⇒ □}
+    with refl ← eq-υ = ⊥-elim (τ_b≢□ (⊑□-≡ τ_b⊑))
+  □⇒-fits {υ_l ⇒ υ_r} {τ_s} eq-υ τ_b⊑ _
+    rewrite ⊔t-zeroᵣ {υ_r}
+    with refl ← eq-υ = ⊑⇒ ⊑□ τ_b⊑
+
+-- Minimised variant: when τ_b = □ the returned τ' is just □ (not □⇒□).
+-- Bundles a minimality witness: τ' ⊑t any valid alternative υ. Used by
+-- AnaSlicing/ana-slice-pos aλ: so that outer-υ shrinks to ⊥ whenever the body
+-- slice is ⊥, matching the minimum required by minAλ:.
+⊔-ann-⇒-⊑-intro-min : ∀ {τ τ_h τ_a τ₂ τ_h₁ τ_b} → τ ⊔ τ_h ⇒ □ ≡ τ_a ⇒ τ₂
+           → τ_h₁ ⊑t τ_h → τ_b ⊑t τ₂
+           → ∃[ τ' ] (τ' ⊑t τ) ∧ (τ' ⊔ τ_h₁ ⇒ □ ≡ τ_h₁ ⇒ τ_b) ∧ (τ' ~ τ_h₁ ⇒ □)
+                   ∧ (∀ {υ τ_s τ_s' τ_b'}
+                       → τ_s ⊑t τ_h₁
+                       → υ ⊔ τ_s ⇒ □ ≡ τ_s' ⇒ τ_b'
+                       → τ_b ⊑t τ_b'
+                       → τ' ⊑t υ)
+⊔-ann-⇒-⊑-intro-min {τ} {τ_h} eq τ_h₁⊑ τ_b⊑ with diag τ (τ_h ⇒ □)
+⊔-ann-⇒-⊑-intro-min {τ_l ⇒ τ_r} {τ_h₁ = τ_h₁} eq τ_h₁⊑ ⊑□ | kind⇒
+  rewrite ⊔t-zeroᵣ {τ_r}
+  with refl ← eq = □ , ⊑□ , ⊔t-zeroₗ , ~?₂ , λ _ _ _ → ⊑□
+⊔-ann-⇒-⊑-intro-min {τ_l ⇒ τ_r} {τ_h₁ = τ_h₁} {τ_b = τ_b} eq τ_h₁⊑ τ_b⊑@⊑* | kind⇒
+  rewrite ⊔t-zeroᵣ {τ_r}
+  with refl ← eq = (□ ⇒ τ_b) , ⊑⇒ ⊑□ τ_b⊑ , out-eq , ~⇒ ~?₂ ~?₁
+                  , λ _ eq-υ τ_b⊑' → □⇒-fits eq-υ τ_b⊑' λ ()
+  where
+    out-eq : (□ ⇒ τ_b) ⊔ (τ_h₁ ⇒ □) ≡ τ_h₁ ⇒ τ_b
+    out-eq rewrite ⊔t-zeroᵣ {τ_b} | ⊔t-zeroₗ {τ_h₁} = refl
+⊔-ann-⇒-⊑-intro-min {τ_l ⇒ τ_r} {τ_h₁ = τ_h₁} {τ_b = τ_b} eq τ_h₁⊑ τ_b⊑@⊑Var | kind⇒
+  rewrite ⊔t-zeroᵣ {τ_r}
+  with refl ← eq = (□ ⇒ τ_b) , ⊑⇒ ⊑□ τ_b⊑ , out-eq , ~⇒ ~?₂ ~?₁
+                  , λ _ eq-υ τ_b⊑' → □⇒-fits eq-υ τ_b⊑' λ ()
+  where
+    out-eq : (□ ⇒ τ_b) ⊔ (τ_h₁ ⇒ □) ≡ τ_h₁ ⇒ τ_b
+    out-eq rewrite ⊔t-zeroᵣ {τ_b} | ⊔t-zeroₗ {τ_h₁} = refl
+⊔-ann-⇒-⊑-intro-min {τ_l ⇒ τ_r} {τ_h₁ = τ_h₁} {τ_b = τ_b} eq τ_h₁⊑ τ_b⊑@(⊑⇒ _ _) | kind⇒
+  rewrite ⊔t-zeroᵣ {τ_r}
+  with refl ← eq = (□ ⇒ τ_b) , ⊑⇒ ⊑□ τ_b⊑ , out-eq , ~⇒ ~?₂ ~?₁
+                  , λ _ eq-υ τ_b⊑' → □⇒-fits eq-υ τ_b⊑' λ ()
+  where
+    out-eq : (□ ⇒ τ_b) ⊔ (τ_h₁ ⇒ □) ≡ τ_h₁ ⇒ τ_b
+    out-eq rewrite ⊔t-zeroᵣ {τ_b} | ⊔t-zeroₗ {τ_h₁} = refl
+⊔-ann-⇒-⊑-intro-min {τ_l ⇒ τ_r} {τ_h₁ = τ_h₁} {τ_b = τ_b} eq τ_h₁⊑ τ_b⊑@(⊑× _ _) | kind⇒
+  rewrite ⊔t-zeroᵣ {τ_r}
+  with refl ← eq = (□ ⇒ τ_b) , ⊑⇒ ⊑□ τ_b⊑ , out-eq , ~⇒ ~?₂ ~?₁
+                  , λ _ eq-υ τ_b⊑' → □⇒-fits eq-υ τ_b⊑' λ ()
+  where
+    out-eq : (□ ⇒ τ_b) ⊔ (τ_h₁ ⇒ □) ≡ τ_h₁ ⇒ τ_b
+    out-eq rewrite ⊔t-zeroᵣ {τ_b} | ⊔t-zeroₗ {τ_h₁} = refl
+⊔-ann-⇒-⊑-intro-min {τ_l ⇒ τ_r} {τ_h₁ = τ_h₁} {τ_b = τ_b} eq τ_h₁⊑ τ_b⊑@(⊑+ _ _) | kind⇒
+  rewrite ⊔t-zeroᵣ {τ_r}
+  with refl ← eq = (□ ⇒ τ_b) , ⊑⇒ ⊑□ τ_b⊑ , out-eq , ~⇒ ~?₂ ~?₁
+                  , λ _ eq-υ τ_b⊑' → □⇒-fits eq-υ τ_b⊑' λ ()
+  where
+    out-eq : (□ ⇒ τ_b) ⊔ (τ_h₁ ⇒ □) ≡ τ_h₁ ⇒ τ_b
+    out-eq rewrite ⊔t-zeroᵣ {τ_b} | ⊔t-zeroₗ {τ_h₁} = refl
+⊔-ann-⇒-⊑-intro-min {τ_l ⇒ τ_r} {τ_h₁ = τ_h₁} {τ_b = τ_b} eq τ_h₁⊑ τ_b⊑@(⊑∀ _) | kind⇒
+  rewrite ⊔t-zeroᵣ {τ_r}
+  with refl ← eq = (□ ⇒ τ_b) , ⊑⇒ ⊑□ τ_b⊑ , out-eq , ~⇒ ~?₂ ~?₁
+                  , λ _ eq-υ τ_b⊑' → □⇒-fits eq-υ τ_b⊑' λ ()
+  where
+    out-eq : (□ ⇒ τ_b) ⊔ (τ_h₁ ⇒ □) ≡ τ_h₁ ⇒ τ_b
+    out-eq rewrite ⊔t-zeroᵣ {τ_b} | ⊔t-zeroₗ {τ_h₁} = refl
+⊔-ann-⇒-⊑-intro-min {τ} eq τ_h₁⊑ τ_b⊑ | diff with τ ≟ □
+⊔-ann-⇒-⊑-intro-min refl _ ⊑□ | diff | yes refl = □ , ⊑□ , refl , ~?₂ , λ _ _ _ → ⊑□
+⊔-ann-⇒-⊑-intro-min () _ _ | diff | no _
 
 ⊔-+-~ : ∀ {τ τ₁ τ₂} → τ ⊔ (□ + □) ≡ τ₁ + τ₂ → τ ~ □ + □
 ⊔-+-~ {τ} eq with diag τ (□ + □)

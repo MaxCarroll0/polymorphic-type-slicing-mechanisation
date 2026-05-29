@@ -322,7 +322,7 @@ mutual
   extract-pos-minimal (minASub {Cls' = Cls'} m) =
     extract-pos-minimal-minASub (minASub m)
   extract-pos-minimal (minAλ: {τ = τ} {τ₁ = τ₁} {τ₂ = τ₂} {Cls' = Cls'}
-                              m outer-υ-slot c-lifted eq-lifted)
+                              m outer-υ-slot c-lifted eq-lifted outer-min)
                        s' (κ⊑ , γ⊑ , υ⊑)
     with s' .ana-κ                  | κ⊑                  | s' .ana-valid
   ... | _ isSlice (⊑λ τ-prec p)     | ⊑λ binder-prec κ-body⊑ | _ , _ , aλ: c' eq' wf' s'-inner-cls'
@@ -347,11 +347,8 @@ mutual
             ih-κ , ih-γ-raw , ih-υ = extract-pos-minimal m inner-s' (κ-body⊑ , γ⊑-inner , τ_b⊑υ-cod)
             ih-γ-decomp : (hd .↓ ∷ tlₛ (ana-γ inner) .↓) ⊑a _
             ih-γ-decomp = subst (_⊑a _) (cons-decompₛ (ana-γ inner)) ih-γ-raw
-            -- outer-υ.↓ ⊑ s'.υ_outer.↓ is genuinely false in the corner case
-            -- where τ has ⇒-shape, hd.↓ = □, and inner υ-cod = □ but s' picks
-            -- υ_outer = □ (then outer-υ = □⇒□ from ⊔-ann-⇒-⊑-intro-full).
             outer-υ⊑ : outer-υ-slot .↓ ⊑t s' .ana-υ_outer .↓
-            outer-υ⊑ = {!!}
+            outer-υ⊑ = outer-min binder-prec eq' ih-υ
         in ⊑λ (head-of ih-γ-decomp) ih-κ , tail-of ih-γ-decomp , outer-υ⊑
         where
           head-of : ∀ {a b c d} → (a ∷ b) ⊑a (c ∷ d) → a ⊑t c

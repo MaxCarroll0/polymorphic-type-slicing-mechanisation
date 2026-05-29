@@ -79,7 +79,7 @@ mutual
           lift-pos-cov m_inner (⊑∷ pa Γ⊑) C-inner⊑ pb inner-pre
     in _ , _ , _ , Γ_f⊑ , τ_f⊑ , cov , aλ⇒ eq-lifted inner-cls
 
-  lift-pos-cov (minAλ: {c = c} {eq = eq} {wf = wf} m_inner outer-υ c-lifted eq-orig)
+  lift-pos-cov (minAλ: {c = c} {eq = eq} {wf = wf} m_inner outer-υ c-lifted eq-orig _)
                Γ⊑ (⊑λ τ_h⊑ C-inner⊑) τ_p⊑ pre
     with ⊔-ann-⇒-⊑ τ_p⊑ τ_h⊑ eq
   ... | _ , τ_b_₁ , eq-lifted , pb =

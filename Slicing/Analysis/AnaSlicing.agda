@@ -21,7 +21,7 @@ open import Slicing.Analysis.Minimality using (syn-cls-precision)
 open import Core.Typ.Lift using (unmatch⇒; unmatch⇒-min; match⇒ₛ; cod⇒ₛ; dom⇒ₛ;
                                   unmatch⇒-cov-dom;
                                   unmatch+-min; match+ₛ; fst+ₛ'; snd+ₛ')
-open import Core.Typ.Properties using (⊔-ann-⇒-⊑-intro-full; ⊔-⇒-⊑)
+open import Core.Typ.Properties using (⊔-ann-⇒-⊑-intro-min; ⊔-⇒-⊑)
 open import Core.Assms.Lift using (hdₛ; tlₛ; cons-decompₛ)
 
 -- Algorithmic MinAna / MinAnaPos construction (Dissertation §8.6).
@@ -159,10 +159,10 @@ mutual
   ana-slice-pos {τ_p = τ-pos} (aλ: {τ₁ = τ_a} {τ₂ = τ_b} c eq wf Cls') υ@(_ isSlice _)
     with ana-slice-pos Cls' υ
   ... | m
-    with ⊔-ann-⇒-⊑-intro-full eq (hdₛ (ana-γ (extract-pos m)) .proof)
-                                 (ana-υ_outer (extract-pos m) .proof)
-  ... | _ , outer⊑τ , eq-built , c-built =
-        minAλ: m (_ isSlice outer⊑τ) c-built eq-built
+    with ⊔-ann-⇒-⊑-intro-min eq (hdₛ (ana-γ (extract-pos m)) .proof)
+                                (ana-υ_outer (extract-pos m) .proof)
+  ... | _ , outer⊑τ , eq-built , c-built , outer-min =
+        minAλ: m (_ isSlice outer⊑τ) c-built eq-built outer-min
 
   ana-slice-pos (aλ⇒ eq Cls') υ@(_ isSlice _) =
     minAλ⇒ (ana-slice-pos Cls' υ)
