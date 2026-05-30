@@ -1,0 +1,43 @@
+name: release
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@v17
+        with:
+          extra-conf: |
+            experimental-features = nix-command flakes
+
+      - name: Nix magic cache
+        uses: DeterminateSystems/magic-nix-cache-action@v9
+
+      - name: Type-check via nix build
+        run: nix build --print-build-logs .#default
+
+      - name: Assemble release bundle
+        run: |
+          set -euo pipefail
+          rm -rf release
+          mkdir -p release/dissertation-mechanisation/source
+          git archive --format=tar HEAD | tar -x -C release/dissertation-mechanisation/source
+          cp -rL result/TYPECHECK_RESULTS release/dissertation-mechanisation/TYPECHECK_RESULTS
+          tar -czf release/dissertation-mechanisation.tar.gz -C release dissertation-mechanisation
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Mechanisation accompanying the dissertation
+          tag_name: dissertation-mechanisation
+          generate_release_notes: true
+          files: release/dissertation-mechanisation.tar.gz

@@ -26,7 +26,8 @@ standard library and writes:
 - `result/TYPECHECK_RESULTS/build.log` — full Agda output
 - `result/TYPECHECK_RESULTS/status` — `PASS …` or `FAIL …` with the agda exit code
 - `result/TYPECHECK_RESULTS/postulates_and_holes.txt` — every `postulate` block
-  and hole (`{! … !}`, `?`)
+  and hole (`{! … !}`, `?`). Holes mark in-progress proof fragments
+  corresponding to results marked UNMECHANISED in the dissertation.
 - `result/out/` — checked sources and built `.agdai` interfaces
 
 The Nix build itself always succeeds (so the log is recoverable even on a
