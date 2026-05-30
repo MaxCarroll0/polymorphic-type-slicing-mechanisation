@@ -123,23 +123,6 @@ syn-cls-precision Γ⊑ (⊑def₂ e⊑ C⊑) m⊑ (sdef₂ D₁ cls₁) (sdef�
   with refl ← syn-unicity D₁ D₁'
   = syn-cls-precision (⊑∷ τ'⊑ Γ⊑) C⊑ m⊑ cls₁ cls₂
 
-postulate
-  extract-minimal-minS∘₂   : ∀ {n Γ₀ C n_f Γ τ τ_p}
-                               {Cls : n , Γ₀ ⊢ C at synPos τ_p ▷ n_f , Γ [ ⇐mode τ ]} {υ}
-                               (m : MinAna Cls υ)
-                             → IsMinimal (extract m)
-  extract-minimal-case-sdef : ∀ {n Γ₀ C n_f Γ τ τ_p}
-                                {Cls : n , Γ₀ ⊢ C at synPos τ_p ▷ n_f , Γ [ ⇐mode τ ]} {υ}
-                                (m : MinAna Cls υ)
-                              → IsMinimal (extract m)
-  extract-pos-minimal-case-adef : ∀ {n Γ₀ C n_f Γ τ τ_p}
-                                    {Cls : n , Γ₀ ⊢ C at anaPos τ_p ▷ n_f , Γ [ ⇐mode τ ]} {υ}
-                                    (m : MinAnaPos Cls υ)
-                                  → IsMinimalPos (extract-pos m)
-  extract-pos-minimal-minASub : ∀ {n Γ₀ C n_f Γ τ τ_p}
-                                  {Cls : n , Γ₀ ⊢ C at anaPos τ_p ▷ n_f , Γ [ ⇐mode τ ]} {υ}
-                                  (m : MinAnaPos Cls υ)
-                                → IsMinimalPos (extract-pos m)
 
 mutual
   extract-minimal : ∀ {n Γ₀ C n_f Γ τ τ_p}
@@ -198,8 +181,7 @@ mutual
                 ; valid = _ , _ , inner-cls' }
               ih = extract-minimal m inner-s' (κ-body⊑inner , γ⊑)
           in ⊑∘₁ (proj₁ ih) ⊑□ , proj₂ ih
-  extract-minimal (minS∘₂ m ss focus focus⊒ cls-lifted) =
-    extract-minimal-minS∘₂ (minS∘₂ m ss focus focus⊒ cls-lifted)
+  extract-minimal (minS∘₂ m ss focus focus⊒ cls-lifted) = {!!}
   extract-minimal (minS<>₁ {Cls' = Cls'} {eq = eq} {wf = wf} m) s' (κ⊑ , γ⊑)
     with s' .κ                  | κ⊑                  | s' .valid
   ... | _ isSlice (⊑<>₁ s-proof _) | ⊑<>₁ κ-body⊑inner _ | _ , _ , s<>₁ inner-cls' eq'-real wf' =
@@ -238,8 +220,8 @@ mutual
                 ; valid = _ , _ , inner-cls' }
               ih = extract-minimal m inner-s' (κ-body⊑inner , γ⊑)
           in ⊑&₂ ⊑□ (proj₁ ih) , proj₂ ih
-  extract-minimal m@(minScase₁ _ _ _ _ _ _) = extract-minimal-case-sdef m
-  extract-minimal m@(minScase₂ _ _ _ _ _ _) = extract-minimal-case-sdef m
+  extract-minimal m@(minScase₁ _ _ _ _ _ _) = {!!}
+  extract-minimal m@(minScase₂ _ _ _ _ _ _) = {!!}
   extract-minimal (minSπ₁ {Cls' = Cls'} {eq = eq} m) s' (κ⊑ , γ⊑)
     with s' .κ                | κ⊑                | s' .valid
   ... | _ isSlice (⊑π₁ s-proof) | ⊑π₁ κ-body⊑inner | _ , _ , sπ₁ inner-cls' eq' =
@@ -305,7 +287,7 @@ mutual
               ih = extract-minimal m inner-s' (κ-body⊑inner , γ⊑)
           in ⊑def₁ (proj₁ ih) ⊑□ , proj₂ ih
 
-  extract-minimal m@(minSdef₂ _ _ _ _ _ _) = extract-minimal-case-sdef m
+  extract-minimal m@(minSdef₂ _ _ _ _ _ _) = {!!}
 
   extract-pos-minimal min□Pos s' (κ⊑ , γ⊑ , υ⊑) =
       ⊑ₛLat.⊥ₛ-min (ana-κ s')
@@ -317,10 +299,9 @@ mutual
   ... | _ , _ , a○ =
           ⊑ₛLat.⊥ₛ-min (ana-κ s')
         , ⊑ₛLat.⊥ₛ-min (ana-γ s')
-        , ana-focus⊒ s'
+        , {!!}
   ... | _ , _ , aSub () _
-  extract-pos-minimal (minASub {Cls' = Cls'} m) =
-    extract-pos-minimal-minASub (minASub m)
+  extract-pos-minimal (minASub {Cls' = Cls'} m) = {!!}
   extract-pos-minimal (minAλ: {τ = τ} {τ₁ = τ₁} {τ₂ = τ₂} {Cls' = Cls'}
                               m outer-υ-slot c-lifted eq-lifted outer-min)
                        s' (κ⊑ , γ⊑ , υ⊑)
@@ -514,9 +495,9 @@ mutual
             outer-υ⊑ = unmatch+-min-⊑ τ eq (⊥ₛ {a = τ₁}) (ana-υ_outer (extract-pos m))
                          (s' .ana-υ_outer .proof) s'-match-eq ⊑□ ih-υ
         in ⊑ι₂ ih-κ , ih-γ , outer-υ⊑
-  extract-pos-minimal m@(minAcase₁ _ _ _ _ _) = extract-pos-minimal-case-adef m
-  extract-pos-minimal m@(minAcase₂ _ _ _ _ _) = extract-pos-minimal-case-adef m
-  extract-pos-minimal m@(minAdef₂ _ _ _ _ _) = extract-pos-minimal-case-adef m
+  extract-pos-minimal m@(minAcase₁ _ _ _ _ _) = {!!}
+  extract-pos-minimal m@(minAcase₂ _ _ _ _ _) = {!!}
+  extract-pos-minimal m@(minAdef₂ _ _ _ _ _) = {!!}
   extract-pos-minimal (minAdef₁ {Cls' = Cls'} m) s' (κ⊑ , γ⊑ , υ⊑)
     with s' .ana-κ                | κ⊑                  | s' .ana-valid
   ... | _ isSlice (⊑def₁ s-proof _) | ⊑def₁ κ-body⊑inner _ | _ , _ , adef₁ inner-cls' _ =

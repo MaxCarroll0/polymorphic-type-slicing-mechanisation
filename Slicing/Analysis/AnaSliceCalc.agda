@@ -209,8 +209,6 @@ mutual
               → (outer-υ .↓ ~ (hdₛ (ana-γ (extract-pos m))) .↓ ⇒ □)
               → (outer-υ .↓ ⊔ (hdₛ (ana-γ (extract-pos m))) .↓ ⇒ □
                    ≡ (hdₛ (ana-γ (extract-pos m))) .↓ ⇒ (ana-υ_outer (extract-pos m)) .↓)
-              -- outer-υ is the minimum among valid alternatives. Provided by
-              -- AnaSlicing via ⊔-ann-⇒-⊑-intro-min, used by Minimality.
               → (∀ {υ' τ_s τ_s' τ_b'}
                   → τ_s ⊑t (hdₛ (ana-γ (extract-pos m))) .↓
                   → υ' ⊔ τ_s ⇒ □ ≡ τ_s' ⇒ τ_b'
@@ -549,10 +547,6 @@ mutual
          ; focus⊒  = ana-focus⊒ inner
          ; valid   = _ , _ , aλ: c-lifted eq-lifted (wf-⊑ wf hd⊑) inner-cls-decomp
          }
-  -- Unannotated lambda in analysis: outer aλ⇒ eq Cls'. Inner Cls' at
-  -- anaPos τ₂ in (τ₁ ∷ Γ); destructure inner.γ to extract the binder
-  -- slice (hd) and outer-context slice (tl). outer.υ_outer is built via
-  -- unmatch⇒ with the binder/body slices; bridge via unmatch⇒-≡-fst/snd.
   extract-pos {n = n} {υ = υ} (minAλ⇒ {τ = τ} {τ₁ = τ₁} {τ₂ = τ₂} {eq = eq} m) =
     let inner = extract-pos m
         hd : ⌊ τ₁ ⌋
@@ -783,7 +777,6 @@ mutual
                      {Cls : n , Γ₀ ⊢ C at synPos τ_p ▷ n_f , Γ [ ⇐mode τ ]} {υ}
                    → MinAna Cls υ → ⌊ τ ⌋
 
-  -- ana-υ_outer-of-m: the outer-analysis-type slice tracked by MinAnaPos.
   ana-υ_outer-of-m min□Pos                     = ⊥ₛ
   ana-υ_outer-of-m (minA○ υ)                   = υ
   ana-υ_outer-of-m (minASub _)                 = ⊥ₛ
@@ -803,7 +796,6 @@ mutual
   ana-υ_outer-of-m (minAdef₁ _)                = ⊥ₛ
   ana-υ_outer-of-m (minAdef₂ m _ _ _ _)          = ana-υ_outer-of-m m
 
-  -- ana-γ-of-m: slice of the outer assumptions Γ₀.
   ana-γ-of-m min□Pos                       = ⊥ₛ
   ana-γ-of-m (minA○ _)                     = ⊥ₛ
   ana-γ-of-m (minASub m)                   = syn-γ-of-m m
@@ -818,7 +810,6 @@ mutual
   ana-γ-of-m (minAdef₁ m)                  = syn-γ-of-m m
   ana-γ-of-m (minAdef₂ _ ss _ _ _)             = ss ↓s ↓γₛ
 
-  -- ana-κ-of-m: slice of the surrounding context C.
   ana-κ-of-m min□Pos                       = ⊥ₛ
   ana-κ-of-m (minA○ _)                     = ⊥ₛ
   ana-κ-of-m (minASub m)                   = syn-κ-of-m m
@@ -846,8 +837,6 @@ mutual
   ana-κ-of-m (minAdef₂ m ss _ _ _)             =
     (def (ss ↓s ↓σ) ⊢₂ (ana-κ-of-m m .↓)) isSlice ⊑def₂ (ss ↓s ↓σ⊑) (ana-κ-of-m m .proof)
 
-  -- ana-focus-of-m: slice of the focus type τ. Propagates unchanged through
-  -- structural rules; equals υ at leaves and ⊥ at the bottom slice.
   ana-focus-of-m min□Pos                   = ⊥ₛ
   ana-focus-of-m (minA○ υ)                 = υ
   ana-focus-of-m (minASub m)               = syn-focus-of-m m
@@ -862,7 +851,6 @@ mutual
   ana-focus-of-m (minAdef₁ m)              = syn-focus-of-m m
   ana-focus-of-m (minAdef₂ _ _ focus _ _)  = focus
 
-  -- syn-γ-of-m: slice of the outer Γ₀ for MinAna (synPos position).
   syn-γ-of-m min□                          = ⊥ₛ
   syn-γ-of-m (minSλ: _ m)                  = tlₛ (syn-γ-of-m m)
   syn-γ-of-m (minS∘₁ m)                    = syn-γ-of-m m
@@ -1041,12 +1029,3 @@ mutual
   syn-focus-≡ (minSdef₁ m) = syn-focus-≡ m
   syn-focus-≡ (minSdef₂ _ _ _ _ _ _) = refl
 
--- Completeness: every minimal AnaSlice arises from some MinAna; same
--- for AnaPosSlice. Postulated for now (out of scope for this iteration).
-postulate
-  complete : ∀ {n Γ₀ C n_f Γ τ τ_p} {Cls : n , Γ₀ ⊢ C at synPos τ_p ▷ n_f , Γ [ ⇐mode τ ]} {υ}
-           → (s : AnaSlice Cls υ) → IsMinimal s
-           → Σ[ m ∈ MinAna Cls υ ] (extract m) ≈ s
-  completePos : ∀ {n Γ₀ C n_f Γ τ τ_p} {Cls : n , Γ₀ ⊢ C at anaPos τ_p ▷ n_f , Γ [ ⇐mode τ ]} {υ}
-              → (s : AnaPosSlice Cls υ) → IsMinimalPos s
-              → Σ[ m ∈ MinAnaPos Cls υ ] (extract-pos m) ≈ s

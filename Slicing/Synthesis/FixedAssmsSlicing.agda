@@ -1,3 +1,4 @@
+{-# OPTIONS --allow-unsolved-metas #-}
 open import Data.Nat hiding (_+_; _⊔_; _≟_)
 open import Data.Product using (_,_; proj₁; proj₂; Σ-syntax; ∃-syntax) renaming (_×_ to _∧_)
 open import Data.Sum using (_⊎_; inj₁; inj₂)
@@ -341,9 +342,7 @@ head-min-from-state {Γ = Γ} {τ = τ} {D = D} {D₁ = D₁} {D₂ = D₂} {m =
         ...   | yes ψ₀-comp⊑ψ₀-min with ψ₀-comp .↓ ≈? ψ₀-min .↓
         ...     | yes ψ₀-comp≡ψ₀-min = ⊥-elim (¬p (subst (ψ₀-min .↓ ⊑_) (≡sym ψ₀-comp≡ψ₀-min) (⊑.refl {Typ})))
         ...     | no  ψ₀-comp≢ψ₀-min = ⊥-elim (no-desc (ψ₀-comp⊑ψ₀-min , ψ₀-comp≢ψ₀-min) cov-comp)
-        body | no ¬p | no ¬ψ₀-comp⊑ψ₀-min = incomparable-postulate
-          where
-            postulate incomparable-postulate : ψ₀-min .↓ ⊑ τ₀'
+        body | no ¬p | no ¬ψ₀-comp⊑ψ₀-min = {!!}
     strict-case {σ₀'} {τ₀'} σ₀'⊑σ₀ σ₀'≢σ₀ d-σ₀' m' d-τa d-τb v | no ¬τ₀'⊑sψ₀ =
       ⊥-elim (¬τ₀'⊑sψ₀ (syn-precision (⊑.refl {Assms} {Γ}) σ₀'⊑σ₀ d-sσ₀ d-σ₀'))
 
@@ -436,10 +435,8 @@ phase2 {Γ = Γ} {τ = τ} {τ₁ = τ₁} {τ₂ = τ₂} D D₁ D₂ m c υ υ
     ς₁⊑fst = ⊑.refl {Typ}
     ς₂⊑snd : (state .ς₂) .↓ ⊑ snd+ₛ' ψ₀-min m .↓
     ς₂⊑snd = ⊑.refl {Typ}
-    postulate
-      ψ₀-min⊑sψ₀ : ψ₀-min .↓ ⊑ ψ₀ .↓
     head-min = head-min-from-state state ψ₀-min no-desc
-                                   ψ₀-min⊑sψ₀ ς₁⊑fst ς₂⊑snd
+                                   {!!} ς₁⊑fst ς₂⊑snd
     -- Phase 3: minimal context cover (postulated)
     mcc = min-case-cover D m D₁ D₂ σ₀
             (BranchFP.σ₁ bfp) (BranchFP.σ₂ bfp) υ

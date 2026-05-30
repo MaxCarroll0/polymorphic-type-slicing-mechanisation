@@ -67,9 +67,6 @@ open import Core.Instances
 ...                       | yes refl = ~?₂
 ⊔-⇒-~     ()    | diff    | no  _
 
--- Specialised to the value produced by ⊔-ann-⇒-⊑-intro-tight: outputs of
--- shape (□ ⇒ τ_b) for some τ_b. Such a value is consistent with τ_h ⇒ □ via
--- ~⇒ ~?₂ ~?₁ regardless of τ_h.
 □⇒-~-ann-⇒ : ∀ {τ_h τ_b} → (□ ⇒ τ_b) ~ (τ_h ⇒ □)
 □⇒-~-ann-⇒ = ~⇒ ~?₂ ~?₁
 
@@ -95,9 +92,6 @@ private
   ⊑□-≡ : ∀ {τ} → τ ⊑t □ → τ ≡ □
   ⊑□-≡ ⊑□ = refl
 
-  -- When intro-min returns □⇒τ_b (non-⊑□ body), this proves it is ⊑ any valid
-  -- alternative υ for the annotated-lambda join. τ_b ≠ □ is the witness that
-  -- selects this branch.
   □⇒-fits : ∀ {υ τ_s τ_s' τ_b' τ_b}
       → υ ⊔ τ_s ⇒ □ ≡ τ_s' ⇒ τ_b'
       → τ_b ⊑t τ_b'
@@ -110,10 +104,6 @@ private
     rewrite ⊔t-zeroᵣ {υ_r}
     with refl ← eq-υ = ⊑⇒ ⊑□ τ_b⊑
 
--- Minimised variant: when τ_b = □ the returned τ' is just □ (not □⇒□).
--- Bundles a minimality witness: τ' ⊑t any valid alternative υ. Used by
--- AnaSlicing/ana-slice-pos aλ: so that outer-υ shrinks to ⊥ whenever the body
--- slice is ⊥, matching the minimum required by minAλ:.
 ⊔-ann-⇒-⊑-intro-min : ∀ {τ τ_h τ_a τ₂ τ_h₁ τ_b} → τ ⊔ τ_h ⇒ □ ≡ τ_a ⇒ τ₂
            → τ_h₁ ⊑t τ_h → τ_b ⊑t τ₂
            → ∃[ τ' ] (τ' ⊑t τ) ∧ (τ' ⊔ τ_h₁ ⇒ □ ≡ τ_h₁ ⇒ τ_b) ∧ (τ' ~ τ_h₁ ⇒ □)

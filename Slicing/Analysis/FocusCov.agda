@@ -1,3 +1,4 @@
+{-# OPTIONS --allow-unsolved-metas #-}
 open import Data.Nat hiding (_+_; _⊔_; _≟_)
 open import Data.Product using (_,_; proj₁; proj₂; Σ-syntax; ∃-syntax) renaming (_×_ to _∧_)
 open import Data.List using (_∷_)
@@ -19,17 +20,6 @@ open import Slicing.Analysis.AnaSliceCalc
 
 -- Gradual lifts with focus-coverage (υ ⊑ τ_f) for AnaSlicing (Dissertation §8.6).
 module Slicing.Analysis.FocusCov where
-
-private
-  postulate
-    minS∘₂-cov : ∀ {n Γ Γ' C n_f τ_p τ}
-                   {Cls : n , Γ ⊢ C at synPos τ_p ▷ n_f , Γ' [ ⇐mode τ ]}
-                   {υ : ⌊ τ ⌋} (m : MinAna Cls υ)
-                 → ∀ {Γ_₁ C_₁} (Γ⊑ : Γ_₁ ⊑ Γ) (C⊑ : C_₁ ⊑c C)
-                 → ∃[ τ_p_₁ ] (τ_p_₁ ⊑ τ_p) ∧
-                   ∃[ Γ_f_₁ ] ∃[ n_f_₁ ] ∃[ τ_f ]
-                     (Γ_f_₁ ⊑ Γ') ∧ (τ_f ⊑ τ) ∧ (υ .↓ ⊑t τ_f) ∧
-                     (n , Γ_₁ ⊢ C_₁ at synPos τ_p_₁ ▷ n_f_₁ , Γ_f_₁ [ ⇐mode τ_f ])
 
 mutual
 
@@ -187,7 +177,7 @@ mutual
         s∘₁ inner-cls eq_₁ (static-gradual-ana Γ⊑ e⊑ pa d₂)
 
   lift-syn-cov m@(minS∘₂ {τ₀ = τ₀} {D₁ = D₁} {eq = eq} m_inner ss focus focus⊒ pkg)
-               Γ⊑ C⊑@(⊑∘₂ e⊑ C-inner⊑) = minS∘₂-cov m Γ⊑ C⊑
+               Γ⊑ C⊑@(⊑∘₂ e⊑ C-inner⊑) = {!!}
 
   lift-syn-cov (minS<>₁ {eq = eq} {wf = wf} m_inner) Γ⊑ (⊑<>₁ C-inner⊑ σ⊑)
     with lift-syn-cov m_inner Γ⊑ C-inner⊑

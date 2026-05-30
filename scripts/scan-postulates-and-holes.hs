@@ -207,5 +207,6 @@ main = do
     if null psts then BS.putStr "NO POSTULATES\n"
     else forM_ psts \(f, l, n, t) -> BS.putStr (BS.concat [prefix f l, n, " : ", t, "\n"])
     BS.putStr "\n## Holes\n"
+    BS.putStr "Holes mark in-progress proof fragments (UNMECHANISED in the dissertation).\n\n"
     if null hols then BS.putStr "NO HOLES\n"
     else forM_ hols \(f, l, x) -> BS.putStr (BS.concat [prefix f l, x, "\n"])

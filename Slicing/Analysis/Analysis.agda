@@ -320,21 +320,3 @@ MinAnaSlice Cls υ = Σ[ s ∈ AnaSlice Cls υ ] IsMinimal s
 
 MinAnaPosSlice : ∀ {n Γ₀ C n' Γ τ τ_p} → (Cls : n , Γ₀ ⊢ C at anaPos τ_p ▷ n' , Γ [ ⇐mode τ ]) → ⌊ τ ⌋ → Set
 MinAnaPosSlice Cls υ = Σ[ s ∈ AnaPosSlice Cls υ ] IsMinimalPos s
-
-postulate
-  minExists : ∀ {n Γ₀ C n' Γ τ τ_p} (Cls : n , Γ₀ ⊢ C at synPos τ_p ▷ n' , Γ [ ⇐mode τ ]) υ
-            → ∃[ m ] IsMinimal {Cls = Cls} {υ = υ} m
-  minExistsPos : ∀ {n Γ₀ C n' Γ τ τ_p} (Cls : n , Γ₀ ⊢ C at anaPos τ_p ▷ n' , Γ [ ⇐mode τ ]) υ
-               → ∃[ m ] IsMinimalPos {Cls = Cls} {υ = υ} m
-  mono : ∀ {n Γ₀ C n' Γ τ τ_p} {Cls : n , Γ₀ ⊢ C at synPos τ_p ▷ n' , Γ [ ⇐mode τ ]} {υ₁ υ₂ : ⌊ τ ⌋}
-       → υ₁ ⊑ₛ υ₂
-       → (m₂ : AnaSlice Cls υ₂) → IsMinimal m₂
-       → Σ[ m₁ ∈ AnaSlice Cls υ₁ ] IsMinimal m₁ ∧ AnaSlice.κ m₁ ⊑ₛ AnaSlice.κ m₂ ∧ AnaSlice.γ m₁ ⊑ₛ AnaSlice.γ m₂
-  monoPos : ∀ {n Γ₀ C n' Γ τ τ_p} {Cls : n , Γ₀ ⊢ C at anaPos τ_p ▷ n' , Γ [ ⇐mode τ ]} {υ₁ υ₂ : ⌊ τ ⌋}
-          → υ₁ ⊑ₛ υ₂
-          → (m₂ : AnaPosSlice Cls υ₂) → IsMinimalPos m₂
-          → Σ[ m₁ ∈ AnaPosSlice Cls υ₁ ] IsMinimalPos m₁
-                                         ∧ ana-κ m₁ ⊑ₛ ana-κ m₂
-                                         ∧ ana-γ m₁ ⊑ₛ ana-γ m₂
-                                         ∧ ana-υ_outer m₁ ⊑ₛ ana-υ_outer m₂
-
