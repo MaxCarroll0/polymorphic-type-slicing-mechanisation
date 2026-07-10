@@ -20,7 +20,7 @@ nix build github:MaxCarroll0/polymorphic-type-slicing-formalism
 
 Alternatively, clone the repo and run `nix build` within.
 
-The build runs `agda -W error --double-check all.agda` against the pinned
+The build runs `agda -W error all.agda` against the pinned
 standard library and writes:
 
 - `result/TYPECHECK_RESULTS/build.log` — full Agda output

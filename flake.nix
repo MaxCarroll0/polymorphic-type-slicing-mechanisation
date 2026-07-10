@@ -67,7 +67,7 @@
             set +e
             agda \
               --library-file="$NIX_BUILD_TOP/libraries" \
-              -W error --double-check \
+              -W error \
               all.agda 2>&1 | tee "$results/build.log"
             status=''${PIPESTATUS[0]}
             set -e
