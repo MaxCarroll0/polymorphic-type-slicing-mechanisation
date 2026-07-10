@@ -25,7 +25,7 @@ record TyAppMatch (τ' σ : Typ) (υ : ⌊ [ zero ↦ σ ] τ' ⌋) : Set where
 private
   tyapp-var :
       ∀ (k : ℕ) {σ : Typ} (m : ℕ) (s : ⌊ [ k ↦ σ ] ⟨ m ⟩ ⌋)
-    → Σ[ M ∈ ⌊ σ ⌋ ] s .↓ ⊑t [ k ⇑ M .↓ ] (match-α-aux k ⟨ m ⟩ s) .↓
+    → Σ[ M ∈ ⌊ σ ⌋ ] s .↓ ⊑t [ k ↦ M .↓ ] (match-α-aux k ⟨ m ⟩ s) .↓
   tyapp-var k m s with m ≟ℕ k
   ... | yes ≡refl with s .↓ ≟t □
   ...   | yes p
@@ -33,7 +33,7 @@ private
   ...   | no  _
         = s , prf
         where
-          prf : s .↓ ⊑t [ m ⇑ s .↓ ] ⟨ m ⟩
+          prf : s .↓ ⊑t [ m ↦ s .↓ ] ⟨ m ⟩
           prf with m ≟ℕ m
           ... | yes _ = ⊑t-refl
           ... | no ¬p = ⊥-elim (¬p ≡refl)
@@ -43,14 +43,14 @@ private
   ...   | no  _
         = (□ isSlice ⊑□) , prf
         where
-          prf : s .↓ ⊑t [ k ⇑ □ ] ⟨ m ⟩
+          prf : s .↓ ⊑t [ k ↦ □ ] ⟨ m ⟩
           prf with m ≟ℕ k
           ... | yes p = ⊥-elim (neq p)
           ... | no _ = s .proof
 
   tyapp-aux :
       ∀ (k : ℕ) {σ : Typ} (τ' : Typ) (s : ⌊ [ k ↦ σ ] τ' ⌋)
-    → Σ[ M ∈ ⌊ σ ⌋ ] s .↓ ⊑t [ k ⇑ M .↓ ] (match-α-aux k τ' s) .↓
+    → Σ[ M ∈ ⌊ σ ⌋ ] s .↓ ⊑t [ k ↦ M .↓ ] (match-α-aux k τ' s) .↓
   tyapp-aux k *  (□ isSlice ⊑□) = (□ isSlice ⊑□) , ⊑□
   tyapp-aux k *  (* isSlice ⊑*) = (□ isSlice ⊑□) , ⊑*
   tyapp-aux k □  (□ isSlice ⊑□) = (□ isSlice ⊑□) , ⊑□
@@ -105,7 +105,7 @@ private
   tyarg-min-var :
       ∀ (k : ℕ) {σ : Typ} (m : ℕ) (s : ⌊ [ k ↦ σ ] ⟨ m ⟩ ⌋)
         (ϕ : ⌊ σ ⌋) (υ' : ⌊ ⟨ m ⟩ ⌋)
-      → s .↓ ⊑t [ k ⇑ ϕ .↓ ] υ' .↓
+      → s .↓ ⊑t [ k ↦ ϕ .↓ ] υ' .↓
       → (tyapp-var k m s) .proj₁ .↓ ⊑t ϕ .↓
   tyarg-min-var k m s ϕ (□ isSlice ⊑□) h with m ≟ℕ k
   ... | yes ≡refl with s .↓ ≟t □
@@ -127,7 +127,7 @@ private
   tyarg-min-aux :
       ∀ (k : ℕ) {σ : Typ} (τ' : Typ) (s : ⌊ [ k ↦ σ ] τ' ⌋)
         (ϕ : ⌊ σ ⌋) (υ' : ⌊ τ' ⌋)
-      → s .↓ ⊑t [ k ⇑ ϕ .↓ ] υ' .↓
+      → s .↓ ⊑t [ k ↦ ϕ .↓ ] υ' .↓
       → (tyapp-aux k τ' s) .proj₁ .↓ ⊑t ϕ .↓
   tyarg-min-aux k * (□ isSlice ⊑□) ϕ υ' h = ⊑□
   tyarg-min-aux k * (* isSlice ⊑*) ϕ υ' h = ⊑□
@@ -173,7 +173,7 @@ private
   match-α-min-var :
       ∀ (k : ℕ) {σ : Typ} (m : ℕ) (s : ⌊ [ k ↦ σ ] ⟨ m ⟩ ⌋)
       → (ϕ : ⌊ σ ⌋) (υ' : ⌊ ⟨ m ⟩ ⌋)
-      → s .↓ ⊑t [ k ⇑ ϕ .↓ ] υ' .↓
+      → s .↓ ⊑t [ k ↦ ϕ .↓ ] υ' .↓
       → (match-α-aux k ⟨ m ⟩ s) .↓ ⊑t υ' .↓
   match-α-min-var k m s ϕ (□ isSlice ⊑□) h with m ≟ℕ k
   ... | yes ≡refl with s .↓ ≟t □
@@ -193,7 +193,7 @@ private
   match-α-min-aux :
       ∀ (k : ℕ) {σ : Typ} (τ' : Typ) (s : ⌊ [ k ↦ σ ] τ' ⌋)
       → (ϕ : ⌊ σ ⌋) (υ' : ⌊ τ' ⌋)
-      → s .↓ ⊑t [ k ⇑ ϕ .↓ ] υ' .↓
+      → s .↓ ⊑t [ k ↦ ϕ .↓ ] υ' .↓
       → (match-α-aux k τ' s) .↓ ⊑t υ' .↓
   match-α-min-aux k * (□ isSlice ⊑□) ϕ υ' h = ⊑□
   match-α-min-aux k * (* isSlice ⊑*) ϕ (□ isSlice ⊑□) ()

@@ -5,6 +5,8 @@ open import Relation.Binary using (IsPartialOrder; IsDecPartialOrder; IsEquivale
 open import Relation.Binary.PropositionalEquality as Eq using (_≡_; refl; subst; sym; cong; trans)
 open import Data.List using (map; _∷_; length)
 open import Data.List.Properties using (length-map)
+open import Data.Sum using (_⊎_; inj₁; inj₂)
+open import Induction.WellFounded using (WellFounded; Acc; acc)
 open import Core
 open import Semantics.Statics
 open import Core.Typ.WellFormedness using (wf□)
@@ -320,3 +322,41 @@ MinAnaSlice Cls υ = Σ[ s ∈ AnaSlice Cls υ ] IsMinimal s
 
 MinAnaPosSlice : ∀ {n Γ₀ C n' Γ τ τ_p} → (Cls : n , Γ₀ ⊢ C at anaPos τ_p ▷ n' , Γ [ ⇐mode τ ]) → ⌊ τ ⌋ → Set
 MinAnaPosSlice Cls υ = Σ[ s ∈ AnaPosSlice Cls υ ] IsMinimalPos s
+
+reindex-ana : ∀ {n Γ₀ C n' Γ τ τ_p} {Cls : n , Γ₀ ⊢ C at synPos τ_p ▷ n' , Γ [ ⇐mode τ ]} {υ υ'}
+            → (s : AnaSlice Cls υ) → υ' ⊑ₛ s .focus → AnaSlice Cls υ'
+reindex-ana s p = record { κ = s .κ ; γ = s .γ ; type = s .type ; focus = s .focus ; focus⊒ = p ; valid = s .valid }
+
+private
+  _⊏ana_ : ∀ {n Γ₀ C n' Γ τ τ_p} {Cls : n , Γ₀ ⊢ C at synPos τ_p ▷ n' , Γ [ ⇐mode τ ]} {υ}
+         → AnaSlice Cls υ → AnaSlice Cls υ → Set
+  _⊏ana_ = ⊑._⊏_ ⦃ anaSlice-precision ⦄
+
+postulate
+  ⊏-wf-ana : ∀ {n Γ₀ C n' Γ τ τ_p} {Cls : n , Γ₀ ⊢ C at synPos τ_p ▷ n' , Γ [ ⇐mode τ ]} {υ}
+           → WellFounded (_⊏ana_ {Cls = Cls} {υ = υ})
+  minimal?-ana : ∀ {n Γ₀ C n' Γ τ τ_p} {Cls : n , Γ₀ ⊢ C at synPos τ_p ▷ n' , Γ [ ⇐mode τ ]} {υ}
+               → (s : AnaSlice Cls υ)
+               → IsMinimal s ⊎ (Σ[ s' ∈ AnaSlice Cls υ ] s' ⊏ana s)
+
+minExistsAna : ∀ {n Γ₀ C n' Γ τ τ_p} {Cls : n , Γ₀ ⊢ C at synPos τ_p ▷ n' , Γ [ ⇐mode τ ]} {υ}
+             → (s : AnaSlice Cls υ)
+             → Σ[ (m , _) ∈ MinAnaSlice Cls υ ] (m ⊑ana s)
+minExistsAna {Cls = Cls} {υ = υ} s = go s (⊏-wf-ana s)
+  where
+  go : (s : AnaSlice Cls υ) → Acc (_⊏ana_ {Cls = Cls} {υ = υ}) s
+     → Σ[ (m , _) ∈ MinAnaSlice Cls υ ] (m ⊑ana s)
+  go s a        with minimal?-ana s
+  go s _        | inj₁ min-s       = (s , min-s) , ⊑.refl {A = AnaSlice Cls υ} {x = s}
+  go s (acc rs) | inj₂ (s' , s'⊏s) =
+    let ((m , min-m) , m⊑s') = go s' (rs s'⊏s)
+    in (m , min-m) , ⊑.trans {A = AnaSlice Cls υ} {i = m} {j = s'} {k = s} m⊑s' (proj₁ s'⊏s)
+
+monoAna : ∀ {n Γ₀ C n' Γ τ τ_p} {Cls : n , Γ₀ ⊢ C at synPos τ_p ▷ n' , Γ [ ⇐mode τ ]} {υ₁ υ₂}
+        → υ₁ ⊑ₛ υ₂
+        → (m₂ : AnaSlice Cls υ₂) → IsMinimal m₂
+        → Σ[ m₁ ∈ AnaSlice Cls υ₁ ] IsMinimal m₁ ∧ (m₁ ⊑ana m₂)
+monoAna {τ = τ} {υ₁ = υ₁} {υ₂ = υ₂} υ₁⊑υ₂ m₂ _ =
+  let s₁                      = reindex-ana m₂ (⊑ₛ.trans {a = τ} {i = υ₁} {j = υ₂} {k = m₂ .focus} υ₁⊑υ₂ (m₂ .focus⊒))
+      ((m₁ , min-m₁) , m₁⊑s₁) = minExistsAna s₁
+  in m₁ , min-m₁ , m₁⊑s₁

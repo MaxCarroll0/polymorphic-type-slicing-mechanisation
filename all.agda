@@ -9,8 +9,10 @@ module all where
   import Semantics.Marking.Erasure
   import Semantics.Marking.Judgment
   import Semantics.Marking.Metatheory
+  import Semantics.Marking.CtxMarking
   import Slicing.Synthesis.Synthesis
   import Slicing.Synthesis.Decompositions
+  import Slicing.Synthesis.FixedAssmsCalc
   import Slicing.Synthesis.SynSliceCalc
   import Slicing.Analysis.Analysis
   import Slicing.Analysis.AnaSliceCalc

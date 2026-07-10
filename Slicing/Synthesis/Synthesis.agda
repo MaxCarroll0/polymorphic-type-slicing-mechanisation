@@ -247,9 +247,13 @@ minExists {D = D} {υ = υ} s = go s (⊏-wf-syn s)
 
 -- Dissertation: Theorem 5.8 thm:mono (Monotonicity of minimal slices), §5.3.
 -- Monotonicity: more precise type slice → more precise minimal slice
-postulate
-  mono : ∀ {n Γ e τ} {D : n , Γ ⊢ e ⇑ τ} {υ₁ υ₂ : ⌊ τ ⌋}
-         → υ₁ ⊑ₛ υ₂
-         → (m₂ : SynSlice D ◂ υ₂) → IsMinimal m₂
-         → Σ[ m₁ ∈ SynSlice D ◂ υ₁ ] IsMinimal m₁ ∧ m₁ ↓ρ ⊑ m₂ ↓ρ
+mono : ∀ {n Γ e τ} {D : n , Γ ⊢ e ⇑ τ} {υ₁ υ₂ : ⌊ τ ⌋}
+       → υ₁ ⊑ₛ υ₂
+       → (m₂ : SynSlice D ◂ υ₂) → IsMinimal m₂
+       → Σ[ m₁ ∈ SynSlice D ◂ υ₁ ] IsMinimal m₁ ∧ m₁ ↓ρ ⊑ m₂ ↓ρ
+mono {τ = τ} {υ₁ = υ₁} {υ₂ = υ₂} υ₁⊑υ₂ m₂ _ =
+  let s₁                      = (m₂ .progₛ) ⇑ (m₂ .type) ∈ (m₂ .syn)
+                                ⊒ ⊑ₛ.trans {a = τ} {i = υ₁} {j = υ₂} {k = m₂ .type} υ₁⊑υ₂ (m₂ .valid)
+      ((m₁ , min-m₁) , m₁⊑s₁) = minExists s₁
+  in m₁ , min-m₁ , m₁⊑s₁
 
