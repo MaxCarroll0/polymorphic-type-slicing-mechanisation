@@ -1,236 +1,357 @@
 open import Data.Nat hiding (_+_; _⊔_; _≟_)
 open import Data.Product using (_,_; proj₁; proj₂; Σ-syntax; ∃-syntax) renaming (_×_ to _∧_)
 open import Data.List using (_∷_)
-open import Relation.Binary.PropositionalEquality using (_≡_; refl; subst; sym; cong)
+open import Relation.Binary.PropositionalEquality using (_≡_; refl; subst; sym; trans; cong)
 open import Core
+open import Core.Typ.Lift using (_⇒ₛ_; _×ₛ_; _+ₛ_; ∀·ₛ;
+                                  match⇒ₛ; dom⇒ₛ; cod⇒ₛ;
+                                  match×ₛ; fst×ₛ'; snd×ₛ;
+                                  match+ₛ; fst+ₛ'; snd+ₛ';
+                                  match∀ₛ; body∀ₛ;
+                                  unmatch⇒-min; unmatch×-min; unmatch+-min;
+                                  unmatch⇒-min-cov; unmatch×-min-cov; unmatch+-min-cov;
+                                  unmatch⇒-min-mono; unmatch×-min-mono; unmatch+-min-mono;
+                                  unmatch⇒-min-least; unmatch×-min-least; unmatch+-min-least;
+                                  unmatch⇒-min-□; unmatch×-min-□; unmatch+-min-□;
+                                  ann-⇒-plain)
+open import Core.Typ.Properties using (⊔-⇒-⊑; ⊔-+-⊑; ⊔-×-⊑; ⊔-∀-⊑; ⊔-mono-⊑; sub-⊑; ⊔-ann-⇒-⊑)
+open import Core.Typ.Precision using (~-⊑-down)
+open import Core.Typ.WellFormedness using (wf□; wf-⊑)
+open import Core.Typ.Consistency using (~?₁; ~?₂)
+open import Core.Assms.Precision using (shiftΓ-⊑; unshiftΓ-⊑; unshiftΓ-shiftΓ)
 open import Semantics.Statics
 open import Semantics.Graduality using (mode-⊑; ⇐mode-⊑; ⇒mode-⊑;
                                           static-gradual-syn; static-gradual-ana;
-                                          static-gradual-syn-cls; static-gradual-ana-cls)
-open import Slicing.Synthesis.Synthesis using (SynSlice_◂_; MinSynSlice_◂_;
-                                                 _↓s; _↓γ; _↓γₛ; _↓γ⊑; _↓σ; _↓σ⊑; _↓ϕ;
-                                                 _⇑_∈_⊒_; ⊤-syn; minExists)
-import Slicing.Synthesis.Synthesis as SS
+                                          static-gradual-syn-cls; static-gradual-ana-cls;
+                                          syn-unicity; syn-precision)
+open import Slicing.Synthesis.FixedAssmsSynthesis using (FixedAssmsSynSlice; _⇑_∈_⊒_)
+import Slicing.Synthesis.FixedAssmsCalc as FC
 open import Slicing.Analysis.Analysis
 open import Slicing.Analysis.AnaSliceCalc
-open import Slicing.Analysis.Alignment using (scase₁-Cls-lifted; scase₂-Cls-lifted;
-                                                 acase₁-Cls-lifted; acase₂-Cls-lifted;
-                                                 sdef₂-Cls-lifted; adef₂-Cls-lifted)
-open import Slicing.Analysis.FocusCov using (lift-pos-cov; lift-syn-cov)
-open import Slicing.Analysis.Minimality using (syn-cls-precision)
-open import Core.Typ.Lift using (unmatch⇒; unmatch⇒-min; match⇒ₛ; cod⇒ₛ; dom⇒ₛ;
-                                  unmatch⇒-cov-dom;
-                                  unmatch+-min; match+ₛ; fst+ₛ'; snd+ₛ')
-open import Core.Typ.Properties using (⊔-ann-⇒-⊑-intro-min; ⊔-⇒-⊑)
-open import Core.Assms.Lift using (hdₛ; tlₛ; cons-decompₛ)
 
--- Algorithmic MinAna / MinAnaPos construction (Dissertation §8.6).
+-- Soundness and minimality of the analysis slice calculi: bounded upward
+-- lifts (lift-syn, lift-pos), extraction to AnaSlice / AnaPosSlice, and
+-- minimality of extraction.  Dissertation §8.6.
 module Slicing.Analysis.AnaSlicing where
 
 private
-  unmatch⇒-min-dom-cov : ∀ {τ τ₁ τ₂} (eq : τ ⊔ □ ⇒ □ ≡ τ₁ ⇒ τ₂) (υ : ⌊ τ₁ ⌋)
-                       → ∀ {ψ : ⌊ τ ⌋}
-                       → (unmatch⇒-min {τ} {τ₁} {τ₂} eq υ (⊥ₛ {a = τ₂})) ⊑ₛ ψ
-                       → υ .↓ ⊑t (dom⇒ₛ ψ eq) .↓
-  unmatch⇒-min-dom-cov eq (.□ isSlice ⊑□) _ = ⊑□
-  unmatch⇒-min-dom-cov {τ} {τ₁} {τ₂} eq υ@(_ isSlice ⊑*) {ψ} prec =
-    unmatch⇒-cov-dom τ eq υ (⊥ₛ {a = τ₂}) prec (match⇒ₛ ψ eq)
-  unmatch⇒-min-dom-cov {τ} {τ₁} {τ₂} eq υ@(_ isSlice ⊑Var) {ψ} prec =
-    unmatch⇒-cov-dom τ eq υ (⊥ₛ {a = τ₂}) prec (match⇒ₛ ψ eq)
-  unmatch⇒-min-dom-cov {τ} {τ₁} {τ₂} eq υ@(_ isSlice (⊑⇒ _ _)) {ψ} prec =
-    unmatch⇒-cov-dom τ eq υ (⊥ₛ {a = τ₂}) prec (match⇒ₛ ψ eq)
-  unmatch⇒-min-dom-cov {τ} {τ₁} {τ₂} eq υ@(_ isSlice (⊑+ _ _)) {ψ} prec =
-    unmatch⇒-cov-dom τ eq υ (⊥ₛ {a = τ₂}) prec (match⇒ₛ ψ eq)
-  unmatch⇒-min-dom-cov {τ} {τ₁} {τ₂} eq υ@(_ isSlice (⊑× _ _)) {ψ} prec =
-    unmatch⇒-cov-dom τ eq υ (⊥ₛ {a = τ₂}) prec (match⇒ₛ ψ eq)
-  unmatch⇒-min-dom-cov {τ} {τ₁} {τ₂} eq υ@(_ isSlice (⊑∀ _)) {ψ} prec =
-    unmatch⇒-cov-dom τ eq υ (⊥ₛ {a = τ₂}) prec (match⇒ₛ ψ eq)
+  ⇒-inj-snd : ∀ {a b c d : Typ} → a ⇒ b ≡ c ⇒ d → b ≡ d
+  ⇒-inj-snd refl = refl
 
-syn-slice : ∀ {n Γ e τ} → (D : n , Γ ⊢ e ⇑ τ) → (υ : ⌊ τ ⌋) → MinSynSlice D ◂ υ
-syn-slice D υ = proj₁ (SS.minExists (SynSlice_◂_.reindex (⊤-syn D) (⊤ₛ-max υ)))
+  ×-inj-fst : ∀ {a b c d : Typ} → a × b ≡ c × d → a ≡ c
+  ×-inj-fst refl = refl
 
+  ×-inj-snd : ∀ {a b c d : Typ} → a × b ≡ c × d → b ≡ d
+  ×-inj-snd refl = refl
+
+  +-inj-fst : ∀ {a b c d : Typ} → a + b ≡ c + d → a ≡ c
+  +-inj-fst refl = refl
+
+  +-inj-snd : ∀ {a b c d : Typ} → a + b ≡ c + d → b ≡ d
+  +-inj-snd refl = refl
+
+  ∀-inj : ∀ {a b : Typ} → ∀· a ≡ ∀· b → a ≡ b
+  ∀-inj refl = refl
+
+  ⇒-inj-fst : ∀ {a b c d : Typ} → a ⇒ b ≡ c ⇒ d → a ≡ c
+  ⇒-inj-fst refl = refl
+
+  ⊑□-inv : ∀ {x : Typ} → x ⊑t □ → x ≡ □
+  ⊑□-inv ⊑□ = refl
+
+-- A sliced classification's root type is below any less-sliced one.
+syn-cls-precision : ∀ {n Γ₁ Γ₂ C₁ C₂ τ_p₁ τ_p₂ n_f₁ n_f₂ Γ_f₁ Γ_f₂ m₁ m₂}
+                  → Γ₁ ⊑ Γ₂ → C₁ ⊑c C₂ → mode-⊑ m₁ m₂
+                  → n , Γ₁ ⊢ C₁ at synPos τ_p₁ ▷ n_f₁ , Γ_f₁ [ m₁ ]
+                  → n , Γ₂ ⊢ C₂ at synPos τ_p₂ ▷ n_f₂ , Γ_f₂ [ m₂ ]
+                  → τ_p₁ ⊑ τ_p₂
+syn-cls-precision Γ⊑ ⊑○ (⇒mode-⊑ τ⊑) s○ s○ = τ⊑
+syn-cls-precision Γ⊑ (⊑λ τ_h⊑ C⊑) m⊑ (sλ: _ cls₁) (sλ: _ cls₂)
+  = ⊑⇒ τ_h⊑ (syn-cls-precision (⊑∷ τ_h⊑ Γ⊑) C⊑ m⊑ cls₁ cls₂)
+syn-cls-precision Γ⊑ (⊑∘₁ C⊑ _) m⊑ (s∘₁ cls₁ eq₁ _) (s∘₁ cls₂ eq₂ _)
+  with ⊔-⇒-⊑ (syn-cls-precision Γ⊑ C⊑ m⊑ cls₁ cls₂) eq₂
+... | _ , _ , eq₁' , _ , q
+  rewrite ⇒-inj-snd (trans (sym eq₁') eq₁) = q
+syn-cls-precision Γ⊑ (⊑∘₂ e⊑ _) m⊑ (s∘₂ D₁ eq₁ _) (s∘₂ D₂ eq₂ _)
+  with static-gradual-syn Γ⊑ e⊑ D₂
+... | _ , D₁' , τ⊑
+  with refl ← syn-unicity D₁ D₁'
+  with ⊔-⇒-⊑ τ⊑ eq₂
+... | _ , _ , eq₁' , _ , q
+  rewrite ⇒-inj-snd (trans (sym eq₁') eq₁) = q
+syn-cls-precision Γ⊑ (⊑<>₁ C⊑ σ⊑) m⊑ (s<>₁ cls₁ eq₁ _) (s<>₁ cls₂ eq₂ _)
+  with ⊔-∀-⊑ (syn-cls-precision Γ⊑ C⊑ m⊑ cls₁ cls₂) eq₂
+... | _ , eq₁' , q
+  rewrite ∀-inj (trans (sym eq₁') eq₁) = sub-⊑ zero σ⊑ q
+syn-cls-precision Γ⊑ (⊑&₁ C⊑ e⊑) m⊑ (s&₁ cls₁ d₁) (s&₁ cls₂ d₂)
+  with static-gradual-syn Γ⊑ e⊑ d₂
+... | _ , d₁' , τ⊑
+  with refl ← syn-unicity d₁ d₁'
+  = ⊑× (syn-cls-precision Γ⊑ C⊑ m⊑ cls₁ cls₂) τ⊑
+syn-cls-precision Γ⊑ (⊑&₂ e⊑ C⊑) m⊑ (s&₂ d₁ cls₁) (s&₂ d₂ cls₂)
+  with static-gradual-syn Γ⊑ e⊑ d₂
+... | _ , d₁' , τ⊑
+  with refl ← syn-unicity d₁ d₁'
+  = ⊑× τ⊑ (syn-cls-precision Γ⊑ C⊑ m⊑ cls₁ cls₂)
+syn-cls-precision Γ⊑ (⊑ι₁ C⊑) m⊑ (sι₁ cls₁) (sι₁ cls₂)
+  = ⊑+ (syn-cls-precision Γ⊑ C⊑ m⊑ cls₁ cls₂) ⊑□
+syn-cls-precision Γ⊑ (⊑ι₂ C⊑) m⊑ (sι₂ cls₁) (sι₂ cls₂)
+  = ⊑+ ⊑□ (syn-cls-precision Γ⊑ C⊑ m⊑ cls₁ cls₂)
+syn-cls-precision Γ⊑ (⊑case₁ e⊑ C⊑ e'⊑) m⊑
+                  (scase₁ D₁ eq₁ cls₁ d₂₁ con₁) (scase₁ D₂ eq₂ cls₂ d₂₂ con₂)
+  with static-gradual-syn Γ⊑ e⊑ D₂
+... | _ , D₁' , τ⊑
+  with refl ← syn-unicity D₁ D₁'
+  with ⊔-+-⊑ τ⊑ eq₂
+... | _ , _ , eq₁' , p₁ , p₂
+  with refl ← +-inj-fst (trans (sym eq₁') eq₁)
+     | refl ← +-inj-snd (trans (sym eq₁') eq₁)
+  with static-gradual-syn (⊑∷ p₂ Γ⊑) e'⊑ d₂₂
+... | _ , d₂₁' , τ₂⊑
+  with refl ← syn-unicity d₂₁ d₂₁'
+  = ⊔-mono-⊑ con₂ (syn-cls-precision (⊑∷ p₁ Γ⊑) C⊑ m⊑ cls₁ cls₂) τ₂⊑
+syn-cls-precision Γ⊑ (⊑case₂ e⊑ e'⊑ C⊑) m⊑
+                  (scase₂ D₁ eq₁ d₁₁ cls₁ con₁) (scase₂ D₂ eq₂ d₁₂ cls₂ con₂)
+  with static-gradual-syn Γ⊑ e⊑ D₂
+... | _ , D₁' , τ⊑
+  with refl ← syn-unicity D₁ D₁'
+  with ⊔-+-⊑ τ⊑ eq₂
+... | _ , _ , eq₁' , p₁ , p₂
+  with refl ← +-inj-fst (trans (sym eq₁') eq₁)
+     | refl ← +-inj-snd (trans (sym eq₁') eq₁)
+  with static-gradual-syn (⊑∷ p₁ Γ⊑) e'⊑ d₁₂
+... | _ , d₁₁' , τ₁⊑
+  with refl ← syn-unicity d₁₁ d₁₁'
+  = ⊔-mono-⊑ con₂ τ₁⊑ (syn-cls-precision (⊑∷ p₂ Γ⊑) C⊑ m⊑ cls₁ cls₂)
+syn-cls-precision Γ⊑ (⊑π₁ C⊑) m⊑ (sπ₁ cls₁ eq₁) (sπ₁ cls₂ eq₂)
+  with ⊔-×-⊑ (syn-cls-precision Γ⊑ C⊑ m⊑ cls₁ cls₂) eq₂
+... | _ , _ , eq₁' , pa , _
+  rewrite ×-inj-fst (trans (sym eq₁') eq₁) = pa
+syn-cls-precision Γ⊑ (⊑π₂ C⊑) m⊑ (sπ₂ cls₁ eq₁) (sπ₂ cls₂ eq₂)
+  with ⊔-×-⊑ (syn-cls-precision Γ⊑ C⊑ m⊑ cls₁ cls₂) eq₂
+... | _ , _ , eq₁' , _ , pb
+  rewrite ×-inj-snd (trans (sym eq₁') eq₁) = pb
+syn-cls-precision Γ⊑ (⊑Λ C⊑) m⊑ (sΛ cls₁) (sΛ cls₂)
+  = ⊑∀ (syn-cls-precision (shiftΓ-⊑ Γ⊑) C⊑ m⊑ cls₁ cls₂)
+syn-cls-precision Γ⊑ (⊑def₁ C⊑ e⊑) m⊑ (sdef₁ cls₁ d₁) (sdef₁ cls₂ d₂)
+  with static-gradual-syn (⊑∷ (syn-cls-precision Γ⊑ C⊑ m⊑ cls₁ cls₂) Γ⊑) e⊑ d₂
+... | _ , d₁' , τ⊑
+  with refl ← syn-unicity d₁ d₁' = τ⊑
+syn-cls-precision Γ⊑ (⊑def₂ e⊑ C⊑) m⊑ (sdef₂ D₁ cls₁) (sdef₂ D₂ cls₂)
+  with static-gradual-syn Γ⊑ e⊑ D₂
+... | _ , D₁' , τ'⊑
+  with refl ← syn-unicity D₁ D₁'
+  = syn-cls-precision (⊑∷ τ'⊑ Γ⊑) C⊑ m⊑ cls₁ cls₂
+
+-- A classification of a context slice at an analysis position with a checked focus is
+-- backed by a synthesis-position classification with the same focus: the
+-- pure-analysis path to a○ is impossible since the original classification's
+-- mode is ⇐mode (its path never ends at s○).
+ana-cls-to-syn : ∀ {n Γ Γ₀ κ C n_f Γ_f τ_a τ_m n_f₀ Γ_f₀ τ_p₀ m₀}
+  → Γ ⊑a Γ₀ → κ ⊑c C
+  → mode-⊑ (⇐mode τ_m) m₀
+  → n , Γ₀ ⊢ C at synPos τ_p₀ ▷ n_f₀ , Γ_f₀ [ m₀ ]
+  → n , Γ ⊢ κ at anaPos τ_a ▷ n_f , Γ_f [ ⇐mode τ_m ]
+  → ∃[ ψ ] ∃[ n' ] ∃[ Γ' ] (n , Γ ⊢ κ at synPos ψ ▷ n' , Γ' [ ⇐mode τ_m ])
+
+ana-cls-to-syn Γ⊑ ⊑○ () s○ a○
+
+ana-cls-to-syn Γ⊑ (⊑λu _) m⊑ () (aλ⇒ _ _)
+
+ana-cls-to-syn Γ⊑ κ⊑ m⊑ Cls₀ (aSub scls con) =
+  _ , _ , _ , scls
+
+ana-cls-to-syn Γ⊑ (⊑λ t⊑τa κ₁⊑) m⊑ (sλ: wf₀ cls₀) (aλ: con_r eq_r wf_r acls')
+  with ana-cls-to-syn (⊑∷ t⊑τa Γ⊑) κ₁⊑ m⊑ cls₀ acls'
+... | _ , _ , _ , cls₁ =
+      _ , _ , _ , sλ: wf_r cls₁
+
+ana-cls-to-syn Γ⊑ (⊑ι₁ κ₁⊑) m⊑ (sι₁ cls₀) (aι₁ eq_r acls')
+  with ana-cls-to-syn Γ⊑ κ₁⊑ m⊑ cls₀ acls'
+... | _ , _ , _ , cls₁ =
+      _ , _ , _ , sι₁ cls₁
+
+ana-cls-to-syn Γ⊑ (⊑ι₂ κ₁⊑) m⊑ (sι₂ cls₀) (aι₂ eq_r acls')
+  with ana-cls-to-syn Γ⊑ κ₁⊑ m⊑ cls₀ acls'
+... | _ , _ , _ , cls₁ =
+      _ , _ , _ , sι₂ cls₁
+
+ana-cls-to-syn Γ⊑ (⊑&₁ κ₁⊑ σ₂⊑) m⊑ (s&₁ cls₀ d₀) (a&₁ eq_r acls' d_r)
+  with ana-cls-to-syn Γ⊑ κ₁⊑ m⊑ cls₀ acls'
+     | static-gradual-syn Γ⊑ σ₂⊑ d₀
+... | _ , _ , _ , cls₁ | _ , d₂' , _ =
+      _ , _ , _ , s&₁ cls₁ d₂'
+
+ana-cls-to-syn Γ⊑ (⊑&₂ σ₁⊑ κ₁⊑) m⊑ (s&₂ d₀ cls₀) (a&₂ eq_r d_r acls')
+  with ana-cls-to-syn Γ⊑ κ₁⊑ m⊑ cls₀ acls'
+     | static-gradual-syn Γ⊑ σ₁⊑ d₀
+... | _ , _ , _ , cls₁ | _ , d₁' , _ =
+      _ , _ , _ , s&₂ d₁' cls₁
+
+ana-cls-to-syn Γ⊑ (⊑case₁ σ₀⊑ κ₁⊑ σ₂⊑) m⊑ (scase₁ D₀ eq₀ cls₀ d₀ con₀) (acase₁ D_r eq_r acls' d_r)
+  with static-gradual-syn Γ⊑ σ₀⊑ D₀
+... | _ , D₀' , τ₀⊑
+  with refl ← syn-unicity D_r D₀'
+  with ⊔-+-⊑ τ₀⊑ eq₀
+... | _ , _ , eq'' , pa , pb
+  with refl ← +-inj-fst (trans (sym eq'') eq_r)
+  with refl ← +-inj-snd (trans (sym eq'') eq_r)
+  with ana-cls-to-syn (⊑∷ pa Γ⊑) κ₁⊑ m⊑ cls₀ acls'
+     | static-gradual-syn (⊑∷ pb Γ⊑) σ₂⊑ d₀
+... | _ , _ , _ , cls₁ | _ , d₂' , ϕ₂⊑ =
+      _ , _ , _ ,
+      scase₁ D_r eq_r cls₁ d₂'
+        (~-⊑-down con₀ (syn-cls-precision (⊑∷ pa Γ⊑) κ₁⊑ m⊑ cls₁ cls₀) ϕ₂⊑)
+
+ana-cls-to-syn Γ⊑ (⊑case₂ σ₀⊑ σ₁⊑ κ₁⊑) m⊑ (scase₂ D₀ eq₀ d₀ cls₀ con₀) (acase₂ D_r eq_r d_r acls')
+  with static-gradual-syn Γ⊑ σ₀⊑ D₀
+... | _ , D₀' , τ₀⊑
+  with refl ← syn-unicity D_r D₀'
+  with ⊔-+-⊑ τ₀⊑ eq₀
+... | _ , _ , eq'' , pa , pb
+  with refl ← +-inj-fst (trans (sym eq'') eq_r)
+  with refl ← +-inj-snd (trans (sym eq'') eq_r)
+  with ana-cls-to-syn (⊑∷ pb Γ⊑) κ₁⊑ m⊑ cls₀ acls'
+     | static-gradual-syn (⊑∷ pa Γ⊑) σ₁⊑ d₀
+... | _ , _ , _ , cls₁ | _ , d₁' , ϕ₁⊑ =
+      _ , _ , _ ,
+      scase₂ D_r eq_r d₁' cls₁
+        (~-⊑-down con₀ ϕ₁⊑ (syn-cls-precision (⊑∷ pb Γ⊑) κ₁⊑ m⊑ cls₁ cls₀))
+
+ana-cls-to-syn Γ⊑ (⊑def₁ κ₁⊑ σ₂⊑) m⊑ (sdef₁ cls₀ d₀) (adef₁ scls' d_r)
+  with static-gradual-syn
+         (⊑∷ (syn-cls-precision Γ⊑ κ₁⊑ m⊑ scls' cls₀) Γ⊑) σ₂⊑ d₀
+... | _ , d₂' , _ =
+      _ , _ , _ , sdef₁ scls' d₂'
+
+ana-cls-to-syn Γ⊑ (⊑def₂ σ₁⊑ κ₁⊑) m⊑ (sdef₂ D₀ cls₀) (adef₂ D_r acls')
+  with static-gradual-syn Γ⊑ σ₁⊑ D₀
+... | _ , D₀' , τ'⊑
+  with refl ← syn-unicity D_r D₀'
+  with ana-cls-to-syn (⊑∷ τ'⊑ Γ⊑) κ₁⊑ m⊑ cls₀ acls'
+... | _ , _ , _ , cls₁ =
+      _ , _ , _ , sdef₂ D_r cls₁
+
+-- Bounded upward lifts: a calculus derivation classifies its context slice κ
+-- under any assumption slice above γ (and, at analysis positions, any outer
+-- type above υ_outer), with a focus above the query.
 mutual
-  ana-slice : ∀ {n Γ₀ C n_f Γ τ τ_p}
-            → (Cls : n , Γ₀ ⊢ C at synPos τ_p ▷ n_f , Γ [ ⇐mode τ ])
-            → (υ : ⌊ τ ⌋)
-            → MinAna Cls υ
+  lift-syn : ∀ {n Γ₀ C n_f Γ τ τ_p}
+               {Cls : n , Γ₀ ⊢ C at synPos τ_p ▷ n_f , Γ [ ⇐mode τ ]}
+               {υ : ⌊ τ ⌋} {κ : ⌊ C ⌋} {γ : ⌊ Γ₀ ⌋}
+           → Cls ◂ υ ⤳ κ ⊣ γ
+           → (Γ'' : ⌊ Γ₀ ⌋) → γ ⊑ₛ Γ''
+           → Σ[ ψ_p ∈ ⌊ τ_p ⌋ ] Σ[ ϕ ∈ ⌊ τ ⌋ ] (υ ⊑ₛ ϕ) ∧ ∃[ n' ] ∃[ Γ' ]
+               (n , Γ'' .↓ ⊢ κ .↓ at synPos (ψ_p .↓) ▷ n' , Γ' [ ⇐mode (ϕ .↓) ])
 
-  ana-slice-pos : ∀ {n Γ₀ C n_f Γ τ τ_p}
-                → (Cls : n , Γ₀ ⊢ C at anaPos τ_p ▷ n_f , Γ [ ⇐mode τ ])
-                → (υ : ⌊ τ ⌋)
-                → MinAnaPos Cls υ
+  lift-pos : ∀ {n Γ₀ C n_f Γ τ τ_p}
+               {Cls : n , Γ₀ ⊢ C at anaPos τ_p ▷ n_f , Γ [ ⇐mode τ ]}
+               {υ : ⌊ τ ⌋} {κ : ⌊ C ⌋} {υ_outer : ⌊ τ_p ⌋} {γ : ⌊ Γ₀ ⌋}
+           → Cls ◂ υ ⤳ κ ⇓ υ_outer ⊣ γ
+           → (Γ'' : ⌊ Γ₀ ⌋) → γ ⊑ₛ Γ''
+           → (υ_p : ⌊ τ_p ⌋) → υ_outer ⊑ₛ υ_p
+           → Σ[ ϕ ∈ ⌊ τ ⌋ ] (υ ⊑ₛ ϕ) ∧ ∃[ n' ] ∃[ Γ' ]
+               (n , Γ'' .↓ ⊢ κ .↓ at anaPos (υ_p .↓) ▷ n' , Γ' [ ⇐mode (ϕ .↓) ])
 
-  ana-slice Cls (□ isSlice ⊑□) = min□
+  lift-syn {Cls = Cls} min□ Γ'' _
+    with static-gradual-syn-cls (Γ'' .proof) ((⊥ₛ {a = _}) .proof) Cls
+  ... | _ , _ , _ , _ , ψ_p⊑ , _ , ⇐mode-⊑ ϕ⊑ , cls =
+        ↑ ψ_p⊑ , ↑ ϕ⊑ , ⊑□ , _ , _ , cls
 
-  ana-slice (sλ: wf Cls') υ@(_ isSlice _) =
-    minSλ: ⊥ₛ (ana-slice Cls' υ)
+  lift-pos {Cls = Cls} min□Pos Γ'' _ υ_p _
+    with static-gradual-ana-cls (Γ'' .proof) ((⊥ₛ {a = _}) .proof) (υ_p .proof) Cls
+  ... | _ , _ , _ , _ , ⇐mode-⊑ ϕ⊑ , cls =
+        ↑ ϕ⊑ , ⊑□ , _ , _ , cls
 
-  ana-slice (s∘₁ Cls' eq d₂) υ@(_ isSlice _) =
-    minS∘₁ (ana-slice Cls' υ)
+  lift-pos (minA○ υ) Γ'' _ υ_p υ⊑υ_p =
+    υ_p , υ⊑υ_p , _ , _ , a○
 
-  ana-slice {τ = τ-outer} (s∘₂ {τ = τ₀} D₁ eq Cls') υ@(_ isSlice _)
-    with ana-slice-pos Cls' υ
-  ... | m
-    with syn-slice D₁ (unmatch⇒-min {τ₀} eq (ana-υ_outer (extract-pos m)) ⊥ₛ)
-  ... | ss
-    with subst (λ x → x .↓ ⊑t (dom⇒ₛ (SynSlice_◂_.type (ss ↓s)) eq) .↓)
-               (ana-υ_outer-≡ m)
-               (unmatch⇒-min-dom-cov eq (ana-υ_outer (extract-pos m))
-                                       {ψ = SynSlice_◂_.type (ss ↓s)}
-                                       (SynSlice_◂_.valid (ss ↓s)))
-  ... | pre
-    with lift-pos-cov m (ss ↓s ↓γ⊑) (ana-κ (extract-pos m) .proof)
-                       (dom⇒ₛ (SynSlice_◂_.type (ss ↓s)) eq .proof) pre
-  ... | _ , _ , τ_f , _ , τ_f⊑ , cov , cls-lifted =
-        minS∘₂ m ss (τ_f isSlice τ_f⊑) cov (_ , _ , cls-lifted)
+  lift-pos (minASub {con = con} c) Γ'' γ⊑ υ_p _
+    with lift-syn c Γ'' γ⊑
+  ... | ψ_p , ϕ , υ⊑ϕ , _ , _ , cls =
+        ϕ , υ⊑ϕ , _ , _ , aSub cls (~-⊑-down con (υ_p .proof) (ψ_p .proof))
 
-  ana-slice (s<>₁ Cls' eq wf) υ@(_ isSlice _) =
-    minS<>₁ (ana-slice Cls' υ)
+extract : ∀ {n Γ₀ C n_f Γ τ τ_p}
+            {Cls : n , Γ₀ ⊢ C at synPos τ_p ▷ n_f , Γ [ ⇐mode τ ]}
+            {υ : ⌊ τ ⌋} {κ : ⌊ C ⌋} {γ : ⌊ Γ₀ ⌋}
+        → Cls ◂ υ ⤳ κ ⊣ γ → AnaSlice Cls υ
+extract {κ = κ} {γ = γ} c =
+  let (ψ_p , ϕ , υ⊑ϕ , n' , Γ' , cls) = lift-syn c γ (⊑.refl {A = Assms})
+  in record { κ = κ ; γ = γ ; type = ψ_p ; focus = ϕ ; focus⊒ = υ⊑ϕ
+            ; valid = n' , Γ' , cls }
 
-  ana-slice (s&₁ Cls' d₂) υ@(_ isSlice _) =
-    minS&₁ (ana-slice Cls' υ)
+extract-pos : ∀ {n Γ₀ C n_f Γ τ τ_p}
+                {Cls : n , Γ₀ ⊢ C at anaPos τ_p ▷ n_f , Γ [ ⇐mode τ ]}
+                {υ : ⌊ τ ⌋} {κ : ⌊ C ⌋} {υ_outer : ⌊ τ_p ⌋} {γ : ⌊ Γ₀ ⌋}
+            → Cls ◂ υ ⤳ κ ⇓ υ_outer ⊣ γ → AnaPosSlice Cls υ
+extract-pos {κ = κ} {υ_outer = υ_outer} {γ = γ} c =
+  let (ϕ , υ⊑ϕ , n' , Γ' , cls) = lift-pos c γ (⊑.refl {A = Assms}) υ_outer (⊑.refl {A = Typ})
+  in record { κ = κ ; γ = γ ; υ_outer = υ_outer ; focus = ϕ ; focus⊒ = υ⊑ϕ
+            ; valid = n' , Γ' , cls }
 
-  ana-slice (s&₂ d₁ Cls') υ@(_ isSlice _) =
-    minS&₂ (ana-slice Cls' υ)
+-- Least-ness of calculus outputs: any valid classification of a context
+-- slice below κ (under an arbitrary assumption slice, at an arbitrary outer
+-- analysis type) bounds κ, γ, and υ_outer from above.  Minimality of
+-- extraction is the corollary at the rival's own components.
+mutual
+  extract-least : ∀ {n Γ₀ C n_f Γ τ τ_p}
+                    {Cls : n , Γ₀ ⊢ C at synPos τ_p ▷ n_f , Γ [ ⇐mode τ ]}
+                    {υ : ⌊ τ ⌋} {κ : ⌊ C ⌋} {γ : ⌊ Γ₀ ⌋}
+                → Cls ◂ υ ⤳ κ ⊣ γ
+                → ∀ {n' Γ' ψ_r ϕ_r} (κ_r : ⌊ C ⌋) (Γ_r : ⌊ Γ₀ ⌋)
+                → κ_r ⊑ₛ κ
+                → υ .↓ ⊑t ϕ_r
+                → ϕ_r ⊑t τ
+                → n , Γ_r .↓ ⊢ κ_r .↓ at synPos ψ_r ▷ n' , Γ' [ ⇐mode ϕ_r ]
+                → (κ ⊑ₛ κ_r) ∧ (γ ⊑ₛ Γ_r)
 
-  ana-slice (scase₁ {τ = τ₀} {τ₁ = τ₁} D eq Cls' d₂ con) υ@(_ isSlice _) =
-    let m = ana-slice Cls' υ
-        inner = extract m
-        ss = syn-slice D (unmatch+-min {τ₀} eq (hdₛ (inner .γ)) ⊥ₛ)
-        ψ = SynSlice_◂_.type (ss ↓s)
-        X = fst+ₛ' ψ eq
-        Γ⊑outer = ⊑∷ (X .proof) (ss ↓s ↓γ⊑)
-        _ , τ_p⊑ , _ , _ , _ , _ , τ_f⊑ , cov , Cls-lifted =
-          lift-syn-cov m Γ⊑outer (inner .κ .proof)
-        typ' = _ isSlice (syn-cls-precision Γ⊑outer (inner .κ .proof) (⇐mode-⊑ τ_f⊑) Cls-lifted Cls')
-        focus' = _ isSlice τ_f⊑
-    in minScase₁ m ss typ' focus' cov (_ , _ , Cls-lifted)
+  extract-pos-least : ∀ {n Γ₀ C n_f Γ τ τ_p}
+                        {Cls : n , Γ₀ ⊢ C at anaPos τ_p ▷ n_f , Γ [ ⇐mode τ ]}
+                        {υ : ⌊ τ ⌋} {κ : ⌊ C ⌋} {υ_outer : ⌊ τ_p ⌋} {γ : ⌊ Γ₀ ⌋}
+                    → Cls ◂ υ ⤳ κ ⇓ υ_outer ⊣ γ
+                    → ∀ {n' Γ' ϕ_r} (κ_r : ⌊ C ⌋) (Γ_r : ⌊ Γ₀ ⌋) (υ_or : ⌊ τ_p ⌋)
+                    → κ_r ⊑ₛ κ
+                    → υ .↓ ⊑t ϕ_r
+                    → ϕ_r ⊑t τ
+                    → n , Γ_r .↓ ⊢ κ_r .↓ at anaPos (υ_or .↓) ▷ n' , Γ' [ ⇐mode ϕ_r ]
+                    → (κ ⊑ₛ κ_r) ∧ (γ ⊑ₛ Γ_r) ∧ (υ_outer ⊑ₛ υ_or)
 
-  ana-slice (scase₂ {τ = τ₀} {τ₂ = τ₂} D eq d₁ Cls' con) υ@(_ isSlice _) =
-    let m = ana-slice Cls' υ
-        inner = extract m
-        ss = syn-slice D (unmatch+-min {τ₀} eq ⊥ₛ (hdₛ (inner .γ)))
-        ψ = SynSlice_◂_.type (ss ↓s)
-        X = snd+ₛ' ψ eq
-        Γ⊑outer = ⊑∷ (X .proof) (ss ↓s ↓γ⊑)
-        _ , τ_p⊑ , _ , _ , _ , _ , τ_f⊑ , cov , Cls-lifted =
-          lift-syn-cov m Γ⊑outer (inner .κ .proof)
-        typ' = _ isSlice (syn-cls-precision Γ⊑outer (inner .κ .proof) (⇐mode-⊑ τ_f⊑) Cls-lifted Cls')
-        focus' = _ isSlice τ_f⊑
-    in minScase₂ m ss typ' focus' cov (_ , _ , Cls-lifted)
+  extract-least min□ κ_r Γ_r _ _ _ _ =
+    ⊑ₛLat.⊥ₛ-min {A = Ctx} κ_r , ⊑ₛLat.⊥ₛ-min {A = Assms} Γ_r
 
-  ana-slice (sι₁ Cls') υ@(_ isSlice _) =
-    minSι₁ (ana-slice Cls' υ)
+  extract-pos-least min□Pos κ_r Γ_r υ_or _ _ _ _ =
+    ⊑ₛLat.⊥ₛ-min {A = Ctx} κ_r , ⊑ₛLat.⊥ₛ-min {A = Assms} Γ_r ,
+    ⊑ₛLat.⊥ₛ-min {A = Typ} υ_or
 
-  ana-slice (sι₂ Cls') υ@(_ isSlice _) =
-    minSι₂ (ana-slice Cls' υ)
+  extract-pos-least (minA○ υ) (_ isSlice ⊑○) Γ_r υ_or ⊑○ υ⊑ϕ ϕ⊑τ a○ =
+    ⊑○ , ⊑ₛLat.⊥ₛ-min {A = Assms} Γ_r , υ⊑ϕ
 
-  ana-slice (sπ₁ Cls' eq) υ@(_ isSlice _) =
-    minSπ₁ (ana-slice Cls' υ)
+  extract-pos-least (minASub {Cls' = Cls'} c) κ_r Γ_r υ_or κ_r⊑ υ⊑ϕ ϕ⊑τ cls
+    with ana-cls-to-syn (Γ_r .proof) (κ_r .proof) (⇐mode-⊑ ϕ⊑τ) Cls' cls
+  ... | _ , _ , _ , scls_r
+    with extract-least c κ_r Γ_r κ_r⊑ υ⊑ϕ ϕ⊑τ scls_r
+  ... | ih-κ , ih-γ = ih-κ , ih-γ , ⊑ₛLat.⊥ₛ-min {A = Typ} υ_or
 
-  ana-slice (sπ₂ Cls' eq) υ@(_ isSlice _) =
-    minSπ₂ (ana-slice Cls' υ)
+extract-minimal : ∀ {n Γ₀ C n_f Γ τ τ_p}
+                    {Cls : n , Γ₀ ⊢ C at synPos τ_p ▷ n_f , Γ [ ⇐mode τ ]}
+                    {υ : ⌊ τ ⌋} {κ : ⌊ C ⌋} {γ : ⌊ Γ₀ ⌋}
+                → (c : Cls ◂ υ ⤳ κ ⊣ γ)
+                → IsMinimal (extract c)
+extract-minimal c s' (κ⊑ , γ⊑)
+  with s' .valid
+... | _ , _ , cls
+  with extract-least c (s' .κ) (s' .γ) κ⊑ (s' .focus⊒) (s' .focus .proof) cls
+... | ih-κ , ih-γ = ih-κ , ih-γ
 
-  ana-slice (sΛ Cls') υ@(_ isSlice _) =
-    minSΛ (ana-slice Cls' υ)
+extract-pos-minimal : ∀ {n Γ₀ C n_f Γ τ τ_p}
+                        {Cls : n , Γ₀ ⊢ C at anaPos τ_p ▷ n_f , Γ [ ⇐mode τ ]}
+                        {υ : ⌊ τ ⌋} {κ : ⌊ C ⌋} {υ_outer : ⌊ τ_p ⌋} {γ : ⌊ Γ₀ ⌋}
+                    → (c : Cls ◂ υ ⤳ κ ⇓ υ_outer ⊣ γ)
+                    → IsMinimalPos (extract-pos c)
+extract-pos-minimal c s' (κ⊑ , γ⊑ , υo⊑)
+  with ana-valid s'
+... | _ , _ , cls
+  with extract-pos-least c (ana-κ s') (ana-γ s') (ana-υ_outer s')
+         κ⊑ (ana-focus⊒ s') (ana-focus s' .proof) cls
+... | ih-κ , ih-γ , ih-υ = ih-κ , ih-γ , ih-υ
 
-  ana-slice (sdef₁ Cls' d₂) υ@(_ isSlice _) =
-    minSdef₁ (ana-slice Cls' υ)
-
-  ana-slice (sdef₂ {τ' = τ_b} D Cls') υ@(_ isSlice _) =
-    let m = ana-slice Cls' υ
-        inner = extract m
-        ss = syn-slice D (hdₛ (inner .γ))
-        ψ = SynSlice_◂_.type (ss ↓s)
-        Γ⊑outer = ⊑∷ (ψ .proof) (ss ↓s ↓γ⊑)
-        _ , τ_p⊑ , _ , _ , _ , _ , τ_f⊑ , cov , Cls-lifted =
-          lift-syn-cov m Γ⊑outer (inner .κ .proof)
-        typ' = _ isSlice (syn-cls-precision Γ⊑outer (inner .κ .proof) (⇐mode-⊑ τ_f⊑) Cls-lifted Cls')
-        focus' = _ isSlice τ_f⊑
-    in minSdef₂ m ss typ' focus' cov (_ , _ , Cls-lifted)
-
-  ana-slice-pos Cls (□ isSlice ⊑□) = min□Pos
-
-  ana-slice-pos (a○ {τ = τ}) υ@(_ isSlice _) = minA○ υ
-
-  ana-slice-pos (aSub Cls' c) υ@(_ isSlice _) =
-    minASub (ana-slice Cls' υ)
-
-  ana-slice-pos {τ_p = τ-pos} (aλ: {τ₁ = τ_a} {τ₂ = τ_b} c eq wf Cls') υ@(_ isSlice _)
-    with ana-slice-pos Cls' υ
-  ... | m
-    with ⊔-ann-⇒-⊑-intro-min eq (hdₛ (ana-γ (extract-pos m)) .proof)
-                                (ana-υ_outer (extract-pos m) .proof)
-  ... | _ , outer⊑τ , eq-built , c-built , outer-min =
-        minAλ: m (_ isSlice outer⊑τ) c-built eq-built outer-min
-
-  ana-slice-pos (aλ⇒ eq Cls') υ@(_ isSlice _) =
-    minAλ⇒ (ana-slice-pos Cls' υ)
-
-  ana-slice-pos (a&₁ eq Cls' d₂) υ@(_ isSlice _) =
-    minA&₁ (ana-slice-pos Cls' υ)
-
-  ana-slice-pos (a&₂ eq d₁ Cls') υ@(_ isSlice _) =
-    minA&₂ (ana-slice-pos Cls' υ)
-
-  ana-slice-pos (aι₁ eq Cls') υ@(_ isSlice _) =
-    minAι₁ (ana-slice-pos Cls' υ)
-
-  ana-slice-pos (aι₂ eq Cls') υ@(_ isSlice _) =
-    minAι₂ (ana-slice-pos Cls' υ)
-
-  ana-slice-pos (acase₁ {τ₀ = τ₀} {τ₁ = τ₁} D eq Cls' d₂) υ@(_ isSlice _) =
-    let m = ana-slice-pos Cls' υ
-        inner = extract-pos m
-        ss = syn-slice D (unmatch+-min {τ₀} eq (hdₛ (ana-γ inner)) ⊥ₛ)
-        ψ = SynSlice_◂_.type (ss ↓s)
-        X = fst+ₛ' ψ eq
-        Γ⊑ : (X .↓ ∷ (ss ↓s ↓γ)) ⊑a (τ₁ ∷ _)
-        Γ⊑ = ⊑∷ (X .proof) (ss ↓s ↓γ⊑)
-        pre = subst (λ x → ana-υ_outer-of-m m .↓ ⊑t x .↓) (sym (ana-υ_outer-≡ m))
-                     (⊑.refl {A = Typ})
-        _ , _ , τ_f , _ , τ_f⊑ , cov , Cls-lifted =
-          lift-pos-cov m Γ⊑ (ana-κ inner .proof) (ana-υ_outer inner .proof) pre
-    in minAcase₁ m ss (τ_f isSlice τ_f⊑) cov (_ , _ , Cls-lifted)
-
-  ana-slice-pos (acase₂ {τ₀ = τ₀} {τ₂ = τ₂} D eq d₁ Cls') υ@(_ isSlice _) =
-    let m = ana-slice-pos Cls' υ
-        inner = extract-pos m
-        ss = syn-slice D (unmatch+-min {τ₀} eq ⊥ₛ (hdₛ (ana-γ inner)))
-        ψ = SynSlice_◂_.type (ss ↓s)
-        X = snd+ₛ' ψ eq
-        Γ⊑ : (X .↓ ∷ (ss ↓s ↓γ)) ⊑a (τ₂ ∷ _)
-        Γ⊑ = ⊑∷ (X .proof) (ss ↓s ↓γ⊑)
-        pre = subst (λ x → ana-υ_outer-of-m m .↓ ⊑t x .↓) (sym (ana-υ_outer-≡ m))
-                     (⊑.refl {A = Typ})
-        _ , _ , τ_f , _ , τ_f⊑ , cov , Cls-lifted =
-          lift-pos-cov m Γ⊑ (ana-κ inner .proof) (ana-υ_outer inner .proof) pre
-    in minAcase₂ m ss (τ_f isSlice τ_f⊑) cov (_ , _ , Cls-lifted)
-
-  ana-slice-pos (adef₁ Cls' d₂) υ@(_ isSlice _) =
-    minAdef₁ (ana-slice Cls' υ)
-
-  ana-slice-pos (adef₂ {e = e} {τ' = τ_b} D Cls') υ@(_ isSlice _) =
-    let m = ana-slice-pos Cls' υ
-        inner = extract-pos m
-        ss = syn-slice D (hdₛ (ana-γ inner))
-        ψ = SynSlice_◂_.type (ss ↓s)
-        Γ⊑ : (ψ .↓ ∷ (ss ↓s ↓γ)) ⊑a (τ_b ∷ _)
-        Γ⊑ = ⊑∷ (ψ .proof) (ss ↓s ↓γ⊑)
-        pre = subst (λ x → ana-υ_outer-of-m m .↓ ⊑t x .↓) (sym (ana-υ_outer-≡ m))
-                     (⊑.refl {A = Typ})
-        _ , _ , τ_f , _ , τ_f⊑ , cov , Cls-lifted =
-          lift-pos-cov m Γ⊑ (ana-κ inner .proof) (ana-υ_outer inner .proof) pre
-    in minAdef₂ m ss (τ_f isSlice τ_f⊑) cov (_ , _ , Cls-lifted)
-
-slice-ana : ∀ {n Γ₀ C n_f Γ τ τ_p}
-          → (Cls : n , Γ₀ ⊢ C at synPos τ_p ▷ n_f , Γ [ ⇐mode τ ])
-          → (υ : ⌊ τ ⌋)
-          → AnaSlice Cls υ
-slice-ana Cls υ = extract (ana-slice Cls υ)
-
-slice-ana-pos : ∀ {n Γ₀ C n_f Γ τ τ_p}
-              → (Cls : n , Γ₀ ⊢ C at anaPos τ_p ▷ n_f , Γ [ ⇐mode τ ])
-              → (υ : ⌊ τ ⌋)
-              → AnaPosSlice Cls υ
-slice-ana-pos Cls υ = extract-pos (ana-slice-pos Cls υ)
