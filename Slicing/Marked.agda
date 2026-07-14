@@ -301,3 +301,78 @@ mark-min-syn-pos-type-slice : ∀ {n Γ₀ C n' Γ e τ τₚ}
   → MinSynPosTypeSlice Cls D u → MinMarkedSynPosTypeSlice Cls D u
 mark-min-syn-pos-type-slice (s , minimal) =
   mark-syn-pos-type-slice s , mark-syn-pos-type-minimal s minimal
+
+record MarkedFullSynSlice
+    {n : ℕ} {Γ₀ : Assms} {C : Ctx} {Č : MCtx} {n' : ℕ} {Γ : Assms}
+    {e : Exp} {ě : MExp} {τ τ₀ : Typ}
+    (Cls : n , Γ₀ ⊢ C ↬ Č at synPos τ₀ ▷ n' , Γ [ ⇒mode τ ])
+    (D : n' , Γ ⊢ e ↬ ě ⇑ τ)
+    (u : ⌊ τ ⌋) : Set where
+  field
+    marked-full-κ : ⌊ C ⌋
+    marked-full-γ : ⌊ Γ₀ ⌋
+    marked-full-outer : ⌊ τ₀ ⌋
+    marked-full-exp : ⌊ e ⌋
+    marked-full-context-result : MCtx
+    marked-full-focus-result : MExp
+    marked-full-valid :
+      Σ[ n'' ∈ ℕ ] Σ[ Γᶠ ∈ ⌊ Γ ⌋ ] Σ[ φᶠ ∈ ⌊ τ ⌋ ]
+        (u ⊑ₛ φᶠ) ∧
+        (n , marked-full-γ .↓ ⊢ marked-full-κ .↓
+          ↬ marked-full-context-result
+          at synPos (marked-full-outer .↓)
+          ▷ n'' , Γᶠ .↓ [ ⇒mode (φᶠ .↓) ]) ∧
+        (n'' , Γᶠ .↓ ⊢ marked-full-exp .↓
+          ↬ marked-full-focus-result ⇑ φᶠ .↓)
+open MarkedFullSynSlice public
+
+top-marked-full-syn :
+  ∀ {n Γ₀ C Č n' Γ e ě τ τ₀}
+    {Cls : n , Γ₀ ⊢ C ↬ Č at synPos τ₀ ▷ n' , Γ [ ⇒mode τ ]}
+    {D : n' , Γ ⊢ e ↬ ě ⇑ τ}
+    (u : ⌊ τ ⌋)
+  → MarkedFullSynSlice Cls D u
+top-marked-full-syn {Č = Č} {ě = ě} {Cls = Cls} {D = D} u = record
+  { marked-full-κ = ⊤ₛ
+  ; marked-full-γ = ⊤ₛ
+  ; marked-full-outer = ⊤ₛ
+  ; marked-full-exp = ⊤ₛ
+  ; marked-full-context-result = Č
+  ; marked-full-focus-result = ě
+  ; marked-full-valid = _ , ⊤ₛ , ⊤ₛ , u .proof , Cls , D
+  }
+
+record MarkedFullAnaSlice
+    {n : ℕ} {Γ₀ : Assms} {C : Ctx} {Č : MCtx} {n' : ℕ} {Γ : Assms}
+    {τ τ₀ : Typ}
+    (Cls : n , Γ₀ ⊢ C ↬ Č at synPos τ₀ ▷ n' , Γ [ ⇐mode τ ])
+    (u : ⌊ τ ⌋) : Set where
+  field
+    marked-ana-κ : ⌊ C ⌋
+    marked-ana-γ : ⌊ Γ₀ ⌋
+    marked-ana-outer : ⌊ τ₀ ⌋
+    marked-ana-focus : ⌊ τ ⌋
+    marked-ana-query : u ⊑ₛ marked-ana-focus
+    marked-ana-context-result : MCtx
+    marked-ana-valid :
+      ∃[ n'' ] ∃[ Γ' ]
+        n , marked-ana-γ .↓ ⊢ marked-ana-κ .↓
+          ↬ marked-ana-context-result
+          at synPos (marked-ana-outer .↓)
+          ▷ n'' , Γ' [ ⇐mode (marked-ana-focus .↓) ]
+open MarkedFullAnaSlice public
+
+top-marked-full-ana :
+  ∀ {n Γ₀ C Č n' Γ τ τ₀}
+    {Cls : n , Γ₀ ⊢ C ↬ Č at synPos τ₀ ▷ n' , Γ [ ⇐mode τ ]}
+    (u : ⌊ τ ⌋)
+  → MarkedFullAnaSlice Cls u
+top-marked-full-ana {Č = Č} {Cls = Cls} u = record
+  { marked-ana-κ = ⊤ₛ
+  ; marked-ana-γ = ⊤ₛ
+  ; marked-ana-outer = ⊤ₛ
+  ; marked-ana-focus = ⊤ₛ
+  ; marked-ana-query = u .proof
+  ; marked-ana-context-result = Č
+  ; marked-ana-valid = _ , _ , Cls
+  }
