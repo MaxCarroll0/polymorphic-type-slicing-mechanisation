@@ -8,6 +8,7 @@ open import Data.Nat using (ℕ; zero; suc) renaming (_≟_ to _≟ℕ_)
 open import Relation.Binary.PropositionalEquality as Eq using (_≡_; _≢_; refl; subst; cong; trans; sym)
 open import Data.Empty using (⊥; ⊥-elim)
 open import Data.Product using (_,_; ∃-syntax) renaming (_×_ to _∧_)
+open import Data.Sum using (_⊎_; inj₁; inj₂)
 open import Relation.Nullary using (yes; no)
 
 open import Core.Typ.Base using (Typ; □; _⇒_; _×_; ∀·; _+_; ⟨_⟩; *; diag; _kind?_; kind□; kind⇒; kind×; kind+; kind∀; diff)
@@ -1078,3 +1079,277 @@ unmatch⇒-cov-dom (τ_a' ⇒ τ_b') refl υ₁ υ₂ (⊑⇒ {τ₁' = α} {τ�
 unmatch⇒-cov-dom □ refl υ₁ υ₂ _ _
   with υ₁ .proof | υ₂ .proof
 ... | ⊑□ | ⊑□ = ⊑□
+
+-- unmatch⋆-min analysis kit: split, covering, projection, least, and
+-- □-collapse lemmas for the -min unmatch variants (Dissertation §8.6).
+
+private
+  ⊑□-inv : ∀ {x : Typ} → x ⊑t □ → x ≡ □
+  ⊑□-inv ⊑□ = refl
+
+  ⊑t-reflexive : ∀ {x y : Typ} → x ≡ y → x ⊑t y
+  ⊑t-reflexive refl = ⊑t-refl
+
+unmatch⇒-min-split : ∀ {τ τ₁ τ₂} (m : τ ⊔ □ ⇒ □ ≡ τ₁ ⇒ τ₂) (s₁ : ⌊ τ₁ ⌋) (s₂ : ⌊ τ₂ ⌋)
+  → ((s₁ .↓ ≡ □) ∧ (s₂ .↓ ≡ □) ∧ (unmatch⇒-min {τ} m s₁ s₂ ≡ ⊥ₛ))
+  ⊎ ((unmatch⇒-min {τ} m s₁ s₂ ≡ unmatch⇒ {τ} m s₁ s₂) ∧ ((s₁ .↓ ≢ □) ⊎ (s₂ .↓ ≢ □)))
+unmatch⇒-min-split m (□ isSlice ⊑□) (□ isSlice ⊑□)            = inj₁ (refl , refl , refl)
+unmatch⇒-min-split m (Typ.* isSlice ⊑*) s₂                    = inj₂ (refl , inj₁ λ ())
+unmatch⇒-min-split m (Typ.⟨ _ ⟩ isSlice ⊑Var) s₂              = inj₂ (refl , inj₁ λ ())
+unmatch⇒-min-split m ((_ ⇒ _) isSlice ⊑⇒ _ _) s₂              = inj₂ (refl , inj₁ λ ())
+unmatch⇒-min-split m ((_ × _) isSlice ⊑× _ _) s₂              = inj₂ (refl , inj₁ λ ())
+unmatch⇒-min-split m ((_ + _) isSlice ⊑+ _ _) s₂              = inj₂ (refl , inj₁ λ ())
+unmatch⇒-min-split m ((∀· _) isSlice ⊑∀ _) s₂                 = inj₂ (refl , inj₁ λ ())
+unmatch⇒-min-split m (□ isSlice ⊑□) (Typ.* isSlice ⊑*)        = inj₂ (refl , inj₂ λ ())
+unmatch⇒-min-split m (□ isSlice ⊑□) (Typ.⟨ _ ⟩ isSlice ⊑Var)  = inj₂ (refl , inj₂ λ ())
+unmatch⇒-min-split m (□ isSlice ⊑□) ((_ ⇒ _) isSlice ⊑⇒ _ _)  = inj₂ (refl , inj₂ λ ())
+unmatch⇒-min-split m (□ isSlice ⊑□) ((_ × _) isSlice ⊑× _ _)  = inj₂ (refl , inj₂ λ ())
+unmatch⇒-min-split m (□ isSlice ⊑□) ((_ + _) isSlice ⊑+ _ _)  = inj₂ (refl , inj₂ λ ())
+unmatch⇒-min-split m (□ isSlice ⊑□) ((∀· _) isSlice ⊑∀ _)     = inj₂ (refl , inj₂ λ ())
+
+unmatch×-min-split : ∀ {τ τ₁ τ₂} (m : τ ⊔ □ × □ ≡ τ₁ × τ₂) (s₁ : ⌊ τ₁ ⌋) (s₂ : ⌊ τ₂ ⌋)
+  → ((s₁ .↓ ≡ □) ∧ (s₂ .↓ ≡ □) ∧ (unmatch×-min {τ} m s₁ s₂ ≡ ⊥ₛ))
+  ⊎ ((unmatch×-min {τ} m s₁ s₂ ≡ unmatch× {τ} m s₁ s₂) ∧ ((s₁ .↓ ≢ □) ⊎ (s₂ .↓ ≢ □)))
+unmatch×-min-split m (□ isSlice ⊑□) (□ isSlice ⊑□)            = inj₁ (refl , refl , refl)
+unmatch×-min-split m (Typ.* isSlice ⊑*) s₂                    = inj₂ (refl , inj₁ λ ())
+unmatch×-min-split m (Typ.⟨ _ ⟩ isSlice ⊑Var) s₂              = inj₂ (refl , inj₁ λ ())
+unmatch×-min-split m ((_ ⇒ _) isSlice ⊑⇒ _ _) s₂              = inj₂ (refl , inj₁ λ ())
+unmatch×-min-split m ((_ × _) isSlice ⊑× _ _) s₂              = inj₂ (refl , inj₁ λ ())
+unmatch×-min-split m ((_ + _) isSlice ⊑+ _ _) s₂              = inj₂ (refl , inj₁ λ ())
+unmatch×-min-split m ((∀· _) isSlice ⊑∀ _) s₂                 = inj₂ (refl , inj₁ λ ())
+unmatch×-min-split m (□ isSlice ⊑□) (Typ.* isSlice ⊑*)        = inj₂ (refl , inj₂ λ ())
+unmatch×-min-split m (□ isSlice ⊑□) (Typ.⟨ _ ⟩ isSlice ⊑Var)  = inj₂ (refl , inj₂ λ ())
+unmatch×-min-split m (□ isSlice ⊑□) ((_ ⇒ _) isSlice ⊑⇒ _ _)  = inj₂ (refl , inj₂ λ ())
+unmatch×-min-split m (□ isSlice ⊑□) ((_ × _) isSlice ⊑× _ _)  = inj₂ (refl , inj₂ λ ())
+unmatch×-min-split m (□ isSlice ⊑□) ((_ + _) isSlice ⊑+ _ _)  = inj₂ (refl , inj₂ λ ())
+unmatch×-min-split m (□ isSlice ⊑□) ((∀· _) isSlice ⊑∀ _)     = inj₂ (refl , inj₂ λ ())
+
+unmatch+-min-split : ∀ {τ τ₁ τ₂} (m : τ ⊔ □ + □ ≡ τ₁ + τ₂) (s₁ : ⌊ τ₁ ⌋) (s₂ : ⌊ τ₂ ⌋)
+  → ((s₁ .↓ ≡ □) ∧ (s₂ .↓ ≡ □) ∧ (unmatch+-min {τ} m s₁ s₂ ≡ ⊥ₛ))
+  ⊎ ((unmatch+-min {τ} m s₁ s₂ ≡ unmatch+ {τ} m s₁ s₂) ∧ ((s₁ .↓ ≢ □) ⊎ (s₂ .↓ ≢ □)))
+unmatch+-min-split m (□ isSlice ⊑□) (□ isSlice ⊑□)            = inj₁ (refl , refl , refl)
+unmatch+-min-split m (Typ.* isSlice ⊑*) s₂                    = inj₂ (refl , inj₁ λ ())
+unmatch+-min-split m (Typ.⟨ _ ⟩ isSlice ⊑Var) s₂              = inj₂ (refl , inj₁ λ ())
+unmatch+-min-split m ((_ ⇒ _) isSlice ⊑⇒ _ _) s₂              = inj₂ (refl , inj₁ λ ())
+unmatch+-min-split m ((_ × _) isSlice ⊑× _ _) s₂              = inj₂ (refl , inj₁ λ ())
+unmatch+-min-split m ((_ + _) isSlice ⊑+ _ _) s₂              = inj₂ (refl , inj₁ λ ())
+unmatch+-min-split m ((∀· _) isSlice ⊑∀ _) s₂                 = inj₂ (refl , inj₁ λ ())
+unmatch+-min-split m (□ isSlice ⊑□) (Typ.* isSlice ⊑*)        = inj₂ (refl , inj₂ λ ())
+unmatch+-min-split m (□ isSlice ⊑□) (Typ.⟨ _ ⟩ isSlice ⊑Var)  = inj₂ (refl , inj₂ λ ())
+unmatch+-min-split m (□ isSlice ⊑□) ((_ ⇒ _) isSlice ⊑⇒ _ _)  = inj₂ (refl , inj₂ λ ())
+unmatch+-min-split m (□ isSlice ⊑□) ((_ × _) isSlice ⊑× _ _)  = inj₂ (refl , inj₂ λ ())
+unmatch+-min-split m (□ isSlice ⊑□) ((_ + _) isSlice ⊑+ _ _)  = inj₂ (refl , inj₂ λ ())
+unmatch+-min-split m (□ isSlice ⊑□) ((∀· _) isSlice ⊑∀ _)     = inj₂ (refl , inj₂ λ ())
+
+unmatch⇒-min-cov : ∀ (τ : Typ) {τ₁ τ₂ τ' τ_a τ_b}
+  → (m : τ ⊔ □ ⇒ □ ≡ τ₁ ⇒ τ₂) (υ₁ : ⌊ τ₁ ⌋) (υ₂ : ⌊ τ₂ ⌋)
+  → (unmatch⇒-min {τ} m υ₁ υ₂) .↓ ⊑t τ'
+  → τ' ⊔ □ ⇒ □ ≡ τ_a ⇒ τ_b
+  → (υ₁ .↓ ⊑t τ_a) ∧ (υ₂ .↓ ⊑t τ_b)
+unmatch⇒-min-cov τ {τ' = τ'} m υ₁ υ₂ prec m' with unmatch⇒-min-split m υ₁ υ₂
+... | inj₁ (e₁ , e₂ , _) rewrite e₁ | e₂ = ⊑□ , ⊑□
+... | inj₂ (e , _) =
+      unmatch⇒-cov-dom τ m υ₁ υ₂ prec' m' , unmatch⇒-cov-cod τ m υ₁ υ₂ prec' m'
+  where prec' : (unmatch⇒ {τ} m υ₁ υ₂) .↓ ⊑t τ'
+        prec' = subst (λ x → x .↓ ⊑t τ') e prec
+
+unmatch×-min-cov : ∀ (τ : Typ) {τ₁ τ₂ τ' τ_a τ_b}
+  → (m : τ ⊔ □ × □ ≡ τ₁ × τ₂) (υ₁ : ⌊ τ₁ ⌋) (υ₂ : ⌊ τ₂ ⌋)
+  → (unmatch×-min {τ} m υ₁ υ₂) .↓ ⊑t τ'
+  → τ' ⊔ □ × □ ≡ τ_a × τ_b
+  → (υ₁ .↓ ⊑t τ_a) ∧ (υ₂ .↓ ⊑t τ_b)
+unmatch×-min-cov τ {τ' = τ'} m υ₁ υ₂ prec m' with unmatch×-min-split m υ₁ υ₂
+... | inj₁ (e₁ , e₂ , _) rewrite e₁ | e₂ = ⊑□ , ⊑□
+... | inj₂ (e , _) =
+      unmatch×-cov-fst τ m υ₁ υ₂ prec' m' , unmatch×-cov-snd τ m υ₁ υ₂ prec' m'
+  where prec' : (unmatch× {τ} m υ₁ υ₂) .↓ ⊑t τ'
+        prec' = subst (λ x → x .↓ ⊑t τ') e prec
+
+unmatch+-min-cov : ∀ (τ : Typ) {τ₁ τ₂ τ' τ_a τ_b}
+  → (m : τ ⊔ □ + □ ≡ τ₁ + τ₂) (υ₁ : ⌊ τ₁ ⌋) (υ₂ : ⌊ τ₂ ⌋)
+  → (unmatch+-min {τ} m υ₁ υ₂) .↓ ⊑t τ'
+  → τ' ⊔ □ + □ ≡ τ_a + τ_b
+  → (υ₁ .↓ ⊑t τ_a) ∧ (υ₂ .↓ ⊑t τ_b)
+unmatch+-min-cov τ {τ' = τ'} m υ₁ υ₂ prec m' with unmatch+-min-split m υ₁ υ₂
+... | inj₁ (e₁ , e₂ , _) rewrite e₁ | e₂ = ⊑□ , ⊑□
+... | inj₂ (e , _) =
+      unmatch+-cov-fst τ m υ₁ υ₂ prec' m' , unmatch+-cov-snd τ m υ₁ υ₂ prec' m'
+  where prec' : (unmatch+ {τ} m υ₁ υ₂) .↓ ⊑t τ'
+        prec' = subst (λ x → x .↓ ⊑t τ') e prec
+
+unmatch⇒-min-mono : ∀ (τ : Typ) {τ₁ τ₂ τ₀ τ_a τ_b}
+  → (m : τ ⊔ □ ⇒ □ ≡ τ₁ ⇒ τ₂) (υ₁ : ⌊ τ₁ ⌋) (υ₂ : ⌊ τ₂ ⌋)
+  → τ₀ ⊑t (unmatch⇒-min {τ} m υ₁ υ₂) .↓
+  → τ₀ ⊔ □ ⇒ □ ≡ τ_a ⇒ τ_b
+  → (τ_a ⊑t υ₁ .↓) ∧ (τ_b ⊑t υ₂ .↓)
+unmatch⇒-min-mono □ refl (□ isSlice ⊑□) (□ isSlice ⊑□) h m'
+  with refl ← ⊑□-inv h with refl ← m' = ⊑□ , ⊑□
+unmatch⇒-min-mono (τa ⇒ τb) {τ₀ = τ₀} refl υ₁ υ₂ h m'
+  with unmatch⇒-min-split {τ = τa ⇒ τb} refl υ₁ υ₂
+... | inj₁ (_ , _ , e⊥)
+  with refl ← ⊑□-inv (subst (τ₀ ⊑t_) (cong (λ x → x .↓) e⊥) h)
+  with refl ← m' = ⊑□ , ⊑□
+... | inj₂ (e , _) = fin h'' m'
+  where
+    h'' : τ₀ ⊑t (υ₁ .↓ ⇒ υ₂ .↓)
+    h'' = subst (τ₀ ⊑t_)
+            (trans (cong (λ x → x .↓) e)
+                   (Eq.cong₂ _⇒_ (subst-↓-pre (⊔t-zeroᵣ {τa}) υ₁)
+                              (subst-↓-pre (⊔t-zeroᵣ {τb}) υ₂)))
+            h
+    fin : ∀ {τ₀' τ_a τ_b} → τ₀' ⊑t (υ₁ .↓ ⇒ υ₂ .↓) → τ₀' ⊔ □ ⇒ □ ≡ τ_a ⇒ τ_b
+        → (τ_a ⊑t υ₁ .↓) ∧ (τ_b ⊑t υ₂ .↓)
+    fin ⊑□ refl = ⊑□ , ⊑□
+    fin (⊑⇒ {τ₁ = c} {τ₂ = d} pa pb) refl =
+      subst (_⊑t υ₁ .↓) (sym (⊔t-zeroᵣ {c})) pa ,
+      subst (_⊑t υ₂ .↓) (sym (⊔t-zeroᵣ {d})) pb
+
+unmatch×-min-mono : ∀ (τ : Typ) {τ₁ τ₂ τ₀ τ_a τ_b}
+  → (m : τ ⊔ □ × □ ≡ τ₁ × τ₂) (υ₁ : ⌊ τ₁ ⌋) (υ₂ : ⌊ τ₂ ⌋)
+  → τ₀ ⊑t (unmatch×-min {τ} m υ₁ υ₂) .↓
+  → τ₀ ⊔ □ × □ ≡ τ_a × τ_b
+  → (τ_a ⊑t υ₁ .↓) ∧ (τ_b ⊑t υ₂ .↓)
+unmatch×-min-mono □ refl (□ isSlice ⊑□) (□ isSlice ⊑□) h m'
+  with refl ← ⊑□-inv h with refl ← m' = ⊑□ , ⊑□
+unmatch×-min-mono (τa × τb) {τ₀ = τ₀} refl υ₁ υ₂ h m'
+  with unmatch×-min-split {τ = τa × τb} refl υ₁ υ₂
+... | inj₁ (_ , _ , e⊥)
+  with refl ← ⊑□-inv (subst (τ₀ ⊑t_) (cong (λ x → x .↓) e⊥) h)
+  with refl ← m' = ⊑□ , ⊑□
+... | inj₂ (e , _) = fin h'' m'
+  where
+    h'' : τ₀ ⊑t (υ₁ .↓ × υ₂ .↓)
+    h'' = subst (τ₀ ⊑t_)
+            (trans (cong (λ x → x .↓) e)
+                   (Eq.cong₂ _×_ (subst-↓-pre (⊔t-zeroᵣ {τa}) υ₁)
+                              (subst-↓-pre (⊔t-zeroᵣ {τb}) υ₂)))
+            h
+    fin : ∀ {τ₀' τ_a τ_b} → τ₀' ⊑t (υ₁ .↓ × υ₂ .↓) → τ₀' ⊔ □ × □ ≡ τ_a × τ_b
+        → (τ_a ⊑t υ₁ .↓) ∧ (τ_b ⊑t υ₂ .↓)
+    fin ⊑□ refl = ⊑□ , ⊑□
+    fin (⊑× {τ₁ = c} {τ₂ = d} pa pb) refl =
+      subst (_⊑t υ₁ .↓) (sym (⊔t-zeroᵣ {c})) pa ,
+      subst (_⊑t υ₂ .↓) (sym (⊔t-zeroᵣ {d})) pb
+
+unmatch+-min-mono : ∀ (τ : Typ) {τ₁ τ₂ τ₀ τ_a τ_b}
+  → (m : τ ⊔ □ + □ ≡ τ₁ + τ₂) (υ₁ : ⌊ τ₁ ⌋) (υ₂ : ⌊ τ₂ ⌋)
+  → τ₀ ⊑t (unmatch+-min {τ} m υ₁ υ₂) .↓
+  → τ₀ ⊔ □ + □ ≡ τ_a + τ_b
+  → (τ_a ⊑t υ₁ .↓) ∧ (τ_b ⊑t υ₂ .↓)
+unmatch+-min-mono □ refl (□ isSlice ⊑□) (□ isSlice ⊑□) h m'
+  with refl ← ⊑□-inv h with refl ← m' = ⊑□ , ⊑□
+unmatch+-min-mono (τa + τb) {τ₀ = τ₀} refl υ₁ υ₂ h m'
+  with unmatch+-min-split {τ = τa + τb} refl υ₁ υ₂
+... | inj₁ (_ , _ , e⊥)
+  with refl ← ⊑□-inv (subst (τ₀ ⊑t_) (cong (λ x → x .↓) e⊥) h)
+  with refl ← m' = ⊑□ , ⊑□
+... | inj₂ (e , _) = fin h'' m'
+  where
+    h'' : τ₀ ⊑t (υ₁ .↓ + υ₂ .↓)
+    h'' = subst (τ₀ ⊑t_)
+            (trans (cong (λ x → x .↓) e)
+                   (Eq.cong₂ _+_ (subst-↓-pre (⊔t-zeroᵣ {τa}) υ₁)
+                              (subst-↓-pre (⊔t-zeroᵣ {τb}) υ₂)))
+            h
+    fin : ∀ {τ₀' τ_a τ_b} → τ₀' ⊑t (υ₁ .↓ + υ₂ .↓) → τ₀' ⊔ □ + □ ≡ τ_a + τ_b
+        → (τ_a ⊑t υ₁ .↓) ∧ (τ_b ⊑t υ₂ .↓)
+    fin ⊑□ refl = ⊑□ , ⊑□
+    fin (⊑+ {τ₁ = c} {τ₂ = d} pa pb) refl =
+      subst (_⊑t υ₁ .↓) (sym (⊔t-zeroᵣ {c})) pa ,
+      subst (_⊑t υ₂ .↓) (sym (⊔t-zeroᵣ {d})) pb
+
+unmatch⇒-min-□ : ∀ {τ τ₁ τ₂} (m : τ ⊔ □ ⇒ □ ≡ τ₁ ⇒ τ₂) (υ₁ : ⌊ τ₁ ⌋) (υ₂ : ⌊ τ₂ ⌋)
+  → υ₁ .↓ ≡ □ → υ₂ .↓ ≡ □ → (unmatch⇒-min {τ} m υ₁ υ₂) .↓ ≡ □
+unmatch⇒-min-□ m (□ isSlice ⊑□) (□ isSlice ⊑□) _ _ = refl
+
+unmatch×-min-□ : ∀ {τ τ₁ τ₂} (m : τ ⊔ □ × □ ≡ τ₁ × τ₂) (υ₁ : ⌊ τ₁ ⌋) (υ₂ : ⌊ τ₂ ⌋)
+  → υ₁ .↓ ≡ □ → υ₂ .↓ ≡ □ → (unmatch×-min {τ} m υ₁ υ₂) .↓ ≡ □
+unmatch×-min-□ m (□ isSlice ⊑□) (□ isSlice ⊑□) _ _ = refl
+
+unmatch+-min-□ : ∀ {τ τ₁ τ₂} (m : τ ⊔ □ + □ ≡ τ₁ + τ₂) (υ₁ : ⌊ τ₁ ⌋) (υ₂ : ⌊ τ₂ ⌋)
+  → υ₁ .↓ ≡ □ → υ₂ .↓ ≡ □ → (unmatch+-min {τ} m υ₁ υ₂) .↓ ≡ □
+unmatch+-min-□ m (□ isSlice ⊑□) (□ isSlice ⊑□) _ _ = refl
+
+unmatch⇒-min-least : ∀ (τ : Typ) {τ₁ τ₂ τ' τ_a τ_b}
+  → (m : τ ⊔ □ ⇒ □ ≡ τ₁ ⇒ τ₂) (υ₁ : ⌊ τ₁ ⌋) (υ₂ : ⌊ τ₂ ⌋)
+  → τ' ⊑t τ → τ' ⊔ □ ⇒ □ ≡ τ_a ⇒ τ_b
+  → υ₁ .↓ ⊑t τ_a → υ₂ .↓ ⊑t τ_b
+  → (unmatch⇒-min {τ} m υ₁ υ₂) .↓ ⊑t τ'
+unmatch⇒-min-least □ refl (□ isSlice ⊑□) (□ isSlice ⊑□) _ _ _ _ = ⊑□
+unmatch⇒-min-least (τa ⇒ τb) {τ' = τ'} refl υ₁ υ₂ p' m' q₁ q₂
+  with unmatch⇒-min-split {τ = τa ⇒ τb} refl υ₁ υ₂
+... | inj₁ (_ , _ , e⊥) rewrite e⊥ = ⊑□
+... | inj₂ (e , ne) =
+      subst (_⊑t τ')
+        (sym (trans (cong (λ x → x .↓) e)
+                    (Eq.cong₂ _⇒_ (subst-↓-pre (⊔t-zeroᵣ {τa}) υ₁)
+                                  (subst-↓-pre (⊔t-zeroᵣ {τb}) υ₂))))
+        (fin p' m' q₁ q₂ ne)
+  where
+    fin : ∀ {τ' τ_a τ_b}
+        → τ' ⊑t (τa ⇒ τb) → τ' ⊔ □ ⇒ □ ≡ τ_a ⇒ τ_b
+        → υ₁ .↓ ⊑t τ_a → υ₂ .↓ ⊑t τ_b
+        → (υ₁ .↓ ≢ □) ⊎ (υ₂ .↓ ≢ □)
+        → (υ₁ .↓ ⇒ υ₂ .↓) ⊑t τ'
+    fin ⊑□ refl r₁ r₂ (inj₁ ¬e) = ⊥-elim (¬e (⊑□-inv r₁))
+    fin ⊑□ refl r₁ r₂ (inj₂ ¬e) = ⊥-elim (¬e (⊑□-inv r₂))
+    fin (⊑⇒ {τ₁ = c} {τ₂ = d} pa pb) refl r₁ r₂ _ =
+      ⊑⇒ (subst (υ₁ .↓ ⊑t_) (⊔t-zeroᵣ {c}) r₁) (subst (υ₂ .↓ ⊑t_) (⊔t-zeroᵣ {d}) r₂)
+
+unmatch×-min-least : ∀ (τ : Typ) {τ₁ τ₂ τ' τ_a τ_b}
+  → (m : τ ⊔ □ × □ ≡ τ₁ × τ₂) (υ₁ : ⌊ τ₁ ⌋) (υ₂ : ⌊ τ₂ ⌋)
+  → τ' ⊑t τ → τ' ⊔ □ × □ ≡ τ_a × τ_b
+  → υ₁ .↓ ⊑t τ_a → υ₂ .↓ ⊑t τ_b
+  → (unmatch×-min {τ} m υ₁ υ₂) .↓ ⊑t τ'
+unmatch×-min-least □ refl (□ isSlice ⊑□) (□ isSlice ⊑□) _ _ _ _ = ⊑□
+unmatch×-min-least (τa × τb) {τ' = τ'} refl υ₁ υ₂ p' m' q₁ q₂
+  with unmatch×-min-split {τ = τa × τb} refl υ₁ υ₂
+... | inj₁ (_ , _ , e⊥) rewrite e⊥ = ⊑□
+... | inj₂ (e , ne) =
+      subst (_⊑t τ')
+        (sym (trans (cong (λ x → x .↓) e)
+                    (Eq.cong₂ _×_ (subst-↓-pre (⊔t-zeroᵣ {τa}) υ₁)
+                                  (subst-↓-pre (⊔t-zeroᵣ {τb}) υ₂))))
+        (fin p' m' q₁ q₂ ne)
+  where
+    fin : ∀ {τ' τ_a τ_b}
+        → τ' ⊑t (τa × τb) → τ' ⊔ □ × □ ≡ τ_a × τ_b
+        → υ₁ .↓ ⊑t τ_a → υ₂ .↓ ⊑t τ_b
+        → (υ₁ .↓ ≢ □) ⊎ (υ₂ .↓ ≢ □)
+        → (υ₁ .↓ × υ₂ .↓) ⊑t τ'
+    fin ⊑□ refl r₁ r₂ (inj₁ ¬e) = ⊥-elim (¬e (⊑□-inv r₁))
+    fin ⊑□ refl r₁ r₂ (inj₂ ¬e) = ⊥-elim (¬e (⊑□-inv r₂))
+    fin (⊑× {τ₁ = c} {τ₂ = d} pa pb) refl r₁ r₂ _ =
+      ⊑× (subst (υ₁ .↓ ⊑t_) (⊔t-zeroᵣ {c}) r₁) (subst (υ₂ .↓ ⊑t_) (⊔t-zeroᵣ {d}) r₂)
+
+unmatch+-min-least : ∀ (τ : Typ) {τ₁ τ₂ τ' τ_a τ_b}
+  → (m : τ ⊔ □ + □ ≡ τ₁ + τ₂) (υ₁ : ⌊ τ₁ ⌋) (υ₂ : ⌊ τ₂ ⌋)
+  → τ' ⊑t τ → τ' ⊔ □ + □ ≡ τ_a + τ_b
+  → υ₁ .↓ ⊑t τ_a → υ₂ .↓ ⊑t τ_b
+  → (unmatch+-min {τ} m υ₁ υ₂) .↓ ⊑t τ'
+unmatch+-min-least □ refl (□ isSlice ⊑□) (□ isSlice ⊑□) _ _ _ _ = ⊑□
+unmatch+-min-least (τa + τb) {τ' = τ'} refl υ₁ υ₂ p' m' q₁ q₂
+  with unmatch+-min-split {τ = τa + τb} refl υ₁ υ₂
+... | inj₁ (_ , _ , e⊥) rewrite e⊥ = ⊑□
+... | inj₂ (e , ne) =
+      subst (_⊑t τ')
+        (sym (trans (cong (λ x → x .↓) e)
+                    (Eq.cong₂ _+_ (subst-↓-pre (⊔t-zeroᵣ {τa}) υ₁)
+                                  (subst-↓-pre (⊔t-zeroᵣ {τb}) υ₂))))
+        (fin p' m' q₁ q₂ ne)
+  where
+    fin : ∀ {τ' τ_a τ_b}
+        → τ' ⊑t (τa + τb) → τ' ⊔ □ + □ ≡ τ_a + τ_b
+        → υ₁ .↓ ⊑t τ_a → υ₂ .↓ ⊑t τ_b
+        → (υ₁ .↓ ≢ □) ⊎ (υ₂ .↓ ≢ □)
+        → (υ₁ .↓ + υ₂ .↓) ⊑t τ'
+    fin ⊑□ refl r₁ r₂ (inj₁ ¬e) = ⊥-elim (¬e (⊑□-inv r₁))
+    fin ⊑□ refl r₁ r₂ (inj₂ ¬e) = ⊥-elim (¬e (⊑□-inv r₂))
+    fin (⊑+ {τ₁ = c} {τ₂ = d} pa pb) refl r₁ r₂ _ =
+      ⊑+ (subst (υ₁ .↓ ⊑t_) (⊔t-zeroᵣ {c}) r₁) (subst (υ₂ .↓ ⊑t_) (⊔t-zeroᵣ {d}) r₂)
+
+-- An annotation-joined arrow equation determines a □-joined one with the
+-- same codomain (aλ: outer-type slicing, §8.6).
+ann-⇒-plain : ∀ {τ τ_h τ_a τ₂} → τ ⊔ τ_h ⇒ □ ≡ τ_a ⇒ τ₂ → ∃[ τd ] (τ ⊔ □ ⇒ □ ≡ τd ⇒ τ₂)
+ann-⇒-plain {□} refl = _ , refl
+ann-⇒-plain {τl ⇒ τr} refl = _ , refl

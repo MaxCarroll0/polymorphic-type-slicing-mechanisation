@@ -15,9 +15,4 @@ module all where
   import Slicing.Synthesis.FixedAssmsCalc
   import Slicing.Synthesis.SynSliceCalc
   import Slicing.Analysis.Analysis
-  import Slicing.Analysis.AnaSliceCalc
-  import Slicing.Analysis.Alignment
-  import Slicing.Analysis.FocusCov
-  import Slicing.Analysis.Minimality
-  import Slicing.Analysis.AnaSlicing
   import Slicing.Counterexamples

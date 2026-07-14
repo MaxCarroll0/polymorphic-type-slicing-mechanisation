@@ -5,3 +5,4 @@ open import Core.Ctx.Base public hiding (_kind?_; diag; shallow-disequality)
 open import Core.Ctx.Equality public
 open import Core.Ctx.Precision public
 open import Core.Ctx.Lattice public
+open import Core.Ctx.Lift public
