@@ -19,6 +19,12 @@ s₁ &ₛ s₂ = (s₁ .↓ & s₂ .↓) isSlice ⊑& (s₁ .proof) (s₂ .proof
 π₂ₛ : ∀ {e : Exp} → ⌊ e ⌋ → ⌊ π₂ e ⌋
 π₂ₛ (σ isSlice σ⊑e) = (π₂ σ) isSlice (⊑π₂ σ⊑e)
 
+ι₁ₛ : ∀ {e : Exp} → ⌊ e ⌋ → ⌊ ι₁ e ⌋
+ι₁ₛ (σ isSlice σ⊑e) = (ι₁ σ) isSlice (⊑ι₁ σ⊑e)
+
+ι₂ₛ : ∀ {e : Exp} → ⌊ e ⌋ → ⌊ ι₂ e ⌋
+ι₂ₛ (σ isSlice σ⊑e) = (ι₂ σ) isSlice (⊑ι₂ σ⊑e)
+
 ∘ₛ : ∀ {e₁ e₂ : Exp} → ⌊ e₁ ⌋ → ⌊ e₂ ⌋ → ⌊ e₁ ∘ e₂ ⌋
 ∘ₛ (σ₁ isSlice p₁) (σ₂ isSlice p₂) = (σ₁ ∘ σ₂) isSlice (⊑∘ p₁ p₂)
 

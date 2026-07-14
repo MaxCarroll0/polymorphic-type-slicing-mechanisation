@@ -13,7 +13,7 @@ open import Slicing.Synthesis.Synthesis using (SynSlice_◂_; MinSynSlice_◂_; 
 
 -- Minimal synthesis slicing under fixed assumptions.  The core `slice` is
 -- total on `Sliceable` expressions (those the fixedassms calculus covers:
--- no case, no injection) and returns a calculus derivation.  The exported
+-- no case) and returns a calculus derivation.  The exported
 -- `min-slice` decides `sliceable?` and yields a MinSynSlice via `soundness`,
 -- falling back to `minExists` otherwise.  Dissertation: §8.5-8.6.
 module Slicing.Synthesis.FixedAssmsSlicing where
@@ -21,8 +21,7 @@ module Slicing.Synthesis.FixedAssmsSlicing where
 ↓□→⊥ₛ : ∀ {τ : Typ} (υ : ⌊ τ ⌋) → υ .↓ ≡ □ → υ ≡ ⊥ₛ {a = τ}
 ↓□→⊥ₛ (□ isSlice ⊑□) ≡refl = ≡refl
 
--- Expressions the calculus slices: every synthesising form except case and
--- injection (which have no fixedassms rule).
+-- Expressions the calculus slices: every synthesising form except case.
 data Sliceable : Exp → Set where
   sl-□   : Sliceable □
   sl-*   : Sliceable *
@@ -34,6 +33,8 @@ data Sliceable : Exp → Set where
   sl-&   : ∀ {e₁ e₂} → Sliceable e₁ → Sliceable e₂ → Sliceable (e₁ & e₂)
   sl-π₁  : ∀ {e} → Sliceable e → Sliceable (π₁ e)
   sl-π₂  : ∀ {e} → Sliceable e → Sliceable (π₂ e)
+  sl-ι₁  : ∀ {e} → Sliceable e → Sliceable (ι₁ e)
+  sl-ι₂  : ∀ {e} → Sliceable e → Sliceable (ι₂ e)
   sl-Λ   : ∀ {e} → Sliceable e → Sliceable (Λ e)
   sl-def : ∀ {e₁ e₂} → Sliceable e₁ → Sliceable e₂ → Sliceable (def e₁ ⊢ e₂)
 
@@ -50,20 +51,18 @@ sliceable? (e₁ & e₂)     = map′ (λ (p , q) → sl-& p q) (λ where (sl-& 
                                 (sliceable? e₁ ×-dec sliceable? e₂)
 sliceable? (π₁ e)        = map′ sl-π₁ (λ where (sl-π₁ p) → p) (sliceable? e)
 sliceable? (π₂ e)        = map′ sl-π₂ (λ where (sl-π₂ p) → p) (sliceable? e)
+sliceable? (ι₁ e)        = map′ sl-ι₁ (λ where (sl-ι₁ p) → p) (sliceable? e)
+sliceable? (ι₂ e)        = map′ sl-ι₂ (λ where (sl-ι₂ p) → p) (sliceable? e)
 sliceable? (Λ e)         = map′ sl-Λ (λ where (sl-Λ p) → p) (sliceable? e)
 sliceable? (def e₁ ⊢ e₂) = map′ (λ (p , q) → sl-def p q) (λ where (sl-def p q) → p , q)
                                 (sliceable? e₁ ×-dec sliceable? e₂)
-sliceable? (ι₁ _)        = no (λ ())
-sliceable? (ι₂ _)        = no (λ ())
 sliceable? (case _ of _ · _) = no (λ ())
 
 -- Total slicer on Sliceable expressions.  Bodies are the term-minimal
--- algorithm's non-case clauses; case and injection are excluded by Sliceable.
+-- algorithm's non-case clauses; case is excluded by Sliceable.
 slice : ∀ {n Γ e τ} → (D : n , Γ ⊢ e ⇑ τ) → (υ : ⌊ τ ⌋) → Sliceable e
       → ∃[ σ ] ∃[ ψ ] ∃[ γ ] D ◂ υ ⤳ σ ⇑ ψ ⊣ γ
 
-slice (⇑ι₁ D) υ ()
-slice (⇑ι₂ D) υ ()
 slice (⇑case D m D₁ D₂ c) υ ()
 
 slice D (□ isSlice ⊑□) _ = _ , _ , _ , min□
@@ -123,6 +122,14 @@ slice (⇑π₂ D m) υ (sl-π₂ cf) with υ .↓ ≈? □
                                  min□
 ... | no υ≢□ with slice D (unmatch× m ⊥ₛ υ) cf
 ...   | _ , _ , _ , sub = _ , _ , _ , minπ₂ υ≢□ sub
+
+slice (⇑ι₁ D) ((_ + .□) isSlice ⊑+ p ⊑□) (sl-ι₁ cf)
+  with slice D (_ isSlice p) cf
+... | _ , _ , _ , sub = _ , _ , _ , minι₁ sub
+
+slice (⇑ι₂ D) ((.□ + _) isSlice ⊑+ ⊑□ p) (sl-ι₂ cf)
+  with slice D (_ isSlice p) cf
+... | _ , _ , _ , sub = _ , _ , _ , minι₂ sub
 
 slice (⇑def D₁ D₂) υ (sl-def cf₁ cf₂) with υ .↓ ≈? □
 ... | yes eq = _ , _ , _ , subst (λ υ' → ⇑def D₁ D₂ ◂ υ' ⤳ ⊥ₛ ⇑ ⊥ₛ ⊣ ⊥ₛ)

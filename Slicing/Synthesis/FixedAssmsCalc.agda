@@ -101,6 +101,16 @@ data _◂_⤳_⇑_⊣_ {n : ℕ} {Γ : Assms} : ∀ {e : Exp} {τ : Typ}
              → D ◂ (unmatch× m ⊥ₛ υ) ⤳ σ-e ⇑ ψ₁ ⊣ γ
              → (⇑π₂ D m) ◂ υ ⤳ π₂ₛ σ-e ⇑ snd×ₛ ψ₁ m ⊣ γ
 
+  minι₁   : ∀ {e τ υ₁ ψ γ σ-e}
+               {D : n , Γ ⊢ e ⇑ τ}
+             → D ◂ υ₁ ⤳ σ-e ⇑ ψ ⊣ γ
+             → (⇑ι₁ D) ◂ (υ₁ +ₛ ⊥ₛ) ⤳ ι₁ₛ σ-e ⇑ (ψ +ₛ ⊥ₛ) ⊣ γ
+
+  minι₂   : ∀ {e τ υ₁ ψ γ σ-e}
+               {D : n , Γ ⊢ e ⇑ τ}
+             → D ◂ υ₁ ⤳ σ-e ⇑ ψ ⊣ γ
+             → (⇑ι₂ D) ◂ (⊥ₛ +ₛ υ₁) ⤳ ι₂ₛ σ-e ⇑ (⊥ₛ +ₛ ψ) ⊣ γ
+
   -- mincase variant where optimisation to skip scrutinee slice descent is possible
   mincase-cov
            : ∀ {e e₁ e₂ τ τ₁ τ₂ τ₁' τ₂' ψ₀ ψ₁ ψ₂ υ₁ υ₂ ς₁ ς₂ γ₀ γ₁ γ₂ σ₀ σ₁ σ₂}
@@ -457,6 +467,34 @@ extract' (minπ₂ {τ = τ} {τ₂ = τ₂} {υ = υ} {D = D} {m = m} υ≢□ 
       with ih-min (↑ p ⇑ ↑ τ₃⊑τ ∈ d' ⊒ unmatch×-mono-snd m υ υ≢□ τ₃⊑τ m' v') e⊑
     ... | ≡refl = ≡refl
 
+extract' (minι₁ sub)
+  with extract' sub
+... | ((σ ⇑ ϕ ∈ d ⊒ v) , ih-min) , ≡refl , ≡refl
+  = (s , min) , ≡refl , ≡refl
+  where
+    s = ι₁ₛ σ ⇑ (ϕ +ₛ ⊥ₛ) ∈ ⇑ι₁ d ⊒ ⊑+ v ⊑□
+    min : IsMinimal s
+    min s' s'⊑
+      with s' .syn   | s' .valid | s' ↓σ⊑ | s' ↓ϕ⊑   | s'⊑
+    ... | ⇑□         | ()        | _      | _        | _
+    ... | ⇑ι₁ d'     | ⊑+ v' _   | ⊑ι₁ p  | ⊑+ q _   | ⊑ι₁ e⊑
+      with ih-min (↑ p ⇑ ↑ q ∈ d' ⊒ v') e⊑
+    ... | ≡refl = ≡refl
+
+extract' (minι₂ sub)
+  with extract' sub
+... | ((σ ⇑ ϕ ∈ d ⊒ v) , ih-min) , ≡refl , ≡refl
+  = (s , min) , ≡refl , ≡refl
+  where
+    s = ι₂ₛ σ ⇑ (⊥ₛ +ₛ ϕ) ∈ ⇑ι₂ d ⊒ ⊑+ ⊑□ v
+    min : IsMinimal s
+    min s' s'⊑
+      with s' .syn   | s' .valid | s' ↓σ⊑ | s' ↓ϕ⊑   | s'⊑
+    ... | ⇑□         | ()        | _      | _        | _
+    ... | ⇑ι₂ d'     | ⊑+ _ v'   | ⊑ι₂ p  | ⊑+ _ q   | ⊑ι₂ e⊑
+      with ih-min (↑ p ⇑ ↑ q ∈ d' ⊒ v') e⊑
+    ... | ≡refl = ≡refl
+
 extract' (mincase-cov {τ = τ} {τ₁' = τ₁'} {τ₂' = τ₂'} {ψ₁ = ψ₁} {ψ₂ = ψ₂}
                   {υ₁ = υ₁} {υ₂ = υ₂} {ς₁ = ς₁} {ς₂ = ς₂}
                   {γ₁ = γ₁} {γ₂ = γ₂}
@@ -778,6 +816,14 @@ extract-ctx (minπ₂ {τ = τ} {υ = υ} {m = m} υ≢□ sub)
   rewrite ≡sym (unmatch×-≡-snd {τ} m ⊥ₛ _ m')
   = snd×ₛ ψ' m , ⇑π₂ d' (match×ₛ ψ' m) , v''
 
+extract-ctx (minι₁ sub)
+  with extract-ctx sub
+... | ψ' , d' , v' = ψ' +ₛ ⊥ₛ , ⇑ι₁ d' , ⊑+ v' ⊑□
+
+extract-ctx (minι₂ sub)
+  with extract-ctx sub
+... | ψ' , d' , v' = ⊥ₛ +ₛ ψ' , ⇑ι₂ d' , ⊑+ ⊑□ v'
+
 -- case e of e₁ · e₂ : υ - lift scrutinee and branches to (γ₀ ⊔ γ₁) ⊔ γ₂
 extract-ctx (mincase-cov {τ = τ} {ς₁ = ς₁} {ς₂ = ς₂}
                     {γ₀ = γ₀} {γ₁ = γ₁} {γ₂ = γ₂}
@@ -884,6 +930,12 @@ extract-ctx-min (minπ₂ {υ = υ} {σ-e = σ-e} {D = D} {m = m} υ≢□ sub) 
   with syn-precision Γ'⊑ (σ-e .proof) D d'
 ... | τ⊑
   = extract-ctx-min sub d' (unmatch×-mono-snd m υ υ≢□ τ⊑ m' v) Γ'⊑
+
+extract-ctx-min (minι₁ sub) (⇑ι₁ d') (⊑+ v-sub _) Γ'⊑ =
+  extract-ctx-min sub d' v-sub Γ'⊑
+
+extract-ctx-min (minι₂ sub) (⇑ι₂ d') (⊑+ _ v-sub) Γ'⊑ =
+  extract-ctx-min sub d' v-sub Γ'⊑
 
 extract-ctx-min (min<> {τ' = τ'} {σ = σ} {σ-e = σ-e} {D = D} {m = m} {υ = υ} υ≢□ sub) (⇑<> d' m' wf') v Γ'⊑
   with syn-precision Γ'⊑ (σ-e .proof) D d'
