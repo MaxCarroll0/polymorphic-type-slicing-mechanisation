@@ -119,6 +119,21 @@ data _,_⊢_at_▷_,_[_] : ℕ → Assms → Ctx → Position → ℕ → Assms 
             → n , Γ ⊢ C at anaPos τ₂ ▷ n' , Γ' [ m ]                                               →
             n , Γ ⊢ ι₂ C at anaPos τ ▷ n' , Γ' [ m ]
 
+  scase₀  : ∀ {n Γ n' Γ' C e₁ e₂ τ₀ τ₁ τ₂ τ₁' τ₂' m}
+            → n , Γ ⊢ C at synPos τ₀ ▷ n' , Γ' [ m ]
+            → τ₀ ⊔ □ + □ ≡ τ₁ + τ₂
+            → n , (τ₁ ∷ Γ) ⊢ e₁ ⇑ τ₁'
+            → n , (τ₂ ∷ Γ) ⊢ e₂ ⇑ τ₂'
+            → τ₁' ~ τ₂'                                                                               →
+            n , Γ ⊢ case₀ C of e₁ · e₂ at synPos (τ₁' ⊔ τ₂') ▷ n' , Γ' [ m ]
+
+  acase₀  : ∀ {n Γ n' Γ' C e₁ e₂ τ τ₀ τ₁ τ₂ m}
+            → n , Γ ⊢ C at synPos τ₀ ▷ n' , Γ' [ m ]
+            → τ₀ ⊔ □ + □ ≡ τ₁ + τ₂
+            → n , (τ₁ ∷ Γ) ⊢ e₁ ⇓ τ
+            → n , (τ₂ ∷ Γ) ⊢ e₂ ⇓ τ                                              →
+            n , Γ ⊢ case₀ C of e₁ · e₂ at anaPos τ ▷ n' , Γ' [ m ]
+
   scase₁  : ∀ {n Γ n' Γ' e C e' τ τ₁ τ₂ τ₁' τ₂' m}
             → n , Γ ⊢ e ⇑ τ   → τ ⊔ □ + □ ≡ τ₁ + τ₂
             → n , (τ₁ ∷ Γ) ⊢ C at synPos τ₁' ▷ n' , Γ' [ m ]
@@ -204,6 +219,8 @@ mutual
   ... | n' , Γ' , m , cls , ft = n' , Γ' , m , sι₁ cls , ft
   plug-syn (ι₂ C) (⇑ι₂ d) with plug-syn C d
   ... | n' , Γ' , m , cls , ft = n' , Γ' , m , sι₂ cls , ft
+  plug-syn (case₀ C of e₁ · e₂) (⇑case d₀ eq d₁ d₂ con) with plug-syn C d₀
+  ... | n' , Γ' , m , cls , ft = n' , Γ' , m , scase₀ cls eq d₁ d₂ con , ft
   plug-syn (case e₀ of C ·₁ e₂) (⇑case d₀ eq d₁ d₂ con) with plug-syn C d₁
   ... | n' , Γ' , m , cls , ft = n' , Γ' , m , scase₁ d₀ eq cls d₂ con , ft
   plug-syn (case e₀ of₂ e₁ · C) (⇑case d₀ eq d₁ d₂ con) with plug-syn C d₂
@@ -254,6 +271,10 @@ mutual
   ... | n' , Γ' , m , cls , ft = n' , Γ' , m , aSub cls con , ft
   plug-ana (ι₂ C) (⇓ι₂ eq d) with plug-ana C d
   ... | n' , Γ' , m , cls , ft = n' , Γ' , m , aι₂ eq cls , ft
+  plug-ana (case₀ C of e₁ · e₂) (⇓Sub d con) with plug-syn (case₀ C of e₁ · e₂) d
+  ... | n' , Γ' , m , cls , ft = n' , Γ' , m , aSub cls con , ft
+  plug-ana (case₀ C of e₁ · e₂) (⇓case d₀ eq d₁ d₂) with plug-syn C d₀
+  ... | n' , Γ' , m , cls , ft = n' , Γ' , m , acase₀ cls eq d₁ d₂ , ft
   plug-ana (case e₀ of C ·₁ e₂) (⇓Sub d con) with plug-syn (case e₀ of C ·₁ e₂) d
   ... | n' , Γ' , m , cls , ft = n' , Γ' , m , aSub cls con , ft
   plug-ana (case e₀ of C ·₁ e₂) (⇓case d₀ eq d₁ d₂) with plug-ana C d₁
@@ -302,6 +323,7 @@ mutual
   plug-compose-syn (s<>₁ cls eq wf) ft = ⇑<> (plug-compose-syn cls ft) eq wf
   plug-compose-syn (s&₁ cls d₂) ft = ⇑& (plug-compose-syn cls ft) d₂
   plug-compose-syn (s&₂ d₁ cls) ft = ⇑& d₁ (plug-compose-syn cls ft)
+  plug-compose-syn (scase₀ cls eq d₁ d₂ con) ft = ⇑case (plug-compose-syn cls ft) eq d₁ d₂ con
   plug-compose-syn (scase₁ d₀ eq cls d₂ con) ft = ⇑case d₀ eq (plug-compose-syn cls ft) d₂ con
   plug-compose-syn (scase₂ d₀ eq d₁ cls con) ft = ⇑case d₀ eq d₁ (plug-compose-syn cls ft) con
   plug-compose-syn (sπ₁ cls eq) ft = ⇑π₁ (plug-compose-syn cls ft) eq
@@ -325,6 +347,7 @@ mutual
   plug-compose-ana (a&₂ eq d₁ cls) ft = ⇓& eq d₁ (plug-compose-ana cls ft)
   plug-compose-ana (aι₁ eq cls) ft = ⇓ι₁ eq (plug-compose-ana cls ft)
   plug-compose-ana (aι₂ eq cls) ft = ⇓ι₂ eq (plug-compose-ana cls ft)
+  plug-compose-ana (acase₀ cls eq d₁ d₂) ft = ⇓case (plug-compose-syn cls ft) eq d₁ d₂
   plug-compose-ana (acase₁ d₀ eq cls d₂) ft = ⇓case d₀ eq (plug-compose-ana cls ft) d₂
   plug-compose-ana (acase₂ d₀ eq d₁ cls) ft = ⇓case d₀ eq d₁ (plug-compose-ana cls ft)
   plug-compose-ana (adef₁ cls d₂) ft = ⇓def (plug-compose-syn cls ft) d₂

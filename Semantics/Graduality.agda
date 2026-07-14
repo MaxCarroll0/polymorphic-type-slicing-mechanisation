@@ -224,6 +224,18 @@ mutual
   ... | τ_₁ , _ , _ , _ , τ⊑ , Γ_f⊑ , m⊑ , inner-cls
       = (□ + τ_₁) , _ , _ , _ , ⊑+ ⊑□ τ⊑ , Γ_f⊑ , m⊑ , sι₂ inner-cls
 
+  static-gradual-syn-cls Γ⊑ (⊑case₀ C'⊑ e₁⊑ e₂⊑) (scase₀ Cls' eq d₁ d₂ con)
+    with static-gradual-syn-cls Γ⊑ C'⊑ Cls'
+  ... | τ₀_₁ , _ , _ , _ , τ₀⊑ , Γ_f⊑ , m⊑ , inner-cls
+    with ⊔-+-⊑ τ₀⊑ eq
+  ... | τ₁_₁ , τ₂_₁ , eq_₁ , p₁ , p₂
+    with static-gradual-syn (⊑∷ p₁ Γ⊑) e₁⊑ d₁
+       | static-gradual-syn (⊑∷ p₂ Γ⊑) e₂⊑ d₂
+  ... | τ₁'_₁ , d₁_₁ , τ₁'⊑
+      | τ₂'_₁ , d₂_₁ , τ₂'⊑
+      = (τ₁'_₁ ⊔ τ₂'_₁) , _ , _ , _ , ⊔-mono-⊑ con τ₁'⊑ τ₂'⊑ , Γ_f⊑ , m⊑
+          , scase₀ inner-cls eq_₁ d₁_₁ d₂_₁ (~-⊑-down con τ₁'⊑ τ₂'⊑)
+
   static-gradual-syn-cls Γ⊑ (⊑case₁ e⊑ C'⊑ e'⊑) (scase₁ D eq Cls' d₂ con)
     with static-gradual-syn Γ⊑ e⊑ D
   ... | τ_₁ , D_₁ , τ⊑
@@ -342,6 +354,16 @@ mutual
       = _ , _ , _ , Γ_f⊑ , m⊑
           , a&₂ eq_₁ (static-gradual-ana Γ⊑ e⊑ pa d₁) inner-cls
 
+  static-gradual-ana-cls Γ⊑ (⊑case₀ C'⊑ e₁⊑ e₂⊑) τ_p⊑ (acase₀ Cls' eq d₁ d₂)
+    with static-gradual-syn-cls Γ⊑ C'⊑ Cls'
+  ... | τ₀_₁ , _ , _ , _ , τ₀⊑ , Γ_f⊑ , m⊑ , inner-cls
+    with ⊔-+-⊑ τ₀⊑ eq
+  ... | τ₁_₁ , τ₂_₁ , eq_₁ , p₁ , p₂
+      = _ , _ , _ , Γ_f⊑ , m⊑
+          , acase₀ inner-cls eq_₁
+              (static-gradual-ana (⊑∷ p₁ Γ⊑) e₁⊑ τ_p⊑ d₁)
+              (static-gradual-ana (⊑∷ p₂ Γ⊑) e₂⊑ τ_p⊑ d₂)
+
   static-gradual-ana-cls Γ⊑ (⊑case₁ e⊑ C'⊑ e'⊑) τ_p⊑ (acase₁ D eq Cls' d₂)
     with static-gradual-syn Γ⊑ e⊑ D
   ... | τ₀_₁ , D_₁ , τ₀⊑
@@ -425,6 +447,10 @@ syn-cls-unicity (sι₁ cls₁) (sι₁ cls₂)
   rewrite syn-cls-unicity cls₁ cls₂ = refl
 syn-cls-unicity (sι₂ cls₁) (sι₂ cls₂)
   rewrite syn-cls-unicity cls₁ cls₂ = refl
+syn-cls-unicity (scase₀ cls₁ eq₁ d₁₁ d₂₁ _) (scase₀ cls₂ eq₂ d₁₂ d₂₂ _)
+  with refl ← syn-cls-unicity cls₁ cls₂
+  with refl ← trans (sym eq₁) eq₂
+  rewrite syn-unicity d₁₁ d₁₂ | syn-unicity d₂₁ d₂₂ = refl
 syn-cls-unicity (scase₁ D₁ eq₁ cls₁ d₂_₁ _) (scase₁ D₂ eq₂ cls₂ d₂_₂ _)
   rewrite syn-unicity D₁ D₂
   with refl ← trans (sym eq₁) eq₂
@@ -458,4 +484,3 @@ syn-precision : ∀ {n Γ₁ Γ₂ e₁ e₂ τ₁ τ₂}
 syn-precision Γ⊑ e⊑ D₂ D₁
   with static-gradual-syn Γ⊑ e⊑ D₂
 ...  | τ₁' , D₁' , τ⊑ rewrite syn-unicity D₁ D₁' = τ⊑
-

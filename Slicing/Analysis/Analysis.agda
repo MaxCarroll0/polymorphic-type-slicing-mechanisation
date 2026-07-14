@@ -211,6 +211,12 @@ mutual
   ... | _ , _ , τ' , τ'⊑ , Cls'-lifted =
         _ , _ , _ , ⊑+ ⊑□ τ'⊑ , sι₂ Cls'-lifted
 
+  ⊥-ana-valid (scase₀ Cls' eq d₁ d₂ con) with ⊥-ana-valid Cls'
+  ... | _ , _ , τ₀' , τ₀'⊑ , Cls'-lifted
+    with ⊔-+-⊑ τ₀'⊑ eq
+  ... | _ , _ , eq-lifted , _ , _ =
+        _ , _ , _ , ⊑□ , scase₀ Cls'-lifted eq-lifted ⇑□ ⇑□ ~?₁
+
   ⊥-ana-valid (scase₁ D eq Cls' d₂ con) with ⊥-ana-valid Cls'
   ... | _ , _ , τ₁' , τ₁'⊑ , Cls'-lifted =
         _ , _ , _
@@ -280,6 +286,12 @@ mutual
   ⊥-ana-pos-valid (a&₂ eq d₁ Cls') with ⊥-ana-pos-valid Cls'
   ... | _ , _ , Cls'-lifted =
         _ , _ , a&₂ refl (⇓Sub ⇑□ ~?₁) Cls'-lifted
+
+  ⊥-ana-pos-valid (acase₀ Cls' eq d₁ d₂) with ⊥-ana-valid Cls'
+  ... | _ , _ , τ₀' , τ₀'⊑ , Cls'-lifted
+    with ⊔-+-⊑ τ₀'⊑ eq
+  ... | _ , _ , eq-lifted , _ , _ =
+        _ , _ , acase₀ Cls'-lifted eq-lifted (⇓Sub ⇑□ ~?₁) (⇓Sub ⇑□ ~?₁)
 
   ⊥-ana-pos-valid (acase₁ D eq Cls' d₂) with ⊥-ana-pos-valid Cls'
   ... | _ , _ , Cls'-lifted =

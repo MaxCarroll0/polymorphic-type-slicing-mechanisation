@@ -39,6 +39,10 @@ _&₂ₖ_ : ∀ {e : Exp} {C : Ctx} → ⌊ e ⌋ → ⌊ C ⌋ → ⌊ e &₂ C
 ι₂ₖ : ∀ {C : Ctx} → ⌊ C ⌋ → ⌊ ι₂ C ⌋
 ι₂ₖ (κ isSlice κ⊑C) = (ι₂ κ) isSlice (⊑ι₂ κ⊑C)
 
+case₀ₖ : ∀ {C : Ctx} {e f : Exp} → ⌊ C ⌋ → ⌊ e ⌋ → ⌊ f ⌋ → ⌊ case₀ C of e · f ⌋
+case₀ₖ (κ isSlice κ⊑C) (σ isSlice σ⊑e) (σ' isSlice σ'⊑f) =
+  (case₀ κ of σ · σ') isSlice (⊑case₀ κ⊑C σ⊑e σ'⊑f)
+
 case₁ₖ : ∀ {e : Exp} {C : Ctx} {f : Exp} → ⌊ e ⌋ → ⌊ C ⌋ → ⌊ f ⌋ → ⌊ case e of C ·₁ f ⌋
 case₁ₖ (σ isSlice σ⊑e) (κ isSlice κ⊑C) (σ' isSlice σ'⊑f) =
   (case σ of κ ·₁ σ') isSlice (⊑case₁ σ⊑e κ⊑C σ'⊑f)

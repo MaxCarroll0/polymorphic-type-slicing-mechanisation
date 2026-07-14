@@ -257,6 +257,29 @@ data _,_⊢_↬_at_▷_,_[_] : ℕ → Assms → Ctx → MCtx → Position → �
   -- CASE — synthesis: focus on left/right branch (no mark when sum matches)
   -- ============================================================
 
+  mscase₀  : ∀ {n Γ n' Γ' C Č e₁ ě₁ e₂ ě₂ τ₀ τ₁ τ₂ τ₁' τ₂' m}
+             → n , Γ ⊢ C ↬ Č at synPos τ₀ ▷ n' , Γ' [ m ]
+             → τ₀ ⊔ □ + □ ≡ τ₁ + τ₂
+             → n , (τ₁ ∷ Γ) ⊢ e₁ ↬ ě₁ ⇑ τ₁'
+             → n , (τ₂ ∷ Γ) ⊢ e₂ ↬ ě₂ ⇑ τ₂'
+             → τ₁' ~ τ₂'                                                                                    →
+             n , Γ ⊢ case₀ C of e₁ · e₂ ↬ case₀ Č of ě₁ · ě₂ at synPos (τ₁' ⊔ τ₂') ▷ n' , Γ' [ m ]
+
+  mscase₀⇑ : ∀ {n Γ n' Γ' C Č e₁ ě₁ e₂ ě₂ τ₀ τ₁' τ₂' m}
+             → n , Γ ⊢ C ↬ Č at synPos τ₀ ▷ n' , Γ' [ m ]
+             → (∀ {τ₁ τ₂} → τ₀ ⊔ □ + □ ≢ τ₁ + τ₂)
+             → n , Γ ⊢ e₁ ↬ ě₁ ⇑ τ₁'
+             → n , Γ ⊢ e₂ ↬ ě₂ ⇑ τ₂'                                                                       →
+             n , Γ ⊢ case₀ C of e₁ · e₂ ↬ case₀ (Č ⦅▸+⦆) of ě₁ · ě₂ at synPos □ ▷ n' , Γ' [ m ]
+
+  mscase₀≁ : ∀ {n Γ n' Γ' C Č e₁ ě₁ e₂ ě₂ τ₀ τ₁ τ₂ τ₁' τ₂' m}
+             → n , Γ ⊢ C ↬ Č at synPos τ₀ ▷ n' , Γ' [ m ]
+             → τ₀ ⊔ □ + □ ≡ τ₁ + τ₂
+             → n , (τ₁ ∷ Γ) ⊢ e₁ ↬ ě₁ ⇑ τ₁'
+             → n , (τ₂ ∷ Γ) ⊢ e₂ ↬ ě₂ ⇑ τ₂'
+             → ¬ (τ₁' ~ τ₂')                                                                                →
+             n , Γ ⊢ case₀ C of e₁ · e₂ ↬ case₀ Č of ě₁ · ě₂ at synPos □ ▷ n' , Γ' [ m ]
+
   mscase₁  : ∀ {n Γ n' Γ' e ě C Č e' ě' τ τ₁ τ₂ τ₁' τ₂' m}
              → n , Γ ⊢ e ↬ ě ⇑ τ
              → τ ⊔ □ + □ ≡ τ₁ + τ₂
@@ -325,6 +348,20 @@ data _,_⊢_↬_at_▷_,_[_] : ℕ → Assms → Ctx → MCtx → Position → �
              n , Γ ⊢ case e of₂ e' · C ↬ case ě of₂ ě' · Č at synPos □ ▷ n' , Γ' [ m ]
 
   -- Case — analysis: focus on left/right branch (no mark)
+  macase₀  : ∀ {n Γ n' Γ' C Č e₁ ě₁ e₂ ě₂ τ τ₀ τ₁ τ₂ m}
+             → n , Γ ⊢ C ↬ Č at synPos τ₀ ▷ n' , Γ' [ m ]
+             → τ₀ ⊔ □ + □ ≡ τ₁ + τ₂
+             → n , (τ₁ ∷ Γ) ⊢ e₁ ↬ ě₁ ⇓ τ
+             → n , (τ₂ ∷ Γ) ⊢ e₂ ↬ ě₂ ⇓ τ                                                                  →
+             n , Γ ⊢ case₀ C of e₁ · e₂ ↬ case₀ Č of ě₁ · ě₂ at anaPos τ ▷ n' , Γ' [ m ]
+
+  macase₀⇑ : ∀ {n Γ n' Γ' C Č e₁ ě₁ e₂ ě₂ τ τ₀ m}
+             → n , Γ ⊢ C ↬ Č at synPos τ₀ ▷ n' , Γ' [ m ]
+             → (∀ {τ₁ τ₂} → τ₀ ⊔ □ + □ ≢ τ₁ + τ₂)
+             → n , (□ ∷ Γ) ⊢ e₁ ↬ ě₁ ⇓ τ
+             → n , (□ ∷ Γ) ⊢ e₂ ↬ ě₂ ⇓ τ                                                                   →
+             n , Γ ⊢ case₀ C of e₁ · e₂ ↬ case₀ (Č ⦅▸+⦆) of ě₁ · ě₂ at anaPos τ ▷ n' , Γ' [ m ]
+
   macase₁  : ∀ {n Γ n' Γ' e ě C Č e' ě' τ τ₀ τ₁ τ₂ m}
              → n , Γ ⊢ e ↬ ě ⇑ τ₀
              → τ₀ ⊔ □ + □ ≡ τ₁ + τ₂
@@ -476,6 +513,12 @@ mutual
   mplug-compose-syn (msλ⇒⇑ cls) ft = mark⇑λ⇒ (mplug-compose-ana cls ft)
   mplug-compose-syn (msι₁ cls) ft = mark⇑ι₁ (mplug-compose-syn cls ft)
   mplug-compose-syn (msι₂ cls) ft = mark⇑ι₂ (mplug-compose-syn cls ft)
+  mplug-compose-syn (mscase₀ cls eq d₁ d₂ con) ft =
+    mark⇑case (mplug-compose-syn cls ft) eq d₁ d₂ con
+  mplug-compose-syn (mscase₀⇑ cls ¬eq d₁ d₂) ft =
+    mark⇑case⇑ (mplug-compose-syn cls ft) ¬eq d₁ d₂
+  mplug-compose-syn (mscase₀≁ cls eq d₁ d₂ ¬con) ft =
+    mark⇑case≁ (mplug-compose-syn cls ft) eq d₁ d₂ ¬con
 
   mplug-compose-ana : ∀ {n Γ n' Γ' C Č e ě τ m}
     → n , Γ ⊢ C ↬ Č at anaPos τ ▷ n' , Γ' [ m ]
@@ -492,6 +535,10 @@ mutual
   mplug-compose-ana (ma&₂ eq d₁ cls) ft = mark⇓& eq d₁ (mplug-compose-ana cls ft)
   mplug-compose-ana (maι₁ eq cls) ft = mark⇓ι₁ eq (mplug-compose-ana cls ft)
   mplug-compose-ana (maι₂ eq cls) ft = mark⇓ι₂ eq (mplug-compose-ana cls ft)
+  mplug-compose-ana (macase₀ cls eq d₁ d₂) ft =
+    mark⇓case (mplug-compose-syn cls ft) eq d₁ d₂
+  mplug-compose-ana (macase₀⇑ cls ¬eq d₁ d₂) ft =
+    mark⇓case⇑ (mplug-compose-syn cls ft) ¬eq d₁ d₂
   mplug-compose-ana (macase₁ d₀ eq cls d₂) ft = mark⇓case d₀ eq (mplug-compose-ana cls ft) d₂
   mplug-compose-ana (macase₂ d₀ eq d₁ cls) ft = mark⇓case d₀ eq d₁ (mplug-compose-ana cls ft)
   mplug-compose-ana (macase₁⇑ d₀ ¬eq cls d₂) ft = mark⇓case⇑ d₀ ¬eq (mplug-compose-ana cls ft) d₂
@@ -587,6 +634,22 @@ mutual
     with mplug-decompose-syn C d
   ... | ě , Č , _ , _ , _ , cls , ft , feq =
         ě , ι₂ Č , _ , _ , _ , msι₂ cls , ft , cong ι₂ feq
+
+  mplug-decompose-syn (case₀ C of e₁ · e₂) (mark⇑case d₀ eq d₁ d₂ con)
+    with mplug-decompose-syn C d₀
+  ... | ě , Č , _ , _ , _ , cls , ft , feq =
+        ě , (case₀ Č of _ · _) , _ , _ , _ , mscase₀ cls eq d₁ d₂ con , ft
+        , cong (λ x → case x of _ · _) feq
+  mplug-decompose-syn (case₀ C of e₁ · e₂) (mark⇑case⇑ d₀ ¬eq d₁ d₂)
+    with mplug-decompose-syn C d₀
+  ... | ě , Č , _ , _ , _ , cls , ft , feq =
+        ě , (case₀ (Č ⦅▸+⦆) of _ · _) , _ , _ , _ , mscase₀⇑ cls ¬eq d₁ d₂ , ft
+        , cong (λ x → case (x ⦅▸+⦆) of _ · _) feq
+  mplug-decompose-syn (case₀ C of e₁ · e₂) (mark⇑case≁ d₀ eq d₁ d₂ ¬con)
+    with mplug-decompose-syn C d₀
+  ... | ě , Č , _ , _ , _ , cls , ft , feq =
+        ě , (case₀ Č of _ · _) , _ , _ , _ , mscase₀≁ cls eq d₁ d₂ ¬con , ft
+        , cong (λ x → case x of _ · _) feq
 
   mplug-decompose-syn (case e₀ of C ·₁ e₂) (mark⇑case d₀ eq d₁ d₂ con)
     with mplug-decompose-syn C d₁
@@ -786,6 +849,25 @@ mutual
     with mplug-decompose-ana C d
   ... | ě , Č , _ , _ , _ , cls , ft , feq =
         ě , ι₂ Č , _ , _ , _ , maι₂ eq cls , ft , cong ι₂ feq
+
+  mplug-decompose-ana (case₀ C of e₁ · e₂) (mark⇓sub d con)
+    with mplug-decompose-syn (case₀ C of e₁ · e₂) d
+  ... | ě , Č , _ , _ , _ , cls , ft , eq =
+        ě , Č , _ , _ , _ , maSub cls con , ft , eq
+  mplug-decompose-ana (case₀ C of e₁ · e₂) (mark⇓sub⇑ d ¬con)
+    with mplug-decompose-syn (case₀ C of e₁ · e₂) d
+  ... | ě , Č , _ , _ , _ , cls , ft , eq =
+        ě , Č ⦅≁ _ ⦆ , _ , _ , _ , maSub⇑ cls ¬con , ft , cong (_⦅≁ _ ⦆) eq
+  mplug-decompose-ana (case₀ C of e₁ · e₂) (mark⇓case d₀ eq d₁ d₂)
+    with mplug-decompose-syn C d₀
+  ... | ě , Č , _ , _ , _ , cls , ft , feq =
+        ě , (case₀ Č of _ · _) , _ , _ , _ , macase₀ cls eq d₁ d₂ , ft
+        , cong (λ x → case x of _ · _) feq
+  mplug-decompose-ana (case₀ C of e₁ · e₂) (mark⇓case⇑ d₀ ¬eq d₁ d₂)
+    with mplug-decompose-syn C d₀
+  ... | ě , Č , _ , _ , _ , cls , ft , feq =
+        ě , (case₀ (Č ⦅▸+⦆) of _ · _) , _ , _ , _ , macase₀⇑ cls ¬eq d₁ d₂ , ft
+        , cong (λ x → case (x ⦅▸+⦆) of _ · _) feq
 
   mplug-decompose-ana (case e₀ of C ·₁ e₂) (mark⇓sub d con)
     with mplug-decompose-syn (case e₀ of C ·₁ e₂) d

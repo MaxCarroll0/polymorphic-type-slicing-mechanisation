@@ -78,6 +78,7 @@ mutual
   focus (minSΛ c) = focus c
   focus (minSdef₁ c) = focus c
   focus (minSdef₂ c f) = focus c
+  focus (minScase₀ c) = focus c
   focus (minScase₁ c f) = focus c
   focus (minScase₂ c f) = focus c
 
@@ -98,6 +99,7 @@ mutual
   focus-pos (minAλ: c) = focus-pos c
   focus-pos (minAdef₁ c) = focus c
   focus-pos (minAdef₂ c f) = focus-pos c
+  focus-pos (minAcase₀ c) = focus c
   focus-pos (minAcase₁ c f) = focus-pos c
   focus-pos (minAcase₂ c f) = focus-pos c
 
@@ -123,6 +125,7 @@ mutual
   focus-σ (minSΛ c) = focus-σ c
   focus-σ (minSdef₁ c) = focus-σ c
   focus-σ (minSdef₂ c f) = focus-σ c
+  focus-σ (minScase₀ c) = focus-σ c
   focus-σ (minScase₁ c f) = focus-σ c
   focus-σ (minScase₂ c f) = focus-σ c
 
@@ -142,6 +145,7 @@ mutual
   focus-pos-σ (minAλ: c) = focus-pos-σ c
   focus-pos-σ (minAdef₁ c) = focus-σ c
   focus-pos-σ (minAdef₂ c f) = focus-pos-σ c
+  focus-pos-σ (minAcase₀ c) = focus-σ c
   focus-pos-σ (minAcase₁ c f) = focus-pos-σ c
   focus-pos-σ (minAcase₂ c f) = focus-pos-σ c
 
@@ -277,6 +281,11 @@ mutual
   ... | ψₚ , n' , Γᶠ , φᶠ , focus⊑ , cls , d =
     ψₚ , n' , Γᶠ , φᶠ , focus⊑ , sdef₂ d' cls , d
 
+  lift-syn (minScase₀ {eq = eq} c) Γ'' γ⊑ with lift-syn c Γ'' γ⊑
+  ... | ψ₀ , n' , Γᶠ , φᶠ , focus⊑ , cls , d =
+    ⊥ₛ , n' , Γᶠ , φᶠ , focus⊑ ,
+    scase₀ cls (match+ₛ ψ₀ eq) ⇑□ ⇑□ ~?₁ , d
+
   lift-syn
       (minScase₁ {τ₀ = τ₀} {D₀ = D₀} {eq = eq} {con = con}
                   {φ₁ = φ₁} {γ₁ = γ₁} {σ₀ = σ₀} {γ₀ = γ₀} c f)
@@ -411,6 +420,11 @@ mutual
            uₚ uₒ⊑
   ... | n' , Γᶠ , φᶠ , focus⊑ , cls , d =
     n' , Γᶠ , φᶠ , focus⊑ , adef₂ d' cls , d
+
+  lift-pos (minAcase₀ {eq = eq} c) Γ'' γ⊑ uₚ _ with lift-syn c Γ'' γ⊑
+  ... | ψ₀ , n' , Γᶠ , φᶠ , focus⊑ , cls , d =
+    n' , Γᶠ , φᶠ , focus⊑ ,
+    acase₀ cls (match+ₛ ψ₀ eq) (⇓Sub ⇑□ ~?₁) (⇓Sub ⇑□ ~?₁) , d
 
   lift-pos
       (minAcase₁ {τ₀ = τ₀} {D₀ = D₀} {eq = eq} {φ₁ = φ₁}
@@ -768,6 +782,18 @@ mutual
           φ⊑τr (r .γ .proof))
         γ₂⊑r
     ) , σ⊑r
+
+  extract-least {Cls = scase₀ Cls eq d₁ d₂ con} (minScase₀ c) r κr⊑ σr⊑
+    with r .κ | κr⊑ | r .powered
+  ... | (_ isSlice ⊑case₀ κr⊑C _ _)
+      | ⊑case₀ κr⊑κ _ _
+      | n' , Γᶠ , φᶠ , focus⊑ , scase₀ cls eqr d₁r d₂r conr , d
+    with extract-least c
+           (syn-rival Cls (_ isSlice κr⊑C) (r .γ) (r .focus-slice)
+             Γᶠ φᶠ focus⊑ cls d)
+           κr⊑κ σr⊑
+  ... | (κ⊑r , γ⊑r) , σ⊑r =
+    (⊑case₀ κ⊑r ⊑□ ⊑□ , γ⊑r) , σ⊑r
 
   extract-least {Γ₀ = Γ₀} {Cls = scase₁ D₀ eq Cls d₂ con}
       (minScase₁ {τ₀ = τ₀} {D₀ = D₀} {eq = eq} {φ₁ = φ₁}
@@ -1219,6 +1245,42 @@ mutual
           γ₂⊑r
       ) , σ⊑r
     ) , subst (_⊑t (ur .↓)) (sym (⊑□-inv uᵢ⊑□)) ⊑□
+
+  extract-pos-least {Cls = acase₀ Cls eq d₁ d₂} (minAcase₀ c)
+      (record
+        { pos-κ = (case₀ κr of ar · br) isSlice ⊑case₀ κr⊑C ar⊑ br⊑
+        ; pos-γ = γr
+        ; pos-outer = ur
+        ; pos-focus-slice = fr
+        ; pos-powered = n' , Γᶠ , φᶠ , focus⊑ ,
+            acase₀ cls eqr d₁r d₂r , d
+        })
+      (⊑case₀ κr⊑κ ar⊑□ br⊑□) σr⊑
+    with extract-least c
+           (syn-rival Cls (_ isSlice κr⊑C) γr fr
+             Γᶠ φᶠ focus⊑ cls d)
+           κr⊑κ σr⊑
+  ... | (κ⊑r , γ⊑r) , σ⊑r =
+    ((⊑case₀ κ⊑r ⊑□ ⊑□ , γ⊑r) , σ⊑r) ,
+    ⊑ₛLat.⊥ₛ-min {A = Typ} ur
+
+  extract-pos-least {Cls = acase₀ Cls eq d₁ d₂} (minAcase₀ c)
+      (record
+        { pos-κ = (case₀ κr of ar · br) isSlice ⊑case₀ κr⊑C ar⊑ br⊑
+        ; pos-γ = γr
+        ; pos-outer = ur
+        ; pos-focus-slice = fr
+        ; pos-powered = n' , Γᶠ , φᶠ , focus⊑ ,
+            aSub (scase₀ cls eqr d₁r d₂r conr) con' , d
+        })
+      (⊑case₀ κr⊑κ ar⊑□ br⊑□) σr⊑
+    with extract-least c
+           (syn-rival Cls (_ isSlice κr⊑C) γr fr
+             Γᶠ φᶠ focus⊑ cls d)
+           κr⊑κ σr⊑
+  ... | (κ⊑r , γ⊑r) , σ⊑r =
+    ((⊑case₀ κ⊑r ⊑□ ⊑□ , γ⊑r) , σ⊑r) ,
+    ⊑ₛLat.⊥ₛ-min {A = Typ} ur
 
   extract-pos-least {Γ₀ = Γ₀} {Cls = acase₁ D₀ eq Cls d₂}
       (minAcase₁ {τ₀ = τ₀} {D₀ = D₀} {eq = eq} {φ₁ = φ₁}

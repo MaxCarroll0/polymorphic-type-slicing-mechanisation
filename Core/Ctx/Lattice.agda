@@ -34,6 +34,7 @@ private
   ...       | kind&₂ {e} {e'} {C₁} {C₁'}             = (e ⊓ e') &₂ (C₁ ⊓c C₁')
   ...       | kindι₁ {C₁} {C₁'}                      = ι₁ (C₁ ⊓c C₁')
   ...       | kindι₂ {C₁} {C₁'}                      = ι₂ (C₁ ⊓c C₁')
+  ...       | kindcase₀ {C₁} {C₁'} {e} {e'} {f} {f'} = case₀ (C₁ ⊓c C₁') of (e ⊓ e') · (f ⊓ f')
   ...       | kindcase₁ {e} {e'} {C₁} {C₁'} {f} {f'} = case (e ⊓ e') of (C₁ ⊓c C₁') ·₁ (f ⊓ f')
   ...       | kindcase₂ {e} {e'} {f} {f'} {C₁} {C₁'} = case (e ⊓ e') of₂ (f ⊓ f') · (C₁ ⊓c C₁')
   ...       | kindπ₁ {C₁} {C₁'}                      = π₁ (C₁ ⊓c C₁')
@@ -57,6 +58,7 @@ private
   ...       | kind&₂ {e} {e'} {C₁} {C₁'}             = (e ⊔ e') &₂ (C₁ ⊔c C₁')
   ...       | kindι₁ {C₁} {C₁'}                      = ι₁ (C₁ ⊔c C₁')
   ...       | kindι₂ {C₁} {C₁'}                      = ι₂ (C₁ ⊔c C₁')
+  ...       | kindcase₀ {C₁} {C₁'} {e} {e'} {f} {f'} = case₀ (C₁ ⊔c C₁') of (e ⊔ e') · (f ⊔ f')
   ...       | kindcase₁ {e} {e'} {C₁} {C₁'} {f} {f'} = case (e ⊔ e') of (C₁ ⊔c C₁') ·₁ (f ⊔ f')
   ...       | kindcase₂ {e} {e'} {f} {f'} {C₁} {C₁'} = case (e ⊔ e') of₂ (f ⊔ f') · (C₁ ⊔c C₁')
   ...       | kindπ₁ {C₁} {C₁'}                      = π₁ (C₁ ⊔c C₁')
@@ -80,6 +82,7 @@ private
   ⊓-lb₁ (⊑&₂ p₁ q₁)      (⊑&₂ p₂ q₂)              = ⊑&₂ (⊑ₛLat.x⊓ₛy⊑ₛx (↑ p₁) (↑ p₂)) (⊓-lb₁ q₁ q₂)
   ⊓-lb₁ (⊑ι₁ q₁)         (⊑ι₁ q₂)                 = ⊑ι₁ (⊓-lb₁ q₁ q₂)
   ⊓-lb₁ (⊑ι₂ q₁)         (⊑ι₂ q₂)                 = ⊑ι₂ (⊓-lb₁ q₁ q₂)
+  ⊓-lb₁ (⊑case₀ q₁ p₁ r₁) (⊑case₀ q₂ p₂ r₂)       = ⊑case₀ (⊓-lb₁ q₁ q₂) (⊑ₛLat.x⊓ₛy⊑ₛx (↑ p₁) (↑ p₂)) (⊑ₛLat.x⊓ₛy⊑ₛx (↑ r₁) (↑ r₂))
   ⊓-lb₁ (⊑case₁ p₁ q₁ r₁) (⊑case₁ p₂ q₂ r₂)       = ⊑case₁ (⊑ₛLat.x⊓ₛy⊑ₛx (↑ p₁) (↑ p₂)) (⊓-lb₁ q₁ q₂) (⊑ₛLat.x⊓ₛy⊑ₛx (↑ r₁) (↑ r₂))
   ⊓-lb₁ (⊑case₂ p₁ r₁ q₁) (⊑case₂ p₂ r₂ q₂)       = ⊑case₂ (⊑ₛLat.x⊓ₛy⊑ₛx (↑ p₁) (↑ p₂)) (⊑ₛLat.x⊓ₛy⊑ₛx (↑ r₁) (↑ r₂)) (⊓-lb₁ q₁ q₂)
   ⊓-lb₁ (⊑π₁ q₁)         (⊑π₁ q₂)                 = ⊑π₁ (⊓-lb₁ q₁ q₂)
@@ -99,6 +102,7 @@ private
   ⊓-lb₂ (⊑&₂ p₁ q₁)      (⊑&₂ p₂ q₂)              = ⊑&₂ (⊑ₛLat.x⊓ₛy⊑ₛy (↑ p₁) (↑ p₂)) (⊓-lb₂ q₁ q₂)
   ⊓-lb₂ (⊑ι₁ q₁)         (⊑ι₁ q₂)                 = ⊑ι₁ (⊓-lb₂ q₁ q₂)
   ⊓-lb₂ (⊑ι₂ q₁)         (⊑ι₂ q₂)                 = ⊑ι₂ (⊓-lb₂ q₁ q₂)
+  ⊓-lb₂ (⊑case₀ q₁ p₁ r₁) (⊑case₀ q₂ p₂ r₂)       = ⊑case₀ (⊓-lb₂ q₁ q₂) (⊑ₛLat.x⊓ₛy⊑ₛy (↑ p₁) (↑ p₂)) (⊑ₛLat.x⊓ₛy⊑ₛy (↑ r₁) (↑ r₂))
   ⊓-lb₂ (⊑case₁ p₁ q₁ r₁) (⊑case₁ p₂ q₂ r₂)       = ⊑case₁ (⊑ₛLat.x⊓ₛy⊑ₛy (↑ p₁) (↑ p₂)) (⊓-lb₂ q₁ q₂) (⊑ₛLat.x⊓ₛy⊑ₛy (↑ r₁) (↑ r₂))
   ⊓-lb₂ (⊑case₂ p₁ r₁ q₁) (⊑case₂ p₂ r₂ q₂)       = ⊑case₂ (⊑ₛLat.x⊓ₛy⊑ₛy (↑ p₁) (↑ p₂)) (⊑ₛLat.x⊓ₛy⊑ₛy (↑ r₁) (↑ r₂)) (⊓-lb₂ q₁ q₂)
   ⊓-lb₂ (⊑π₁ q₁)         (⊑π₁ q₂)                 = ⊑π₁ (⊓-lb₂ q₁ q₂)
@@ -131,6 +135,10 @@ private
           (⊓-glb q₁' q₂' q₁ q₂)
   ⊓-glb (⊑ι₁ q₁')       (⊑ι₁ q₂')       (⊑ι₁ q₁)       (⊑ι₁ q₂)       = ⊑ι₁ (⊓-glb q₁' q₂' q₁ q₂)
   ⊓-glb (⊑ι₂ q₁')       (⊑ι₂ q₂')       (⊑ι₂ q₁)       (⊑ι₂ q₂)       = ⊑ι₂ (⊓-glb q₁' q₂' q₁ q₂)
+  ⊓-glb (⊑case₀ q₁' p₁' r₁') (⊑case₀ q₂' p₂' r₂') (⊑case₀ q₁ p₁ r₁) (⊑case₀ q₂ p₂ r₂)
+    = ⊑case₀ (⊓-glb q₁' q₂' q₁ q₂)
+             (⊑ₛLat.⊓ₛ-greatest {x = ↑(⊑.trans {A = Exp} p₁ p₁')} {↑ p₁'} {↑ p₂'} p₁ p₂)
+             (⊑ₛLat.⊓ₛ-greatest {x = ↑(⊑.trans {A = Exp} r₁ r₁')} {↑ r₁'} {↑ r₂'} r₁ r₂)
   ⊓-glb (⊑case₁ p₁' q₁' r₁') (⊑case₁ p₂' q₂' r₂') (⊑case₁ p₁ q₁ r₁) (⊑case₁ p₂ q₂ r₂)
     = ⊑case₁ (⊑ₛLat.⊓ₛ-greatest {x = ↑(⊑.trans {A = Exp} p₁ p₁')} {↑ p₁'} {↑ p₂'} p₁ p₂)
              (⊓-glb q₁' q₂' q₁ q₂)
@@ -161,6 +169,7 @@ private
   ⊔-ub₁ (⊑&₂ p₁ q₁)      (⊑&₂ p₂ q₂)              = ⊑&₂ (⊑ₛLat.x⊑ₛx⊔ₛy (↑ p₁) (↑ p₂)) (⊔-ub₁ q₁ q₂)
   ⊔-ub₁ (⊑ι₁ q₁)         (⊑ι₁ q₂)                 = ⊑ι₁ (⊔-ub₁ q₁ q₂)
   ⊔-ub₁ (⊑ι₂ q₁)         (⊑ι₂ q₂)                 = ⊑ι₂ (⊔-ub₁ q₁ q₂)
+  ⊔-ub₁ (⊑case₀ q₁ p₁ r₁) (⊑case₀ q₂ p₂ r₂)       = ⊑case₀ (⊔-ub₁ q₁ q₂) (⊑ₛLat.x⊑ₛx⊔ₛy (↑ p₁) (↑ p₂)) (⊑ₛLat.x⊑ₛx⊔ₛy (↑ r₁) (↑ r₂))
   ⊔-ub₁ (⊑case₁ p₁ q₁ r₁) (⊑case₁ p₂ q₂ r₂)       = ⊑case₁ (⊑ₛLat.x⊑ₛx⊔ₛy (↑ p₁) (↑ p₂)) (⊔-ub₁ q₁ q₂) (⊑ₛLat.x⊑ₛx⊔ₛy (↑ r₁) (↑ r₂))
   ⊔-ub₁ (⊑case₂ p₁ r₁ q₁) (⊑case₂ p₂ r₂ q₂)       = ⊑case₂ (⊑ₛLat.x⊑ₛx⊔ₛy (↑ p₁) (↑ p₂)) (⊑ₛLat.x⊑ₛx⊔ₛy (↑ r₁) (↑ r₂)) (⊔-ub₁ q₁ q₂)
   ⊔-ub₁ (⊑π₁ q₁)         (⊑π₁ q₂)                 = ⊑π₁ (⊔-ub₁ q₁ q₂)
@@ -180,6 +189,7 @@ private
   ⊔-ub₂ (⊑&₂ p₁ q₁)      (⊑&₂ p₂ q₂)              = ⊑&₂ (⊑ₛLat.y⊑ₛx⊔ₛy (↑ p₁) (↑ p₂)) (⊔-ub₂ q₁ q₂)
   ⊔-ub₂ (⊑ι₁ q₁)         (⊑ι₁ q₂)                 = ⊑ι₁ (⊔-ub₂ q₁ q₂)
   ⊔-ub₂ (⊑ι₂ q₁)         (⊑ι₂ q₂)                 = ⊑ι₂ (⊔-ub₂ q₁ q₂)
+  ⊔-ub₂ (⊑case₀ q₁ p₁ r₁) (⊑case₀ q₂ p₂ r₂)       = ⊑case₀ (⊔-ub₂ q₁ q₂) (⊑ₛLat.y⊑ₛx⊔ₛy (↑ p₁) (↑ p₂)) (⊑ₛLat.y⊑ₛx⊔ₛy (↑ r₁) (↑ r₂))
   ⊔-ub₂ (⊑case₁ p₁ q₁ r₁) (⊑case₁ p₂ q₂ r₂)       = ⊑case₁ (⊑ₛLat.y⊑ₛx⊔ₛy (↑ p₁) (↑ p₂)) (⊔-ub₂ q₁ q₂) (⊑ₛLat.y⊑ₛx⊔ₛy (↑ r₁) (↑ r₂))
   ⊔-ub₂ (⊑case₂ p₁ r₁ q₁) (⊑case₂ p₂ r₂ q₂)       = ⊑case₂ (⊑ₛLat.y⊑ₛx⊔ₛy (↑ p₁) (↑ p₂)) (⊑ₛLat.y⊑ₛx⊔ₛy (↑ r₁) (↑ r₂)) (⊔-ub₂ q₁ q₂)
   ⊔-ub₂ (⊑π₁ q₁)         (⊑π₁ q₂)                 = ⊑π₁ (⊔-ub₂ q₁ q₂)
@@ -199,6 +209,7 @@ private
   ⊔-lub (⊑&₂ p₁ q₁)      (⊑&₂ p₂ q₂)              = ⊑&₂ (⊑ₛLat.⊔ₛ-least {x = ↑ p₁} {↑ p₂} {⊤ₛ} p₁ p₂) (⊔-lub q₁ q₂)
   ⊔-lub (⊑ι₁ q₁)         (⊑ι₁ q₂)                 = ⊑ι₁ (⊔-lub q₁ q₂)
   ⊔-lub (⊑ι₂ q₁)         (⊑ι₂ q₂)                 = ⊑ι₂ (⊔-lub q₁ q₂)
+  ⊔-lub (⊑case₀ q₁ p₁ r₁) (⊑case₀ q₂ p₂ r₂)       = ⊑case₀ (⊔-lub q₁ q₂) (⊑ₛLat.⊔ₛ-least {x = ↑ p₁} {↑ p₂} {⊤ₛ} p₁ p₂) (⊑ₛLat.⊔ₛ-least {x = ↑ r₁} {↑ r₂} {⊤ₛ} r₁ r₂)
   ⊔-lub (⊑case₁ p₁ q₁ r₁) (⊑case₁ p₂ q₂ r₂)       = ⊑case₁ (⊑ₛLat.⊔ₛ-least {x = ↑ p₁} {↑ p₂} {⊤ₛ} p₁ p₂) (⊔-lub q₁ q₂) (⊑ₛLat.⊔ₛ-least {x = ↑ r₁} {↑ r₂} {⊤ₛ} r₁ r₂)
   ⊔-lub (⊑case₂ p₁ r₁ q₁) (⊑case₂ p₂ r₂ q₂)       = ⊑case₂ (⊑ₛLat.⊔ₛ-least {x = ↑ p₁} {↑ p₂} {⊤ₛ} p₁ p₂) (⊑ₛLat.⊔ₛ-least {x = ↑ r₁} {↑ r₂} {⊤ₛ} r₁ r₂) (⊔-lub q₁ q₂)
   ⊔-lub (⊑π₁ q₁)         (⊑π₁ q₂)                 = ⊑π₁ (⊔-lub q₁ q₂)
@@ -225,6 +236,7 @@ private
   □-⊑ (e &₂ C)             = ⊑&₂ ⊑□ (□-⊑ C)
   □-⊑ (ι₁ C)               = ⊑ι₁ (□-⊑ C)
   □-⊑ (ι₂ C)               = ⊑ι₂ (□-⊑ C)
+  □-⊑ (case₀ C of e · f)     = ⊑case₀ (□-⊑ C) ⊑□ ⊑□
   □-⊑ (case e of C ·₁ f)   = ⊑case₁ ⊑□ (□-⊑ C) ⊑□
   □-⊑ (case e of₂ f · C)   = ⊑case₂ ⊑□ ⊑□ (□-⊑ C)
   □-⊑ (π₁ C)               = ⊑π₁ (□-⊑ C)
@@ -247,6 +259,7 @@ private
   ⊥ₛ-min (_ isSlice ⊑&₂ p q)         = ⊑&₂ ⊑□ (⊥ₛ-min (↑ q))
   ⊥ₛ-min (_ isSlice ⊑ι₁ q)           = ⊑ι₁ (⊥ₛ-min (↑ q))
   ⊥ₛ-min (_ isSlice ⊑ι₂ q)           = ⊑ι₂ (⊥ₛ-min (↑ q))
+  ⊥ₛ-min (_ isSlice ⊑case₀ q p r)    = ⊑case₀ (⊥ₛ-min (↑ q)) ⊑□ ⊑□
   ⊥ₛ-min (_ isSlice ⊑case₁ p q r)    = ⊑case₁ ⊑□ (⊥ₛ-min (↑ q)) ⊑□
   ⊥ₛ-min (_ isSlice ⊑case₂ p r q)    = ⊑case₂ ⊑□ ⊑□ (⊥ₛ-min (↑ q))
   ⊥ₛ-min (_ isSlice ⊑π₁ q)           = ⊑π₁ (⊥ₛ-min (↑ q))
@@ -283,6 +296,15 @@ private
     = cong ι₁ (dist q₁ q₂ q₃)
   dist (⊑ι₂ q₁) (⊑ι₂ q₂) (⊑ι₂ q₃)
     = cong ι₂ (dist q₁ q₂ q₃)
+  dist (⊑case₀ q₁ p₁ r₁) (⊑case₀ q₂ p₂ r₂) (⊑case₀ q₃ p₃ r₃)
+    = case₀-cong (dist q₁ q₂ q₃)
+                 (⊑ₛLat.⊓ₛ-distribˡ-⊔ₛ (↑ p₁) (↑ p₂) (↑ p₃))
+                 (⊑ₛLat.⊓ₛ-distribˡ-⊔ₛ (↑ r₁) (↑ r₂) (↑ r₃))
+    where
+    case₀-cong : ∀ {a a' : Ctx} {b b' c c' : Exp}
+               → a ≡ a' → b ≡ b' → c ≡ c'
+               → case₀ a of b · c ≡ case₀ a' of b' · c'
+    case₀-cong refl refl refl = refl
   dist (⊑case₁ p₁ q₁ r₁) (⊑case₁ p₂ q₂ r₂) (⊑case₁ p₃ q₃ r₃)
     = case₁-cong (⊑ₛLat.⊓ₛ-distribˡ-⊔ₛ (↑ p₁) (↑ p₂) (↑ p₃))
                  (dist q₁ q₂ q₃)

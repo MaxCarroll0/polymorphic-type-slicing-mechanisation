@@ -145,6 +145,15 @@ mutual
              → sdef₂ D₁ Cls , D ◂ u
                ⤳ def₂ₖ σ₁ κ ∣ σ ⊣ (γ₁ ⊔ₛ γ₂)
 
+    minScase₀ : ∀ {C e₁ e₂ n_f Γ e τ₀ τ₁ τ₂ τ₁' τ₂' τ}
+                  {Cls : n , Γ₀ ⊢ C at synPos τ₀ ▷ n_f , Γ [ ⇒mode τ ]}
+                  {eq : τ₀ ⊔ □ + □ ≡ τ₁ + τ₂}
+                  {d₁ : n , (τ₁ ∷ Γ₀) ⊢ e₁ ⇑ τ₁'} {d₂ : n , (τ₂ ∷ Γ₀) ⊢ e₂ ⇑ τ₂'}
+                  {con : τ₁' ~ τ₂'} {D : n_f , Γ ⊢ e ⇑ τ}
+                  {u : ⌊ τ ⌋} {κ : ⌊ C ⌋} {σ : ⌊ e ⌋} {γ : ⌊ Γ₀ ⌋}
+              → Cls , D ◂ u ⤳ κ ∣ σ ⊣ γ
+              → scase₀ Cls eq d₁ d₂ con , D ◂ u ⤳ case₀ₖ κ ⊥ₛ ⊥ₛ ∣ σ ⊣ γ
+
     minScase₁ : ∀ {e₀ C e₂ n_f Γ e τ₀ τ₁ τ₂ τ₁' τ₂' τ}
                   {D₀ : n , Γ₀ ⊢ e₀ ⇑ τ₀}
                   {eq : τ₀ ⊔ □ + □ ≡ τ₁ + τ₂}
@@ -266,6 +275,15 @@ mutual
              → D₁ ◂ φ ⤳ σ₁ ⇑ ψ₁ ⊣ γ₁
              → adef₂ D₁ Cls , D ◂ u
                ⤳ def₂ₖ σ₁ κ ∣ σ ⇓ uᵢ ⊣ (γ₁ ⊔ₛ γ₂)
+
+    minAcase₀ : ∀ {C e₁ e₂ n_f Γ e τ₀ τ₁ τ₂ τ_b τ}
+                  {Cls : n , Γ₀ ⊢ C at synPos τ₀ ▷ n_f , Γ [ ⇒mode τ ]}
+                  {eq : τ₀ ⊔ □ + □ ≡ τ₁ + τ₂}
+                  {d₁ : n , (τ₁ ∷ Γ₀) ⊢ e₁ ⇓ τ_b} {d₂ : n , (τ₂ ∷ Γ₀) ⊢ e₂ ⇓ τ_b}
+                  {D : n_f , Γ ⊢ e ⇑ τ}
+                  {u : ⌊ τ ⌋} {κ : ⌊ C ⌋} {σ : ⌊ e ⌋} {γ : ⌊ Γ₀ ⌋}
+              → Cls , D ◂ u ⤳ κ ∣ σ ⊣ γ
+              → acase₀ Cls eq d₁ d₂ , D ◂ u ⤳ case₀ₖ κ ⊥ₛ ⊥ₛ ∣ σ ⇓ ⊥ₛ ⊣ γ
 
     minAcase₁ : ∀ {e₀ C e₂ n_f Γ e τ₀ τ₁ τ₂ τ_b τ}
                   {D₀ : n , Γ₀ ⊢ e₀ ⇑ τ₀}

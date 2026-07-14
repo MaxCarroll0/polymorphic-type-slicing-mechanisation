@@ -26,6 +26,7 @@ data MCtx : Set where
   _&₂_             : MExp → MCtx → MCtx          -- Pair; hole on right
   ι₁               : MCtx → MCtx                  -- Left injection
   ι₂               : MCtx → MCtx                  -- Right injection
+  case₀_of_·_      : MCtx → MExp → MExp → MCtx   -- Case; hole in scrutinee
   case_of_·₁_      : MExp → MCtx → MExp → MCtx   -- Case; hole in left branch
   case_of₂_·_      : MExp → MExp → MCtx → MCtx   -- Case; hole in right branch
   π₁               : MCtx → MCtx                  -- First projection
@@ -66,6 +67,7 @@ mplug (C &₁ ě')          ě = mplug C ě & ě'
 mplug (ě' &₂ C)          ě = ě' & mplug C ě
 mplug (ι₁ C)             ě = ι₁ (mplug C ě)
 mplug (ι₂ C)             ě = ι₂ (mplug C ě)
+mplug (case₀ C of ě' · ě'') ě = case mplug C ě of ě' · ě''
 mplug (case ě' of C ·₁ ě'') ě = case ě' of mplug C ě · ě''
 mplug (case ě' of₂ ě'' · C) ě = case ě' of ě'' · mplug C ě
 mplug (π₁ C)             ě = π₁ (mplug C ě)

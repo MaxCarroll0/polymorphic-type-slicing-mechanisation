@@ -79,6 +79,9 @@ mutual
     map-classifications sι₁ (classify-syn C d)
   classify-syn (ι₂ C) (⇑ι₂ d) =
     map-classifications sι₂ (classify-syn C d)
+  classify-syn (case₀ C of e₁ · e₂) (⇑case d₀ eq d₁ d₂ con) =
+    map-classifications
+      (λ cls → scase₀ cls eq d₁ d₂ con) (classify-syn C d₀)
   classify-syn (case e₀ of C ·₁ e₂) (⇑case d₀ eq d₁ d₂ con) =
     map-classifications
       (λ cls → scase₁ d₀ eq cls d₂ con) (classify-syn C d₁)
@@ -139,6 +142,12 @@ mutual
     map-classifications (λ cls → aSub cls con) (classify-syn (ι₂ C) d)
   classify-ana (ι₂ C) (⇓ι₂ eq d) =
     map-classifications (aι₂ eq) (classify-ana C d)
+  classify-ana (case₀ C of e₁ · e₂) (⇓Sub d con) =
+    map-classifications (λ cls → aSub cls con)
+      (classify-syn (case₀ C of e₁ · e₂) d)
+  classify-ana (case₀ C of e₁ · e₂) (⇓case d₀ eq d₁ d₂) =
+    map-classifications
+      (λ cls → acase₀ cls eq d₁ d₂) (classify-syn C d₀)
   classify-ana (case e₀ of C ·₁ e₂) (⇓Sub d con) =
     map-classifications (λ cls → aSub cls con)
       (classify-syn (case e₀ of C ·₁ e₂) d)

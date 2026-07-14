@@ -40,6 +40,10 @@ private
                                                         (λ where refl → refl) (C₁ ≟c C₁')
   (ι₂ C₁)      ≟c (ι₂ C₁')         | kindι₂    | _ = map′ (cong ι₂)
                                                         (λ where refl → refl) (C₁ ≟c C₁')
+  (case₀ C₁ of e · f)  ≟c (case₀ C₁' of e' · f')  | kindcase₀ | _
+                                                  = map′ (λ where (refl , refl , refl) → refl)
+                                                         (λ where refl → refl , refl , refl)
+                                                         (C₁ ≟c C₁' ×-dec e ≟ e' ×-dec f ≟ f')
   (case e of C₁ ·₁ f)  ≟c (case e' of C₁' ·₁ f')  | kindcase₁ | _
                                                   = map′ (λ where (refl , refl , refl) → refl)
                                                          (λ where refl → refl , refl , refl)

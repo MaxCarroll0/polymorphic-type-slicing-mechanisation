@@ -31,6 +31,8 @@ data _⊑c_ : Ctx → Ctx → Set where
   ⊑&₂     :  ∀ {e e' C C'}    →  e ⊑ e' → C ⊑c C'  →  e &₂ C     ⊑c e' &₂ C'
   ⊑ι₁     :  ∀ {C C'}         →  C ⊑c C'            →  ι₁ C       ⊑c ι₁ C'
   ⊑ι₂     :  ∀ {C C'}         →  C ⊑c C'            →  ι₂ C       ⊑c ι₂ C'
+  ⊑case₀  :  ∀ {C C' e e' f f'}
+             → C ⊑c C' → e ⊑ e' → f ⊑ f'     → case₀ C of e · f ⊑c case₀ C' of e' · f'
   ⊑case₁  :  ∀ {e e' C C' f f'}
              → e ⊑ e' → C ⊑c C' → f ⊑ f'     → case e of C ·₁ f ⊑c case e' of C' ·₁ f'
   ⊑case₂  :  ∀ {e e' f f' C C'}
@@ -55,6 +57,7 @@ private
   ⊑-refl {_ &₂ _}               = ⊑&₂ (⊑.refl {A = Exp}) ⊑-refl
   ⊑-refl {ι₁ _}                 = ⊑ι₁ ⊑-refl
   ⊑-refl {ι₂ _}                 = ⊑ι₂ ⊑-refl
+  ⊑-refl {case₀ _ of _ · _}      = ⊑case₀ ⊑-refl (⊑.refl {A = Exp}) (⊑.refl {A = Exp})
   ⊑-refl {case _ of _ ·₁ _}     = ⊑case₁ (⊑.refl {A = Exp}) ⊑-refl (⊑.refl {A = Exp})
   ⊑-refl {case _ of₂ _ · _}     = ⊑case₂ (⊑.refl {A = Exp}) (⊑.refl {A = Exp}) ⊑-refl
   ⊑-refl {π₁ _}                 = ⊑π₁ ⊑-refl
@@ -74,6 +77,7 @@ private
   ⊑-trans (⊑&₂ p q) (⊑&₂ r s)         = ⊑&₂ (⊑.trans {A = Exp} p r) (⊑-trans q s)
   ⊑-trans (⊑ι₁ p) (⊑ι₁ q)             = ⊑ι₁ (⊑-trans p q)
   ⊑-trans (⊑ι₂ p) (⊑ι₂ q)             = ⊑ι₂ (⊑-trans p q)
+  ⊑-trans (⊑case₀ p q r) (⊑case₀ s t u) = ⊑case₀ (⊑-trans p s) (⊑.trans {A = Exp} q t) (⊑.trans {A = Exp} r u)
   ⊑-trans (⊑case₁ p q r) (⊑case₁ s t u) = ⊑case₁ (⊑.trans {A = Exp} p s) (⊑-trans q t) (⊑.trans {A = Exp} r u)
   ⊑-trans (⊑case₂ p q r) (⊑case₂ s t u) = ⊑case₂ (⊑.trans {A = Exp} p s) (⊑.trans {A = Exp} q t) (⊑-trans r u)
   ⊑-trans (⊑π₁ p) (⊑π₁ q)             = ⊑π₁ (⊑-trans p q)
@@ -93,6 +97,8 @@ private
   ⊑-antisym (⊑&₂ p q) (⊑&₂ r s)         = cong₂ _&₂_ (⊑.antisym {A = Exp} p r) (⊑-antisym q s)
   ⊑-antisym (⊑ι₁ p) (⊑ι₁ q)             = cong ι₁ (⊑-antisym p q)
   ⊑-antisym (⊑ι₂ p) (⊑ι₂ q)             = cong ι₂ (⊑-antisym p q)
+  ⊑-antisym (⊑case₀ p q r) (⊑case₀ s t u) with ⊑-antisym p s | ⊑.antisym {A = Exp} q t | ⊑.antisym {A = Exp} r u
+  ... | refl | refl | refl = refl
   ⊑-antisym (⊑case₁ p q r) (⊑case₁ s t u) with ⊑.antisym {A = Exp} p s | ⊑-antisym q t | ⊑.antisym {A = Exp} r u
   ... | refl | refl | refl = refl
   ⊑-antisym (⊑case₂ p q r) (⊑case₂ s t u) with ⊑.antisym {A = Exp} p s | ⊑.antisym {A = Exp} q t | ⊑-antisym r u
@@ -124,6 +130,7 @@ private
   shallow-imprecision () (⊑&₂ _ _)
   shallow-imprecision () (⊑ι₁ _)
   shallow-imprecision () (⊑ι₂ _)
+  shallow-imprecision () (⊑case₀ _ _ _)
   shallow-imprecision () (⊑case₁ _ _ _)
   shallow-imprecision () (⊑case₂ _ _ _)
   shallow-imprecision () (⊑π₁ _)
@@ -157,6 +164,10 @@ C ⊑c? C'                       with diag C C' | Eq.inspect (diag C) C'
                                                         (e ⊑? e' ×-dec C₁ ⊑c? C₁')
 (ι₁ C₁)      ⊑c? (ι₁ C₁')       | kindι₁    | _ = map′ ⊑ι₁ (λ where (⊑ι₁ p) → p) (C₁ ⊑c? C₁')
 (ι₂ C₁)      ⊑c? (ι₂ C₁')       | kindι₂    | _ = map′ ⊑ι₂ (λ where (⊑ι₂ p) → p) (C₁ ⊑c? C₁')
+(case₀ C₁ of e · f) ⊑c? (case₀ C₁' of e' · f') | kindcase₀ | _ =
+                                                      map′ (λ where (p , q , r) → ⊑case₀ p q r)
+                                                           (λ where (⊑case₀ p q r) → p , q , r)
+                                                           (C₁ ⊑c? C₁' ×-dec e ⊑? e' ×-dec f ⊑? f')
 (case e of C₁ ·₁ f) ⊑c? (case e' of C₁' ·₁ f') | kindcase₁ | _ =
                                                       map′ (λ where (p , q , r) → ⊑case₁ p q r)
                                                            (λ where (⊑case₁ p q r) → p , q , r)
@@ -197,6 +208,7 @@ plug-preserves-⊑ (⊑&₁ q r) p        = E.⊑&    (plug-preserves-⊑ q p) r
 plug-preserves-⊑ (⊑&₂ q r) p        = E.⊑&    q (plug-preserves-⊑ r p)
 plug-preserves-⊑ (⊑ι₁ q) p          = E.⊑ι₁   (plug-preserves-⊑ q p)
 plug-preserves-⊑ (⊑ι₂ q) p          = E.⊑ι₂   (plug-preserves-⊑ q p)
+plug-preserves-⊑ (⊑case₀ q r s) p   = E.⊑case (plug-preserves-⊑ q p) r s
 plug-preserves-⊑ (⊑case₁ q r s) p   = E.⊑case q (plug-preserves-⊑ r p) s
 plug-preserves-⊑ (⊑case₂ q r s) p   = E.⊑case q r (plug-preserves-⊑ s p)
 plug-preserves-⊑ (⊑π₁ q) p          = E.⊑π₁   (plug-preserves-⊑ q p)
