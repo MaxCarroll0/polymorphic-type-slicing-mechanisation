@@ -1164,16 +1164,16 @@ module Total
       with fixslice D (_ isSlice h)
     ... | σ₁ , ψ₁ , γ₁ , f = _ , _ , _ , minAdef₂ c f
 
-  slice-ana : ∀ {n Γ₀ C n_f Γ τ τ_p}
-            → (Cls : n , Γ₀ ⊢ C at synPos τ_p ▷ n_f , Γ [ ⇐mode τ ])
-            → (υ : ⌊ τ ⌋)
-            → AnaSlice Cls υ
-  slice-ana Cls υ with ana-slice Cls υ
-  ... | _ , _ , c = extract c
-
-  slice-ana-pos : ∀ {n Γ₀ C n_f Γ τ τ_p}
-                → (Cls : n , Γ₀ ⊢ C at anaPos τ_p ▷ n_f , Γ [ ⇐mode τ ])
+  min-slice-ana : ∀ {n Γ₀ C n_f Γ τ τ_p}
+                → (Cls : n , Γ₀ ⊢ C at synPos τ_p ▷ n_f , Γ [ ⇐mode τ ])
                 → (υ : ⌊ τ ⌋)
-                → AnaPosSlice Cls υ
-  slice-ana-pos Cls υ with ana-slice-pos Cls υ
-  ... | _ , _ , _ , c = extract-pos c
+                → MinAnaSlice Cls υ
+  min-slice-ana Cls υ with ana-slice Cls υ
+  ... | _ , _ , c = extract c , extract-minimal c
+
+  min-slice-ana-pos : ∀ {n Γ₀ C n_f Γ τ τ_p}
+                    → (Cls : n , Γ₀ ⊢ C at anaPos τ_p ▷ n_f , Γ [ ⇐mode τ ])
+                    → (υ : ⌊ τ ⌋)
+                    → MinAnaPosSlice Cls υ
+  min-slice-ana-pos Cls υ with ana-slice-pos Cls υ
+  ... | _ , _ , _ , c = extract-pos c , extract-pos-minimal c
