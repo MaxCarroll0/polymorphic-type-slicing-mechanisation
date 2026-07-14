@@ -1,0 +1,33 @@
+name: typecheck
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  agda:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@v17
+        with:
+          extra-conf: |
+            experimental-features = nix-command flakes
+
+      - name: Nix magic cache
+        uses: DeterminateSystems/magic-nix-cache-action@v9
+
+      - name: Type-check via nix build
+        run: nix build --print-build-logs .#default
+
+      - name: Fail if Agda type-checking failed
+        run: |
+          set -euo pipefail
+          cat result/TYPECHECK_RESULTS/status
+          grep -q '^PASS ' result/TYPECHECK_RESULTS/status
