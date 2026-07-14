@@ -1049,3 +1049,131 @@ extract-pos-minimal c s' (κ⊑ , γ⊑ , υo⊑)
          κ⊑ (ana-focus⊒ s') (ana-focus s' .proof) cls
 ... | ih-κ , ih-γ , ih-υ = ih-κ , ih-γ , ih-υ
 
+-- Totality: every classification and query has a calculus derivation.
+-- Parametrised by a total fixedassms slicer (FixedAssmsSlicing.slice once
+-- its case fixed point is complete) so this module stays free of its
+-- unsolved parts.
+module Total
+    (fixslice : ∀ {n Γ e τ} (D : n , Γ ⊢ e ⇑ τ) (q : ⌊ τ ⌋)
+                → ∃[ σ ] ∃[ ψ ] ∃[ γ ] (D FC.◂ q ⤳ σ ⇑ ψ ⊣ γ))
+    where
+
+  mutual
+    ana-slice : ∀ {n Γ₀ C n_f Γ τ τ_p}
+              → (Cls : n , Γ₀ ⊢ C at synPos τ_p ▷ n_f , Γ [ ⇐mode τ ])
+              → (υ : ⌊ τ ⌋)
+              → ∃[ κ ] ∃[ γ ] (Cls ◂ υ ⤳ κ ⊣ γ)
+
+    ana-slice-pos : ∀ {n Γ₀ C n_f Γ τ τ_p}
+                  → (Cls : n , Γ₀ ⊢ C at anaPos τ_p ▷ n_f , Γ [ ⇐mode τ ])
+                  → (υ : ⌊ τ ⌋)
+                  → ∃[ κ ] Σ[ υ_outer ∈ ⌊ τ_p ⌋ ] ∃[ γ ] (Cls ◂ υ ⤳ κ ⇓ υ_outer ⊣ γ)
+
+    ana-slice (sλ: wf Cls') υ
+      with ana-slice Cls' υ
+    ... | κ , ((_ ∷ _) isSlice ⊑∷ h t) , c = _ , _ , minSλ: c
+    ana-slice (s∘₁ Cls' eq d₂) υ
+      with ana-slice Cls' υ
+    ... | κ , γ , c = _ , _ , minS∘₁ c
+    ana-slice (s∘₂ D₁ eq Cls') υ
+      with ana-slice-pos Cls' υ
+    ... | κ , υo , γ' , cₚ
+      with fixslice D₁ (unmatch⇒-min eq υo ⊥ₛ)
+    ... | σ , ψ , γ₁ , f = _ , _ , minS∘₂ cₚ f
+    ana-slice (s<>₁ Cls' eq wf) υ
+      with ana-slice Cls' υ
+    ... | κ , γ , c = _ , _ , minS<>₁ c
+    ana-slice (s&₁ Cls' d₂) υ
+      with ana-slice Cls' υ
+    ... | κ , γ , c = _ , _ , minS&₁ c
+    ana-slice (s&₂ d₁ Cls') υ
+      with ana-slice Cls' υ
+    ... | κ , γ , c = _ , _ , minS&₂ c
+    ana-slice (sι₁ Cls') υ
+      with ana-slice Cls' υ
+    ... | κ , γ , c = _ , _ , minSι₁ c
+    ana-slice (sι₂ Cls') υ
+      with ana-slice Cls' υ
+    ... | κ , γ , c = _ , _ , minSι₂ c
+    ana-slice (scase₁ D eq Cls' d₂ con) υ
+      with ana-slice Cls' υ
+    ... | κ , ((_ ∷ _) isSlice ⊑∷ h t) , c
+      with fixslice D (unmatch+-min eq (_ isSlice h) ⊥ₛ)
+    ... | σ₀ , ψ₀ , γ₀ , f = _ , _ , minScase₁ c f
+    ana-slice (scase₂ D eq d₁ Cls' con) υ
+      with ana-slice Cls' υ
+    ... | κ , ((_ ∷ _) isSlice ⊑∷ h t) , c
+      with fixslice D (unmatch+-min eq ⊥ₛ (_ isSlice h))
+    ... | σ₀ , ψ₀ , γ₀ , f = _ , _ , minScase₂ c f
+    ana-slice (sπ₁ Cls' eq) υ
+      with ana-slice Cls' υ
+    ... | κ , γ , c = _ , _ , minSπ₁ c
+    ana-slice (sπ₂ Cls' eq) υ
+      with ana-slice Cls' υ
+    ... | κ , γ , c = _ , _ , minSπ₂ c
+    ana-slice (sΛ Cls') υ
+      with ana-slice Cls' υ
+    ... | κ , γ , c = _ , _ , minSΛ c
+    ana-slice (sdef₁ Cls' d₂) υ
+      with ana-slice Cls' υ
+    ... | κ , γ , c = _ , _ , minSdef₁ c
+    ana-slice (sdef₂ D Cls') υ
+      with ana-slice Cls' υ
+    ... | κ , ((_ ∷ _) isSlice ⊑∷ h t) , c
+      with fixslice D (_ isSlice h)
+    ... | σ₁ , ψ₁ , γ₁ , f = _ , _ , minSdef₂ c f
+
+    ana-slice-pos a○ υ = _ , _ , _ , minA○ υ
+    ana-slice-pos (aSub Cls' con) υ
+      with ana-slice Cls' υ
+    ... | κ , γ , c = _ , _ , _ , minASub c
+    ana-slice-pos (aλ: con eq wf Cls') υ
+      with ana-slice-pos Cls' υ
+    ... | κ , υ_b , ((_ ∷ _) isSlice ⊑∷ h t) , c = _ , _ , _ , minAλ: c
+    ana-slice-pos (aλ⇒ eq Cls') υ
+      with ana-slice-pos Cls' υ
+    ... | κ , υ_b , ((_ ∷ _) isSlice ⊑∷ h t) , c = _ , _ , _ , minAλ⇒ c
+    ana-slice-pos (a&₁ eq Cls' d₂) υ
+      with ana-slice-pos Cls' υ
+    ... | κ , υ_b , γ , c = _ , _ , _ , minA&₁ c
+    ana-slice-pos (a&₂ eq d₁ Cls') υ
+      with ana-slice-pos Cls' υ
+    ... | κ , υ_b , γ , c = _ , _ , _ , minA&₂ c
+    ana-slice-pos (aι₁ eq Cls') υ
+      with ana-slice-pos Cls' υ
+    ... | κ , υ_b , γ , c = _ , _ , _ , minAι₁ c
+    ana-slice-pos (aι₂ eq Cls') υ
+      with ana-slice-pos Cls' υ
+    ... | κ , υ_b , γ , c = _ , _ , _ , minAι₂ c
+    ana-slice-pos (acase₁ D eq Cls' d₂) υ
+      with ana-slice-pos Cls' υ
+    ... | κ , υ_b , ((_ ∷ _) isSlice ⊑∷ h t) , c
+      with fixslice D (unmatch+-min eq (_ isSlice h) ⊥ₛ)
+    ... | σ₀ , ψ₀ , γ₀ , f = _ , _ , _ , minAcase₁ c f
+    ana-slice-pos (acase₂ D eq d₁ Cls') υ
+      with ana-slice-pos Cls' υ
+    ... | κ , υ_b , ((_ ∷ _) isSlice ⊑∷ h t) , c
+      with fixslice D (unmatch+-min eq ⊥ₛ (_ isSlice h))
+    ... | σ₀ , ψ₀ , γ₀ , f = _ , _ , _ , minAcase₂ c f
+    ana-slice-pos (adef₁ Cls' d₂) υ
+      with ana-slice Cls' υ
+    ... | κ , γ , c = _ , _ , _ , minAdef₁ c
+    ana-slice-pos (adef₂ D Cls') υ
+      with ana-slice-pos Cls' υ
+    ... | κ , υ_b , ((_ ∷ _) isSlice ⊑∷ h t) , c
+      with fixslice D (_ isSlice h)
+    ... | σ₁ , ψ₁ , γ₁ , f = _ , _ , _ , minAdef₂ c f
+
+  slice-ana : ∀ {n Γ₀ C n_f Γ τ τ_p}
+            → (Cls : n , Γ₀ ⊢ C at synPos τ_p ▷ n_f , Γ [ ⇐mode τ ])
+            → (υ : ⌊ τ ⌋)
+            → AnaSlice Cls υ
+  slice-ana Cls υ with ana-slice Cls υ
+  ... | _ , _ , c = extract c
+
+  slice-ana-pos : ∀ {n Γ₀ C n_f Γ τ τ_p}
+                → (Cls : n , Γ₀ ⊢ C at anaPos τ_p ▷ n_f , Γ [ ⇐mode τ ])
+                → (υ : ⌊ τ ⌋)
+                → AnaPosSlice Cls υ
+  slice-ana-pos Cls υ with ana-slice-pos Cls υ
+  ... | _ , _ , _ , c = extract-pos c
