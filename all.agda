@@ -13,6 +13,7 @@ module all where
   import Slicing.Synthesis.Synthesis
   import Slicing.Synthesis.Decompositions
   import Slicing.Synthesis.FixedAssmsCalc
+  import Slicing.Synthesis.FixedAssmsSlicing
   import Slicing.Analysis.Analysis
   import Slicing.Analysis.AnaSliceCalc
   import Slicing.Analysis.AnaSlicing
