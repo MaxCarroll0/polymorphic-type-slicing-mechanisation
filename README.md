@@ -1,8 +1,7 @@
 # polymorphic-type-slicing-formalism
 
-Agda mechanisation accompanying my Part III (Cambridge) dissertation
-[polymorphic-type-slicing-tex](https://github.com/MaxCarroll0/polymorphic-type-slicing-tex)
-on **polymorphic type slicing** for bidirectional, gradually-typed languages.
+Agda mechanisation accompanying for **Bidirectional polymorphic type slicing**. Core language is based upon the [Hazel calculus](https://hazel.org/).
+See relevant [paper](https://maxcarroll0.github.io/assets/papers/Carroll-Bidirectional_Type_Slicing_POPL_Preprint.pdf) and [dissertation](https://maxcarroll0.github.io/assets/papers/Carroll-Polymorphic_Type_Slicing_Dissertation.pdf)
 
 ## Verify type-checking with Nix
 
