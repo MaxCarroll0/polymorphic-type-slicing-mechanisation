@@ -83,9 +83,9 @@ data _,_⊢_↬_at_▷_,_[_] : ℕ → Assms → Ctx → MCtx → Position → �
              n , Γ ⊢ λ: τ₁ ⇒ C ↬ λ: τ₁ ⇒ Č at synPos (τ₁ ⇒ τ₂) ▷ n' , Γ' [ m ]
 
   -- Annotated lambda — analysis (no mark). Mirrors mark⇓λ:.
-  maλ:     : ∀ {n Γ n' Γ' C Č τ τ₁ τ₂ m}
+  maλ:     : ∀ {n Γ n' Γ' C Č τ τ₁ τ₁' τ₂ m}
              → τ ~ τ₁ ⇒ □
-             → τ ⊔ τ₁ ⇒ □ ≡ τ₁ ⇒ τ₂
+             → τ ⊔ τ₁ ⇒ □ ≡ τ₁' ⇒ τ₂
              → n ⊢wf τ₁
              → n , (τ₁ ∷ Γ) ⊢ C ↬ Č at anaPos τ₂ ▷ n' , Γ' [ m ]                                         →
              n , Γ ⊢ λ: τ₁ ⇒ C ↬ λ: τ₁ ⇒ Č at anaPos τ ▷ n' , Γ' [ m ]
