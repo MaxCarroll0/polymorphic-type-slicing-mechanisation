@@ -4,9 +4,10 @@ open import Function using (_on_)
 import Relation.Binary.Construct.On as On
 open import Core
 open import Semantics.Statics
-open import Slicing.Synthesis.Synthesis using (SynSlice_◂_; IsMinimal)
+open import Slicing.Synthesis.Synthesis using (SynSlice_◂_; IsMinimal; ⊤-syn)
 open import Slicing.Analysis.Analysis using
-  (AnaSlice; AnaPosSlice; MinAnaSlice; MinAnaPosSlice)
+  (AnaSlice; AnaPosSlice; MinAnaSlice; MinAnaPosSlice;
+   ⊤-ana; reindex-ana; minExistsAna)
 
 -- Full type slices (POPL, Definition 7.1).  Unlike a focused synthesis
 -- slice, a full slice also explains how the assumptions used at the focus
@@ -67,6 +68,40 @@ MinSynTypeSlice :
     (Cls : n , Γ₀ ⊢ C at synPos τₚ ▷ n' , Γ [ ⇒mode τ ])
     (D : n' , Γ ⊢ e ⇑ τ) → ⌊ τ ⌋ → Set
 MinSynTypeSlice Cls D u = Σ[ s ∈ SynTypeSlice Cls D u ] IsMinimal s
+
+-- A maximal full slice at an arbitrary query.  This is the seed used by
+-- minimal-slice existence; unlike FullSliceCalc it does not calculate a
+-- preferred minimum.
+⊤-syn-type :
+  ∀ {n Γ₀ C n' Γ e τ τₚ}
+    (Cls : n , Γ₀ ⊢ C at synPos τₚ ▷ n' , Γ [ ⇒mode τ ])
+    (D : n' , Γ ⊢ e ⇑ τ) (u : ⌊ τ ⌋)
+    → SynTypeSlice Cls D u
+⊤-syn-type Cls D u = record
+  { κ = ⊤ₛ
+  ; γ = ⊤ₛ
+  ; outer = ⊤ₛ
+  ; focus-slice = SynSlice_◂_.reindex (⊤-syn D) (⊤ₛ-max u)
+  ; powered = _ , ⊤ₛ , ⊤ₛ
+            , ⊑ₛ.refl {A = Assms} {x = ⊤ₛ} , Cls , D
+  }
+
+-- As for synthesis and analysis slices, every full slice has a minimal
+-- slice below it.  A constructive calculation is deliberately separate.
+postulate
+  minExistsFull :
+    ∀ {n Γ₀ C n' Γ e τ τₚ}
+      {Cls : n , Γ₀ ⊢ C at synPos τₚ ▷ n' , Γ [ ⇒mode τ ]}
+      {D : n' , Γ ⊢ e ⇑ τ} {u : ⌊ τ ⌋}
+    → (s : SynTypeSlice Cls D u)
+    → Σ[ (m , _) ∈ MinSynTypeSlice Cls D u ] m ⊑ s
+
+min-syn-type :
+  ∀ {n Γ₀ C n' Γ e τ τₚ}
+    (Cls : n , Γ₀ ⊢ C at synPos τₚ ▷ n' , Γ [ ⇒mode τ ])
+    (D : n' , Γ ⊢ e ⇑ τ) (u : ⌊ τ ⌋)
+    → MinSynTypeSlice Cls D u
+min-syn-type Cls D u = proj₁ (minExistsFull (⊤-syn-type Cls D u))
 
 -- The analysing-position variant is needed while recursively traversing a
 -- synthesis context (most notably when the focus is an application argument).
@@ -132,6 +167,13 @@ MinAnaTypeSlice :
     → (Cls : n , Γ₀ ⊢ C at synPos τₚ ▷ n' , Γ [ ⇐mode τ ])
     → ⌊ τ ⌋ → Set
 MinAnaTypeSlice = MinAnaSlice
+
+min-ana-type :
+  ∀ {n Γ₀ C n' Γ τ τₚ}
+    (Cls : n , Γ₀ ⊢ C at synPos τₚ ▷ n' , Γ [ ⇐mode τ ])
+    (u : ⌊ τ ⌋) → MinAnaTypeSlice Cls u
+min-ana-type Cls u =
+  proj₁ (minExistsAna (reindex-ana (⊤-ana Cls) (⊤ₛ-max u)))
 
 MinAnaPosTypeSlice :
   ∀ {n Γ₀ C n' Γ τ τₚ}

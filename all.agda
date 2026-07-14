@@ -3,6 +3,7 @@ module all where
   import Core.IntExp
   import Core.MExp
   import Semantics.Statics
+  import Semantics.Statics.FocusClassification
   import Semantics.Dynamics
   import Semantics.Elaboration
   import Semantics.Metatheory
@@ -20,4 +21,5 @@ module all where
   import Slicing.Full.Full
   import Slicing.Full.FullSliceCalc
   import Slicing.Full.FullSlicing
+  import Slicing.Interaction
   import Slicing.Counterexamples
