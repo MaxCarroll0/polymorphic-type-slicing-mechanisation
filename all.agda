@@ -12,6 +12,7 @@ module all where
   import Semantics.Marking.Metatheory
   import Semantics.Marking.CtxMarking
   import Semantics.Marking.Embedding
+  import Semantics.Marking.FocusClassification
   import Slicing.Synthesis.Synthesis
   import Slicing.Synthesis.Decompositions
   import Slicing.Synthesis.FixedAssmsCalc
