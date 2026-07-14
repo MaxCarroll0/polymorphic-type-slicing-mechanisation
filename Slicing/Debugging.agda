@@ -15,9 +15,9 @@ open import Core.Typ.WellFormedness using (wf□)
 open import Semantics.Statics
 open import Semantics.Marking.Judgment
 open import Semantics.Marking.CtxMarking
+import Semantics.Marking.FocusClassification as MF
 open import Slicing.Synthesis.Synthesis
 open import Slicing.Analysis.Analysis
-import Slicing.Full.Full as F
 open import Slicing.Marked
 
 -- Keep exactly the outer constructor and replace every proper component by
@@ -163,14 +163,14 @@ inconsistency-at-focus-sound cls focus bad =
   mplug-compose-syn cls (mark⇓sub⇑ focus (λ con → bad (~.sym con)))
 
 record JoinedInconsistencySlices
-    {n : ℕ} {Γ₀ : Assms} {C : Ctx} {n' : ℕ} {Γ : Assms}
-    {e : Exp} {τ₀ τˢ τᵃ : Typ}
-    (SCls : n , Γ₀ ⊢ C at synPos τ₀ ▷ n' , Γ [ ⇒mode τˢ ])
-    (D : n' , Γ ⊢ e ⇑ τˢ)
-    (ACls : n , Γ₀ ⊢ C at synPos τ₀ ▷ n' , Γ [ ⇐mode τᵃ ])
+    {n : ℕ} {Γ₀ : Assms} {C : Ctx} {Čˢ Čᵃ : MCtx}
+    {n' : ℕ} {Γ : Assms} {e : Exp} {ě : MExp} {τ₀ τˢ τᵃ : Typ}
+    (SCls : n , Γ₀ ⊢ C ↬ Čˢ at synPos τ₀ ▷ n' , Γ [ ⇒mode τˢ ])
+    (D : n' , Γ ⊢ e ↬ ě ⇑ τˢ)
+    (ACls : n , Γ₀ ⊢ C ↬ Čᵃ at synPos τ₀ ▷ n' , Γ [ ⇐mode τᵃ ])
     (q : InconsistentQueries τˢ τᵃ)
-    (sˢ : MarkedSynTypeSlice SCls D (syn-query q))
-    (sᵃ : MarkedAnaSlice ACls (ana-query q)) : Set where
+    (sˢ : MarkedFullSynSlice SCls D (syn-query q))
+    (sᵃ : MarkedFullAnaSlice ACls (ana-query q)) : Set where
   field
     focus-n : ℕ
     focus-Γ : Assms
@@ -179,38 +179,75 @@ record JoinedInconsistencySlices
     joined-context : MCtx
     joined-focus : MExp
     joined-classification :
-      n , (F.γ (full-slice sˢ) ⊔ₛ AnaSlice.γ (ana-slice sᵃ)) .↓ ⊢
-        (F.κ (full-slice sˢ) ⊔ₛ AnaSlice.κ (ana-slice sᵃ)) .↓
+      n , (marked-full-γ sˢ ⊔ₛ marked-ana-γ sᵃ) .↓ ⊢
+        (marked-full-κ sˢ ⊔ₛ marked-ana-κ sᵃ) .↓
         ↬ joined-context
-        at synPos ((F.outer (full-slice sˢ) ⊔ₛ
-                    AnaSlice.type (ana-slice sᵃ)) .↓)
+        at synPos ((marked-full-outer sˢ ⊔ₛ marked-ana-outer sᵃ) .↓)
         ▷ focus-n , focus-Γ [ ⇐mode sliced-ana-type ]
     joined-focus-synthesis :
       focus-n , focus-Γ ⊢
-        SynSlice_◂_.↓σ (F.focus-slice (full-slice sˢ))
+        marked-full-exp sˢ .↓
         ↬ joined-focus ⇑ sliced-syn-type
     syn-query-retained : syn-query q .↓ ⊑t sliced-syn-type
     ana-query-retained : ana-query q .↓ ⊑t sliced-ana-type
 open JoinedInconsistencySlices public
 
+reindex-marked-ana-classification :
+  ∀ {n n' Γ₀ Γ₀' C C' Č Γ τ₀ τ₀' τ}
+  → Γ₀' ≡ Γ₀
+  → C' ≡ C
+  → τ₀' ≡ τ₀
+  → n , Γ₀ ⊢ C ↬ Č at synPos τ₀ ▷ n' , Γ [ ⇐mode τ ]
+  → n , Γ₀' ⊢ C' ↬ Č at synPos τ₀' ▷ n' , Γ [ ⇐mode τ ]
+reindex-marked-ana-classification refl refl refl cls = cls
+
+top-joined-inconsistency-slices :
+  ∀ {n Γ₀ C Čˢ Čᵃ n' Γ e ě τ₀ τˢ τᵃ}
+    {SCls : n , Γ₀ ⊢ C ↬ Čˢ at synPos τ₀ ▷ n' , Γ [ ⇒mode τˢ ]}
+    {D : n' , Γ ⊢ e ↬ ě ⇑ τˢ}
+    {ACls : n , Γ₀ ⊢ C ↬ Čᵃ at synPos τ₀ ▷ n' , Γ [ ⇐mode τᵃ ]}
+    (q : InconsistentQueries τˢ τᵃ)
+  → JoinedInconsistencySlices SCls D ACls q
+      (top-marked-full-syn (syn-query q))
+      (top-marked-full-ana (ana-query q))
+top-joined-inconsistency-slices
+    {n} {Γ₀} {C} {_} {_} {_} {_} {_} {_} {τ₀}
+    {SCls = SCls} {D = D} {ACls = ACls} q
+  = record
+  { focus-n = _
+  ; focus-Γ = _
+  ; sliced-syn-type = _
+  ; sliced-ana-type = _
+  ; joined-context = _
+  ; joined-focus = _
+  ; joined-classification = reindex-marked-ana-classification
+      (⊑ₛLat.⊔-idempotent
+        {A = Assms} {a = Γ₀} (⊤ₛ {A = Assms} {a = Γ₀}))
+      (⊑ₛLat.⊔-idempotent
+        {A = Ctx} {a = C} (⊤ₛ {A = Ctx} {a = C}))
+      (⊑ₛLat.⊔-idempotent
+        {A = Typ} {a = τ₀} (⊤ₛ {A = Typ} {a = τ₀}))
+      ACls
+  ; joined-focus-synthesis = D
+  ; syn-query-retained = syn-query q .proof
+  ; ana-query-retained = ana-query q .proof
+  }
+
 inconsistency-error-sound :
-  ∀ {n Γ₀ C n' Γ e τ₀ τˢ τᵃ}
-    {SCls : n , Γ₀ ⊢ C at synPos τ₀ ▷ n' , Γ [ ⇒mode τˢ ]}
-    {D : n' , Γ ⊢ e ⇑ τˢ}
-    {ACls : n , Γ₀ ⊢ C at synPos τ₀ ▷ n' , Γ [ ⇐mode τᵃ ]}
+  ∀ {n Γ₀ C Čˢ Čᵃ n' Γ e ě τ₀ τˢ τᵃ}
+    {SCls : n , Γ₀ ⊢ C ↬ Čˢ at synPos τ₀ ▷ n' , Γ [ ⇒mode τˢ ]}
+    {D : n' , Γ ⊢ e ↬ ě ⇑ τˢ}
+    {ACls : n , Γ₀ ⊢ C ↬ Čᵃ at synPos τ₀ ▷ n' , Γ [ ⇐mode τᵃ ]}
     {q : InconsistentQueries τˢ τᵃ}
-    {sˢ : MarkedSynTypeSlice SCls D (syn-query q)}
-    {sᵃ : MarkedAnaSlice ACls (ana-query q)}
+    {sˢ : MarkedFullSynSlice SCls D (syn-query q)}
+    {sᵃ : MarkedFullAnaSlice ACls (ana-query q)}
   → (j : JoinedInconsistencySlices SCls D ACls q sˢ sᵃ)
-  → n , (F.γ (full-slice sˢ) ⊔ₛ
-          AnaSlice.γ (ana-slice sᵃ)) .↓ ⊢
-      plug ((F.κ (full-slice sˢ) ⊔ₛ
-             AnaSlice.κ (ana-slice sᵃ)) .↓)
-           (SynSlice_◂_.↓σ (F.focus-slice (full-slice sˢ)))
+  → n , (marked-full-γ sˢ ⊔ₛ marked-ana-γ sᵃ) .↓ ⊢
+      plug ((marked-full-κ sˢ ⊔ₛ marked-ana-κ sᵃ) .↓)
+           (marked-full-exp sˢ .↓)
       ↬ mplug (joined-context j)
           (joined-focus j M.⦅≁ sliced-ana-type j ⦆)
-      ⇑ (F.outer (full-slice sˢ) ⊔ₛ
-          AnaSlice.type (ana-slice sᵃ)) .↓
+      ⇑ (marked-full-outer sˢ ⊔ₛ marked-ana-outer sᵃ) .↓
 inconsistency-error-sound {q = q} j =
   inconsistency-at-focus-sound
     (joined-classification j)
@@ -219,3 +256,58 @@ inconsistency-error-sound {q = q} j =
       (queries-inconsistent q)
       (syn-query-retained j)
       (ana-query-retained j))
+
+record InconsistencySlicingResult
+    {n : ℕ} {Γ₀ : Assms} {C : Ctx} {n' : ℕ} {Γ : Assms}
+    {e : Exp} {ě : MExp} {τ₀ τˢ τᵃ : Typ}
+    (ACls : n , Γ₀ ⊢ C at synPos τ₀ ▷ n' , Γ [ ⇐mode τᵃ ])
+    (D : n' , Γ ⊢ e ↬ ě ⇑ τˢ)
+    (bad : τˢ ≁ τᵃ) : Set where
+  field
+    focus-classifications : MF.InconsistentFocusClassifications ACls D bad
+    joined-slices :
+      let fc = focus-classifications
+          q = inconsistent-queries bad
+          SCls = MF.InconsistentFocusClassifications.synthesis-classification fc
+          SD = MF.InconsistentFocusClassifications.synthesis-focus fc
+          ACls' = MF.InconsistentFocusClassifications.analysis-classification fc
+          sˢ = top-marked-full-syn {Cls = SCls} {D = SD} (syn-query q)
+          sᵃ = top-marked-full-ana {Cls = ACls'} (ana-query q)
+      in JoinedInconsistencySlices SCls SD ACls' q sˢ sᵃ
+open InconsistencySlicingResult public
+
+slice-inconsistency-error :
+  ∀ {n Γ₀ C n' Γ e ě τ₀ τˢ τᵃ}
+    (ACls : n , Γ₀ ⊢ C at synPos τ₀ ▷ n' , Γ [ ⇐mode τᵃ ])
+    (D : n' , Γ ⊢ e ↬ ě ⇑ τˢ)
+    (bad : τˢ ≁ τᵃ)
+  → InconsistencySlicingResult ACls D bad
+slice-inconsistency-error ACls D bad
+  with MF.inconsistent-focus-classifications ACls D bad
+... | fc = record
+  { focus-classifications = fc
+  ; joined-slices = top-joined-inconsistency-slices (inconsistent-queries bad)
+  }
+
+sliced-inconsistency-error-sound :
+  ∀ {n Γ₀ C n' Γ e ě τ₀ τˢ τᵃ}
+    {ACls : n , Γ₀ ⊢ C at synPos τ₀ ▷ n' , Γ [ ⇐mode τᵃ ]}
+    {D : n' , Γ ⊢ e ↬ ě ⇑ τˢ}
+    {bad : τˢ ≁ τᵃ}
+    (r : InconsistencySlicingResult ACls D bad)
+  → let fc = focus-classifications r
+        q = inconsistent-queries bad
+        SCls = MF.InconsistentFocusClassifications.synthesis-classification fc
+        SD = MF.InconsistentFocusClassifications.synthesis-focus fc
+        ACls' = MF.InconsistentFocusClassifications.analysis-classification fc
+        sˢ = top-marked-full-syn {Cls = SCls} {D = SD} (syn-query q)
+        sᵃ = top-marked-full-ana {Cls = ACls'} (ana-query q)
+        j = joined-slices r
+    in n , (marked-full-γ sˢ ⊔ₛ marked-ana-γ sᵃ) .↓ ⊢
+          plug ((marked-full-κ sˢ ⊔ₛ marked-ana-κ sᵃ) .↓)
+               (marked-full-exp sˢ .↓)
+          ↬ mplug (joined-context j)
+              (joined-focus j M.⦅≁ sliced-ana-type j ⦆)
+          ⇑ (marked-full-outer sˢ ⊔ₛ marked-ana-outer sᵃ) .↓
+sliced-inconsistency-error-sound r =
+  inconsistency-error-sound (joined-slices r)
