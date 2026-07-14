@@ -252,3 +252,52 @@ mark-syn-pos-type-minimal : ∀ {n Γ₀ C n' Γ e τ τₚ}
   {D : n' , Γ ⊢ e ⇑ τ} {u}
   → (s : SynPosTypeSlice Cls D u) → SS.IsMinimal s → SS.IsMinimal (mark-syn-pos-type-slice s)
 mark-syn-pos-type-minimal s minimal r r⊑ = minimal (full-pos-slice r) r⊑
+
+MinMarkedSynSlice : ∀ {n Γ e τ} (D : n , Γ ⊢ e ⇑ τ) → ⌊ τ ⌋ → Set
+MinMarkedSynSlice D u = Σ[ s ∈ MarkedSynSlice D u ] SS.IsMinimal s
+
+MinMarkedAnaSlice : ∀ {n Γ₀ C n' Γ τ τₚ}
+  (Cls : n , Γ₀ ⊢ C at synPos τₚ ▷ n' , Γ [ ⇐mode τ ]) → ⌊ τ ⌋ → Set
+MinMarkedAnaSlice Cls u = Σ[ s ∈ MarkedAnaSlice Cls u ] MarkedAnaMinimal s
+
+MinMarkedAnaPosSlice : ∀ {n Γ₀ C n' Γ τ τₚ}
+  (Cls : n , Γ₀ ⊢ C at anaPos τₚ ▷ n' , Γ [ ⇐mode τ ]) → ⌊ τ ⌋ → Set
+MinMarkedAnaPosSlice Cls u = Σ[ s ∈ MarkedAnaPosSlice Cls u ] MarkedAnaPosMinimal s
+
+MinMarkedSynTypeSlice : ∀ {n Γ₀ C n' Γ e τ τₚ}
+  (Cls : n , Γ₀ ⊢ C at synPos τₚ ▷ n' , Γ [ ⇒mode τ ])
+  (D : n' , Γ ⊢ e ⇑ τ) → ⌊ τ ⌋ → Set
+MinMarkedSynTypeSlice Cls D u = Σ[ s ∈ MarkedSynTypeSlice Cls D u ] SS.IsMinimal s
+
+MinMarkedSynPosTypeSlice : ∀ {n Γ₀ C n' Γ e τ τₚ}
+  (Cls : n , Γ₀ ⊢ C at anaPos τₚ ▷ n' , Γ [ ⇒mode τ ])
+  (D : n' , Γ ⊢ e ⇑ τ) → ⌊ τ ⌋ → Set
+MinMarkedSynPosTypeSlice Cls D u = Σ[ s ∈ MarkedSynPosTypeSlice Cls D u ] SS.IsMinimal s
+
+mark-min-syn-slice : ∀ {n Γ e τ} {D : n , Γ ⊢ e ⇑ τ} {u}
+  → MinSynSlice D ◂ u → MinMarkedSynSlice D u
+mark-min-syn-slice (s , minimal) = mark-syn-slice s , mark-syn-minimal s minimal
+
+mark-min-ana-slice : ∀ {n Γ₀ C n' Γ τ τₚ}
+  {Cls : n , Γ₀ ⊢ C at synPos τₚ ▷ n' , Γ [ ⇐mode τ ]} {u}
+  → MinAnaSlice Cls u → MinMarkedAnaSlice Cls u
+mark-min-ana-slice (s , minimal) = mark-ana-slice s , mark-ana-minimal s minimal
+
+mark-min-ana-pos-slice : ∀ {n Γ₀ C n' Γ τ τₚ}
+  {Cls : n , Γ₀ ⊢ C at anaPos τₚ ▷ n' , Γ [ ⇐mode τ ]} {u}
+  → MinAnaPosSlice Cls u → MinMarkedAnaPosSlice Cls u
+mark-min-ana-pos-slice (s , minimal) = mark-ana-pos-slice s , mark-ana-pos-minimal s minimal
+
+mark-min-syn-type-slice : ∀ {n Γ₀ C n' Γ e τ τₚ}
+  {Cls : n , Γ₀ ⊢ C at synPos τₚ ▷ n' , Γ [ ⇒mode τ ]}
+  {D : n' , Γ ⊢ e ⇑ τ} {u}
+  → MinSynTypeSlice Cls D u → MinMarkedSynTypeSlice Cls D u
+mark-min-syn-type-slice (s , minimal) =
+  mark-syn-type-slice s , mark-syn-type-minimal s minimal
+
+mark-min-syn-pos-type-slice : ∀ {n Γ₀ C n' Γ e τ τₚ}
+  {Cls : n , Γ₀ ⊢ C at anaPos τₚ ▷ n' , Γ [ ⇒mode τ ]}
+  {D : n' , Γ ⊢ e ⇑ τ} {u}
+  → MinSynPosTypeSlice Cls D u → MinMarkedSynPosTypeSlice Cls D u
+mark-min-syn-pos-type-slice (s , minimal) =
+  mark-syn-pos-type-slice s , mark-syn-pos-type-minimal s minimal

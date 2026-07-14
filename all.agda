@@ -25,4 +25,5 @@ module all where
   import Slicing.Full.FullSlicing
   import Slicing.Interaction
   import Slicing.Marked
+  import Slicing.MarkedInteraction
   import Slicing.Counterexamples
