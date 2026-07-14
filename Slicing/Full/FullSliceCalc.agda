@@ -1,9 +1,10 @@
-open import Data.Nat using (ℕ)
+open import Data.Nat using (ℕ; zero; suc)
 open import Data.List using (_∷_)
+open import Data.Product using (proj₂)
 open import Relation.Binary.PropositionalEquality using (_≡_)
 open import Core
 open import Core.Typ.Lift using
-  (unmatch⇒-min; unmatch×-min; unmatch+-min)
+  (unmatch⇒-min; unmatch×-min; unmatch+-min; ann-⇒-plain)
 open import Semantics.Statics
 open import Slicing.Synthesis.FixedAssmsCalc using (_◂_⤳_⇑_⊣_)
 
@@ -107,12 +108,72 @@ mutual
             → D₁ ◂ unmatch⇒-min {τ₀} eq uₒ ⊥ₛ ⤳ σ₁ ⇑ ψ₁ ⊣ γ₁
             → s∘₂ D₁ eq Cls , D ◂ u ⤳ σ₁ ∘₂ₖ κ ∣ σ ⊣ (γ₁ ⊔ₛ γ')
 
+    minSλ: : ∀ {C n_f Γ e τ₁ τ₂ τ}
+                {wf : n ⊢wf τ₁}
+                {Cls : n , (τ₁ ∷ Γ₀) ⊢ C at synPos τ₂ ▷ n_f , Γ [ ⇒mode τ ]}
+                {D : n_f , Γ ⊢ e ⇑ τ}
+                {u : ⌊ τ ⌋} {κ : ⌊ C ⌋} {σ : ⌊ e ⌋}
+                {φ₁ : ⌊ τ₁ ⌋} {γ : ⌊ Γ₀ ⌋}
+            → Cls , D ◂ u ⤳ κ ∣ σ ⊣ (φ₁ ∷ₛ γ)
+            → sλ: wf Cls , D ◂ u ⤳ λ:ₖ φ₁ κ ∣ σ ⊣ γ
+
+    minSΛ : ∀ {C n_f Γ e τ_body τ}
+               {Cls : suc n , shiftΓ (suc zero) Γ₀ ⊢ C at synPos τ_body
+                        ▷ n_f , Γ [ ⇒mode τ ]}
+               {D : n_f , Γ ⊢ e ⇑ τ}
+               {u : ⌊ τ ⌋} {κ : ⌊ C ⌋} {σ : ⌊ e ⌋}
+               {γ' : ⌊ shiftΓ (suc zero) Γ₀ ⌋}
+           → Cls , D ◂ u ⤳ κ ∣ σ ⊣ γ'
+           → sΛ Cls , D ◂ u ⤳ Λₖ κ ∣ σ ⊣ unshiftΓₛ γ'
+
     minSdef₁ : ∀ {C e₂ n_f Γ e τ' τ₂ τ}
                  {Cls : n , Γ₀ ⊢ C at synPos τ' ▷ n_f , Γ [ ⇒mode τ ]}
                  {d₂ : n , (τ' ∷ Γ₀) ⊢ e₂ ⇑ τ₂} {D : n_f , Γ ⊢ e ⇑ τ}
                  {u : ⌊ τ ⌋} {κ : ⌊ C ⌋} {σ : ⌊ e ⌋} {γ : ⌊ Γ₀ ⌋}
              → Cls , D ◂ u ⤳ κ ∣ σ ⊣ γ
              → sdef₁ Cls d₂ , D ◂ u ⤳ def₁ₖ κ ⊥ₛ ∣ σ ⊣ γ
+
+    minSdef₂ : ∀ {e₁ C n_f Γ e τ' τ_b τ}
+                 {D₁ : n , Γ₀ ⊢ e₁ ⇑ τ'}
+                 {Cls : n , (τ' ∷ Γ₀) ⊢ C at synPos τ_b ▷ n_f , Γ [ ⇒mode τ ]}
+                 {D : n_f , Γ ⊢ e ⇑ τ}
+                 {u : ⌊ τ ⌋} {κ : ⌊ C ⌋} {σ : ⌊ e ⌋}
+                 {φ : ⌊ τ' ⌋} {γ₂ : ⌊ Γ₀ ⌋}
+                 {σ₁ : ⌊ e₁ ⌋} {ψ₁ : ⌊ τ' ⌋} {γ₁ : ⌊ Γ₀ ⌋}
+             → Cls , D ◂ u ⤳ κ ∣ σ ⊣ (φ ∷ₛ γ₂)
+             → D₁ ◂ φ ⤳ σ₁ ⇑ ψ₁ ⊣ γ₁
+             → sdef₂ D₁ Cls , D ◂ u
+               ⤳ def₂ₖ σ₁ κ ∣ σ ⊣ (γ₁ ⊔ₛ γ₂)
+
+    minScase₁ : ∀ {e₀ C e₂ n_f Γ e τ₀ τ₁ τ₂ τ₁' τ₂' τ}
+                  {D₀ : n , Γ₀ ⊢ e₀ ⇑ τ₀}
+                  {eq : τ₀ ⊔ □ + □ ≡ τ₁ + τ₂}
+                  {Cls : n , (τ₁ ∷ Γ₀) ⊢ C at synPos τ₁'
+                          ▷ n_f , Γ [ ⇒mode τ ]}
+                  {d₂ : n , (τ₂ ∷ Γ₀) ⊢ e₂ ⇑ τ₂'} {con : τ₁' ~ τ₂'}
+                  {D : n_f , Γ ⊢ e ⇑ τ}
+                  {u : ⌊ τ ⌋} {κ : ⌊ C ⌋} {σ : ⌊ e ⌋}
+                  {φ₁ : ⌊ τ₁ ⌋} {γ₁ : ⌊ Γ₀ ⌋}
+                  {σ₀ : ⌊ e₀ ⌋} {ψ₀ : ⌊ τ₀ ⌋} {γ₀ : ⌊ Γ₀ ⌋}
+              → Cls , D ◂ u ⤳ κ ∣ σ ⊣ (φ₁ ∷ₛ γ₁)
+              → D₀ ◂ unmatch+-min {τ₀} eq φ₁ ⊥ₛ ⤳ σ₀ ⇑ ψ₀ ⊣ γ₀
+              → scase₁ D₀ eq Cls d₂ con , D ◂ u
+                ⤳ case₁ₖ σ₀ κ ⊥ₛ ∣ σ ⊣ (γ₀ ⊔ₛ γ₁)
+
+    minScase₂ : ∀ {e₀ e₁ C n_f Γ e τ₀ τ₁ τ₂ τ₁' τ₂' τ}
+                  {D₀ : n , Γ₀ ⊢ e₀ ⇑ τ₀}
+                  {eq : τ₀ ⊔ □ + □ ≡ τ₁ + τ₂}
+                  {d₁ : n , (τ₁ ∷ Γ₀) ⊢ e₁ ⇑ τ₁'}
+                  {Cls : n , (τ₂ ∷ Γ₀) ⊢ C at synPos τ₂'
+                          ▷ n_f , Γ [ ⇒mode τ ]}
+                  {con : τ₁' ~ τ₂'} {D : n_f , Γ ⊢ e ⇑ τ}
+                  {u : ⌊ τ ⌋} {κ : ⌊ C ⌋} {σ : ⌊ e ⌋}
+                  {φ₂ : ⌊ τ₂ ⌋} {γ₂ : ⌊ Γ₀ ⌋}
+                  {σ₀ : ⌊ e₀ ⌋} {ψ₀ : ⌊ τ₀ ⌋} {γ₀ : ⌊ Γ₀ ⌋}
+              → Cls , D ◂ u ⤳ κ ∣ σ ⊣ (φ₂ ∷ₛ γ₂)
+              → D₀ ◂ unmatch+-min {τ₀} eq ⊥ₛ φ₂ ⤳ σ₀ ⇑ ψ₀ ⊣ γ₀
+              → scase₂ D₀ eq d₁ Cls con , D ◂ u
+                ⤳ case₂ₖ σ₀ ⊥ₛ κ ∣ σ ⊣ (γ₀ ⊔ₛ γ₂)
 
   data _,_◂_⤳_∣_⇓_⊣_ {n} {Γ₀} where
 
@@ -164,9 +225,74 @@ mutual
             → a&₂ eq d₁ Cls , D ◂ u
               ⤳ ⊥ₛ &₂ₖ κ ∣ σ ⇓ unmatch×-min {τₒ} eq ⊥ₛ uᵢ ⊣ γ
 
+    minAλ⇒ : ∀ {C n_f Γ e τₒ τ₁ τ₂ τ}
+                {eq : τₒ ⊔ □ ⇒ □ ≡ τ₁ ⇒ τ₂}
+                {Cls : n , (τ₁ ∷ Γ₀) ⊢ C at anaPos τ₂ ▷ n_f , Γ [ ⇒mode τ ]}
+                {D : n_f , Γ ⊢ e ⇑ τ}
+                {u : ⌊ τ ⌋} {κ : ⌊ C ⌋} {σ : ⌊ e ⌋}
+                {φ₁ : ⌊ τ₁ ⌋} {uᵢ : ⌊ τ₂ ⌋} {γ : ⌊ Γ₀ ⌋}
+            → Cls , D ◂ u ⤳ κ ∣ σ ⇓ uᵢ ⊣ (φ₁ ∷ₛ γ)
+            → aλ⇒ eq Cls , D ◂ u
+              ⤳ λ⇒ₖ κ ∣ σ ⇓ unmatch⇒-min {τₒ} eq φ₁ uᵢ ⊣ γ
+
+    minAλ: : ∀ {C n_f Γ e τₒ τ₁ τ₁' τ₂ τ}
+                {con : τₒ ~ τ₁ ⇒ □} {eq : τₒ ⊔ τ₁ ⇒ □ ≡ τ₁' ⇒ τ₂}
+                {wf : n ⊢wf τ₁}
+                {Cls : n , (τ₁ ∷ Γ₀) ⊢ C at anaPos τ₂ ▷ n_f , Γ [ ⇒mode τ ]}
+                {D : n_f , Γ ⊢ e ⇑ τ}
+                {u : ⌊ τ ⌋} {κ : ⌊ C ⌋} {σ : ⌊ e ⌋}
+                {φ₁ : ⌊ τ₁ ⌋} {uᵢ : ⌊ τ₂ ⌋} {γ : ⌊ Γ₀ ⌋}
+            → Cls , D ◂ u ⤳ κ ∣ σ ⇓ uᵢ ⊣ (φ₁ ∷ₛ γ)
+            → aλ: con eq wf Cls , D ◂ u
+              ⤳ λ:ₖ φ₁ κ ∣ σ
+              ⇓ unmatch⇒-min {τₒ} (proj₂ (ann-⇒-plain {τₒ} {τ₁} eq)) ⊥ₛ uᵢ
+              ⊣ γ
+
     minAdef₁ : ∀ {C e₂ n_f Γ e τ' τ₂ τ}
                  {Cls : n , Γ₀ ⊢ C at synPos τ' ▷ n_f , Γ [ ⇒mode τ ]}
                  {d₂ : n , (τ' ∷ Γ₀) ⊢ e₂ ⇓ τ₂} {D : n_f , Γ ⊢ e ⇑ τ}
                  {u : ⌊ τ ⌋} {κ : ⌊ C ⌋} {σ : ⌊ e ⌋} {γ : ⌊ Γ₀ ⌋}
              → Cls , D ◂ u ⤳ κ ∣ σ ⊣ γ
              → adef₁ Cls d₂ , D ◂ u ⤳ def₁ₖ κ ⊥ₛ ∣ σ ⇓ ⊥ₛ ⊣ γ
+
+    minAdef₂ : ∀ {e₁ C n_f Γ e τ' τ_b τ}
+                 {D₁ : n , Γ₀ ⊢ e₁ ⇑ τ'}
+                 {Cls : n , (τ' ∷ Γ₀) ⊢ C at anaPos τ_b ▷ n_f , Γ [ ⇒mode τ ]}
+                 {D : n_f , Γ ⊢ e ⇑ τ}
+                 {u : ⌊ τ ⌋} {κ : ⌊ C ⌋} {σ : ⌊ e ⌋}
+                 {uᵢ : ⌊ τ_b ⌋} {φ : ⌊ τ' ⌋} {γ₂ : ⌊ Γ₀ ⌋}
+                 {σ₁ : ⌊ e₁ ⌋} {ψ₁ : ⌊ τ' ⌋} {γ₁ : ⌊ Γ₀ ⌋}
+             → Cls , D ◂ u ⤳ κ ∣ σ ⇓ uᵢ ⊣ (φ ∷ₛ γ₂)
+             → D₁ ◂ φ ⤳ σ₁ ⇑ ψ₁ ⊣ γ₁
+             → adef₂ D₁ Cls , D ◂ u
+               ⤳ def₂ₖ σ₁ κ ∣ σ ⇓ uᵢ ⊣ (γ₁ ⊔ₛ γ₂)
+
+    minAcase₁ : ∀ {e₀ C e₂ n_f Γ e τ₀ τ₁ τ₂ τ_b τ}
+                  {D₀ : n , Γ₀ ⊢ e₀ ⇑ τ₀}
+                  {eq : τ₀ ⊔ □ + □ ≡ τ₁ + τ₂}
+                  {Cls : n , (τ₁ ∷ Γ₀) ⊢ C at anaPos τ_b
+                          ▷ n_f , Γ [ ⇒mode τ ]}
+                  {d₂ : n , (τ₂ ∷ Γ₀) ⊢ e₂ ⇓ τ_b}
+                  {D : n_f , Γ ⊢ e ⇑ τ}
+                  {u : ⌊ τ ⌋} {κ : ⌊ C ⌋} {σ : ⌊ e ⌋}
+                  {uᵢ : ⌊ τ_b ⌋} {φ₁ : ⌊ τ₁ ⌋} {γ₁ : ⌊ Γ₀ ⌋}
+                  {σ₀ : ⌊ e₀ ⌋} {ψ₀ : ⌊ τ₀ ⌋} {γ₀ : ⌊ Γ₀ ⌋}
+              → Cls , D ◂ u ⤳ κ ∣ σ ⇓ uᵢ ⊣ (φ₁ ∷ₛ γ₁)
+              → D₀ ◂ unmatch+-min {τ₀} eq φ₁ ⊥ₛ ⤳ σ₀ ⇑ ψ₀ ⊣ γ₀
+              → acase₁ D₀ eq Cls d₂ , D ◂ u
+                ⤳ case₁ₖ σ₀ κ ⊥ₛ ∣ σ ⇓ uᵢ ⊣ (γ₀ ⊔ₛ γ₁)
+
+    minAcase₂ : ∀ {e₀ e₁ C n_f Γ e τ₀ τ₁ τ₂ τ_b τ}
+                  {D₀ : n , Γ₀ ⊢ e₀ ⇑ τ₀}
+                  {eq : τ₀ ⊔ □ + □ ≡ τ₁ + τ₂}
+                  {d₁ : n , (τ₁ ∷ Γ₀) ⊢ e₁ ⇓ τ_b}
+                  {Cls : n , (τ₂ ∷ Γ₀) ⊢ C at anaPos τ_b
+                          ▷ n_f , Γ [ ⇒mode τ ]}
+                  {D : n_f , Γ ⊢ e ⇑ τ}
+                  {u : ⌊ τ ⌋} {κ : ⌊ C ⌋} {σ : ⌊ e ⌋}
+                  {uᵢ : ⌊ τ_b ⌋} {φ₂ : ⌊ τ₂ ⌋} {γ₂ : ⌊ Γ₀ ⌋}
+                  {σ₀ : ⌊ e₀ ⌋} {ψ₀ : ⌊ τ₀ ⌋} {γ₀ : ⌊ Γ₀ ⌋}
+              → Cls , D ◂ u ⤳ κ ∣ σ ⇓ uᵢ ⊣ (φ₂ ∷ₛ γ₂)
+              → D₀ ◂ unmatch+-min {τ₀} eq ⊥ₛ φ₂ ⤳ σ₀ ⇑ ψ₀ ⊣ γ₀
+              → acase₂ D₀ eq d₁ Cls , D ◂ u
+                ⤳ case₂ₖ σ₀ ⊥ₛ κ ∣ σ ⇓ uᵢ ⊣ (γ₀ ⊔ₛ γ₂)
