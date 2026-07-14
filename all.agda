@@ -17,4 +17,7 @@ module all where
   import Slicing.Analysis.Analysis
   import Slicing.Analysis.AnaSliceCalc
   import Slicing.Analysis.AnaSlicing
+  import Slicing.Full.Full
+  import Slicing.Full.FullSliceCalc
+  import Slicing.Full.FullSlicing
   import Slicing.Counterexamples
