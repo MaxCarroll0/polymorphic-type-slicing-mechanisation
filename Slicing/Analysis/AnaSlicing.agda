@@ -143,50 +143,50 @@ syn-cls-precision Γ⊑ (⊑def₂ e⊑ C⊑) m⊑ (sdef₂ D₁ cls₁) (sdef�
   with refl ← syn-unicity D₁ D₁'
   = syn-cls-precision (⊑∷ τ'⊑ Γ⊑) C⊑ m⊑ cls₁ cls₂
 
--- A classification of a context slice at an analysis position with a checked focus is
--- backed by a synthesis-position classification with the same focus: the
--- pure-analysis path to a○ is impossible since the original classification's
--- mode is ⇐mode (its path never ends at s○).
-ana-cls-to-syn : ∀ {n Γ Γ₀ κ C n_f Γ_f τ_a τ_m n_f₀ Γ_f₀ τ_p₀ m₀}
+-- A classification of a context slice at an analysis position is backed by a
+-- synthesis-position classification with the same focus mode whenever the
+-- original context has a synthesis classification.  The pure-analysis path
+-- to a○ is impossible because its mode cannot be below the s○ mode.
+ana-cls-to-syn : ∀ {n Γ Γ₀ κ C n_f Γ_f τ_a n_f₀ Γ_f₀ τ_p₀ m m₀}
   → Γ ⊑a Γ₀ → κ ⊑c C
-  → mode-⊑ (⇐mode τ_m) m₀
+  → mode-⊑ m m₀
   → n , Γ₀ ⊢ C at synPos τ_p₀ ▷ n_f₀ , Γ_f₀ [ m₀ ]
-  → n , Γ ⊢ κ at anaPos τ_a ▷ n_f , Γ_f [ ⇐mode τ_m ]
-  → ∃[ ψ ] ∃[ n' ] ∃[ Γ' ] (n , Γ ⊢ κ at synPos ψ ▷ n' , Γ' [ ⇐mode τ_m ])
+  → n , Γ ⊢ κ at anaPos τ_a ▷ n_f , Γ_f [ m ]
+  → ∃[ ψ ] (n , Γ ⊢ κ at synPos ψ ▷ n_f , Γ_f [ m ])
 
 ana-cls-to-syn Γ⊑ ⊑○ () s○ a○
 
 ana-cls-to-syn Γ⊑ (⊑λu _) m⊑ () (aλ⇒ _ _)
 
 ana-cls-to-syn Γ⊑ κ⊑ m⊑ Cls₀ (aSub scls con) =
-  _ , _ , _ , scls
+  _ , scls
 
 ana-cls-to-syn Γ⊑ (⊑λ t⊑τa κ₁⊑) m⊑ (sλ: wf₀ cls₀) (aλ: con_r eq_r wf_r acls')
   with ana-cls-to-syn (⊑∷ t⊑τa Γ⊑) κ₁⊑ m⊑ cls₀ acls'
-... | _ , _ , _ , cls₁ =
-      _ , _ , _ , sλ: wf_r cls₁
+... | _ , cls₁ =
+      _ , sλ: wf_r cls₁
 
 ana-cls-to-syn Γ⊑ (⊑ι₁ κ₁⊑) m⊑ (sι₁ cls₀) (aι₁ eq_r acls')
   with ana-cls-to-syn Γ⊑ κ₁⊑ m⊑ cls₀ acls'
-... | _ , _ , _ , cls₁ =
-      _ , _ , _ , sι₁ cls₁
+... | _ , cls₁ =
+      _ , sι₁ cls₁
 
 ana-cls-to-syn Γ⊑ (⊑ι₂ κ₁⊑) m⊑ (sι₂ cls₀) (aι₂ eq_r acls')
   with ana-cls-to-syn Γ⊑ κ₁⊑ m⊑ cls₀ acls'
-... | _ , _ , _ , cls₁ =
-      _ , _ , _ , sι₂ cls₁
+... | _ , cls₁ =
+      _ , sι₂ cls₁
 
 ana-cls-to-syn Γ⊑ (⊑&₁ κ₁⊑ σ₂⊑) m⊑ (s&₁ cls₀ d₀) (a&₁ eq_r acls' d_r)
   with ana-cls-to-syn Γ⊑ κ₁⊑ m⊑ cls₀ acls'
      | static-gradual-syn Γ⊑ σ₂⊑ d₀
-... | _ , _ , _ , cls₁ | _ , d₂' , _ =
-      _ , _ , _ , s&₁ cls₁ d₂'
+... | _ , cls₁ | _ , d₂' , _ =
+      _ , s&₁ cls₁ d₂'
 
 ana-cls-to-syn Γ⊑ (⊑&₂ σ₁⊑ κ₁⊑) m⊑ (s&₂ d₀ cls₀) (a&₂ eq_r d_r acls')
   with ana-cls-to-syn Γ⊑ κ₁⊑ m⊑ cls₀ acls'
      | static-gradual-syn Γ⊑ σ₁⊑ d₀
-... | _ , _ , _ , cls₁ | _ , d₁' , _ =
-      _ , _ , _ , s&₂ d₁' cls₁
+... | _ , cls₁ | _ , d₁' , _ =
+      _ , s&₂ d₁' cls₁
 
 ana-cls-to-syn Γ⊑ (⊑case₁ σ₀⊑ κ₁⊑ σ₂⊑) m⊑ (scase₁ D₀ eq₀ cls₀ d₀ con₀) (acase₁ D_r eq_r acls' d_r)
   with static-gradual-syn Γ⊑ σ₀⊑ D₀
@@ -198,8 +198,8 @@ ana-cls-to-syn Γ⊑ (⊑case₁ σ₀⊑ κ₁⊑ σ₂⊑) m⊑ (scase₁ D₀
   with refl ← +-inj-snd (trans (sym eq'') eq_r)
   with ana-cls-to-syn (⊑∷ pa Γ⊑) κ₁⊑ m⊑ cls₀ acls'
      | static-gradual-syn (⊑∷ pb Γ⊑) σ₂⊑ d₀
-... | _ , _ , _ , cls₁ | _ , d₂' , ϕ₂⊑ =
-      _ , _ , _ ,
+... | _ , cls₁ | _ , d₂' , ϕ₂⊑ =
+      _ ,
       scase₁ D_r eq_r cls₁ d₂'
         (~-⊑-down con₀ (syn-cls-precision (⊑∷ pa Γ⊑) κ₁⊑ m⊑ cls₁ cls₀) ϕ₂⊑)
 
@@ -213,8 +213,8 @@ ana-cls-to-syn Γ⊑ (⊑case₂ σ₀⊑ σ₁⊑ κ₁⊑) m⊑ (scase₂ D₀
   with refl ← +-inj-snd (trans (sym eq'') eq_r)
   with ana-cls-to-syn (⊑∷ pb Γ⊑) κ₁⊑ m⊑ cls₀ acls'
      | static-gradual-syn (⊑∷ pa Γ⊑) σ₁⊑ d₀
-... | _ , _ , _ , cls₁ | _ , d₁' , ϕ₁⊑ =
-      _ , _ , _ ,
+... | _ , cls₁ | _ , d₁' , ϕ₁⊑ =
+      _ ,
       scase₂ D_r eq_r d₁' cls₁
         (~-⊑-down con₀ ϕ₁⊑ (syn-cls-precision (⊑∷ pb Γ⊑) κ₁⊑ m⊑ cls₁ cls₀))
 
@@ -222,15 +222,15 @@ ana-cls-to-syn Γ⊑ (⊑def₁ κ₁⊑ σ₂⊑) m⊑ (sdef₁ cls₀ d₀) (a
   with static-gradual-syn
          (⊑∷ (syn-cls-precision Γ⊑ κ₁⊑ m⊑ scls' cls₀) Γ⊑) σ₂⊑ d₀
 ... | _ , d₂' , _ =
-      _ , _ , _ , sdef₁ scls' d₂'
+      _ , sdef₁ scls' d₂'
 
 ana-cls-to-syn Γ⊑ (⊑def₂ σ₁⊑ κ₁⊑) m⊑ (sdef₂ D₀ cls₀) (adef₂ D_r acls')
   with static-gradual-syn Γ⊑ σ₁⊑ D₀
 ... | _ , D₀' , τ'⊑
   with refl ← syn-unicity D_r D₀'
   with ana-cls-to-syn (⊑∷ τ'⊑ Γ⊑) κ₁⊑ m⊑ cls₀ acls'
-... | _ , _ , _ , cls₁ =
-      _ , _ , _ , sdef₂ D_r cls₁
+... | _ , cls₁ =
+      _ , sdef₂ D_r cls₁
 
 -- Bounded upward lifts: a calculus derivation classifies its context slice κ
 -- under any assumption slice above γ (and, at analysis positions, any outer
@@ -719,7 +719,7 @@ mutual
 
   extract-pos-least (minASub {Cls' = Cls'} c) κ_r Γ_r υ_or κ_r⊑ υ⊑ϕ ϕ⊑τ cls
     with ana-cls-to-syn (Γ_r .proof) (κ_r .proof) (⇐mode-⊑ ϕ⊑τ) Cls' cls
-  ... | _ , _ , _ , scls_r
+  ... | _ , scls_r
     with extract-least c κ_r Γ_r κ_r⊑ υ⊑ϕ ϕ⊑τ scls_r
   ... | ih-κ , ih-γ = ih-κ , ih-γ , ⊑ₛLat.⊥ₛ-min {A = Typ} υ_or
 

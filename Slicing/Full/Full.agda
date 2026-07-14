@@ -38,10 +38,10 @@ record SynTypeSlice
     outer      : ⌊ τₚ ⌋
     focus-slice : SynSlice D ◂ u
     powered     :
-      Σ[ n'' ∈ ℕ ] Σ[ Γᶠ ∈ Assms ] Σ[ φᶠ ∈ Typ ]
-        (SynSlice_◂_.↓γ focus-slice ⊑ Γᶠ) ∧
-        (n , γ .↓ ⊢ κ .↓ at synPos (outer .↓) ▷ n'' , Γᶠ [ ⇒mode φᶠ ]) ∧
-        (n'' , Γᶠ ⊢ SynSlice_◂_.↓σ focus-slice ⇑ φᶠ)
+      Σ[ n'' ∈ ℕ ] Σ[ Γᶠ ∈ ⌊ Γ ⌋ ] Σ[ φᶠ ∈ ⌊ τ ⌋ ]
+        (SynSlice_◂_.↓γₛ focus-slice ⊑ₛ Γᶠ) ∧
+        (n , γ .↓ ⊢ κ .↓ at synPos (outer .↓) ▷ n'' , Γᶠ .↓ [ ⇒mode (φᶠ .↓) ]) ∧
+        (n'' , Γᶠ .↓ ⊢ SynSlice_◂_.↓σ focus-slice ⇑ φᶠ .↓)
 
   data↓ : (Ctx ∧ Assms) ∧ Exp
   data↓ = (κ .↓ , γ .↓) , SynSlice_◂_.↓σ focus-slice
@@ -81,10 +81,10 @@ record SynPosTypeSlice
     pos-outer       : ⌊ τₚ ⌋
     pos-focus-slice : SynSlice D ◂ u
     pos-powered     :
-      Σ[ n'' ∈ ℕ ] Σ[ Γᶠ ∈ Assms ] Σ[ φᶠ ∈ Typ ]
-        (SynSlice_◂_.↓γ pos-focus-slice ⊑ Γᶠ) ∧
-        (n , pos-γ .↓ ⊢ pos-κ .↓ at anaPos (pos-outer .↓) ▷ n'' , Γᶠ [ ⇒mode φᶠ ]) ∧
-        (n'' , Γᶠ ⊢ SynSlice_◂_.↓σ pos-focus-slice ⇑ φᶠ)
+      Σ[ n'' ∈ ℕ ] Σ[ Γᶠ ∈ ⌊ Γ ⌋ ] Σ[ φᶠ ∈ ⌊ τ ⌋ ]
+        (SynSlice_◂_.↓γₛ pos-focus-slice ⊑ₛ Γᶠ) ∧
+        (n , pos-γ .↓ ⊢ pos-κ .↓ at anaPos (pos-outer .↓) ▷ n'' , Γᶠ .↓ [ ⇒mode (φᶠ .↓) ]) ∧
+        (n'' , Γᶠ .↓ ⊢ SynSlice_◂_.↓σ pos-focus-slice ⇑ φᶠ .↓)
 
   pos-data↓ : ((Ctx ∧ Assms) ∧ Exp) ∧ Typ
   pos-data↓ =
