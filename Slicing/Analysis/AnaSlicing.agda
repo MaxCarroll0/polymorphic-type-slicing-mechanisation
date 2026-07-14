@@ -299,6 +299,84 @@ mutual
         ↑ (sub-⊑ zero ⊑□ (body∀ₛ ψ_p eq .proof)) , ϕ , υ⊑ϕ , _ , _ ,
         s<>₁ cls (match∀ₛ ψ_p eq) wf□
 
+  lift-syn (minSλ: {wf = wf} {ϕ₁ = ϕ₁} c) Γ'' γ⊑
+    with lift-syn c (ϕ₁ ∷ₛ Γ'') (⊑∷ (⊑.refl {A = Typ}) γ⊑)
+  ... | ψ_p , ϕ , υ⊑ϕ , _ , _ , cls =
+        ϕ₁ ⇒ₛ ψ_p , ϕ , υ⊑ϕ , _ , _ , sλ: (wf-⊑ wf (ϕ₁ .proof)) cls
+
+  lift-syn (minS∘₂ {τ₀ = τ₀} {D₁ = D₁} {eq = eq} {υ_outer = υ_outer} {γ' = γ'} {σ = σ} {γ₁ = γ₁} cₚ f) Γ'' γ⊑
+    with FC.extract-ctx f | static-gradual-syn (Γ'' .proof) (σ .proof) D₁
+  ... | ψγ , dγ , q⊑ψγ | ψ'' , d'' , ψ''⊑τ₀
+    with unmatch⇒-min-cov τ₀ eq υ_outer ⊥ₛ
+           (⊑.trans {A = Typ} q⊑ψγ
+              (syn-precision
+                 (⊑.trans {A = Assms} (⊑ₛLat.x⊑ₛx⊔ₛy {A = Assms} γ₁ γ') γ⊑)
+                 (⊑.refl {A = Exp}) d'' dγ))
+           (match⇒ₛ (_ isSlice ψ''⊑τ₀) eq)
+  ... | υ_outer⊑dom , _
+    with lift-pos cₚ Γ'' (⊑.trans {A = Assms} (⊑ₛLat.y⊑ₛx⊔ₛy {A = Assms} γ₁ γ') γ⊑)
+           (dom⇒ₛ (_ isSlice ψ''⊑τ₀) eq) υ_outer⊑dom
+  ... | ϕ , υ⊑ϕ , _ , _ , cls =
+        cod⇒ₛ (_ isSlice ψ''⊑τ₀) eq , ϕ , υ⊑ϕ , _ , _ ,
+        s∘₂ d'' (match⇒ₛ (_ isSlice ψ''⊑τ₀) eq) cls
+
+  lift-syn (minSΛ {γ' = γ'} c) Γ'' γ⊑
+    with lift-syn c (shiftΓₛ Γ'')
+           (⊑.trans {A = Assms}
+              (⊑.reflexive {A = Assms} (sym (shift-unshiftΓ (γ' .↓) (γ' .proof))))
+              (shiftΓ-⊑ γ⊑))
+  ... | ψ_p , ϕ , υ⊑ϕ , _ , _ , cls =
+        ∀·ₛ ψ_p , ϕ , υ⊑ϕ , _ , _ , sΛ cls
+
+  lift-syn (minSdef₁ c) Γ'' γ⊑
+    with lift-syn c Γ'' γ⊑
+  ... | ψ_p , ϕ , υ⊑ϕ , _ , _ , cls =
+        ⊥ₛ , ϕ , υ⊑ϕ , _ , _ , sdef₁ cls ⇑□
+
+  lift-syn (minSdef₂ {τ' = τ'} {D = D} {ς = ς} {γ₂ = γ₂} {σ₁ = σ₁} {γ₁ = γ₁} c f) Γ'' γ⊑
+    with FC.extract-ctx f | static-gradual-syn (Γ'' .proof) (σ₁ .proof) D
+  ... | ψγ , dγ , ς⊑ψγ | ψ'' , d'' , ψ''⊑τ'
+    with lift-syn c ((_ isSlice ψ''⊑τ') ∷ₛ Γ'')
+           (⊑∷ (⊑.trans {A = Typ} ς⊑ψγ
+                  (syn-precision
+                     (⊑.trans {A = Assms} (⊑ₛLat.x⊑ₛx⊔ₛy {A = Assms} γ₁ γ₂) γ⊑)
+                     (⊑.refl {A = Exp}) d'' dγ))
+               (⊑.trans {A = Assms} (⊑ₛLat.y⊑ₛx⊔ₛy {A = Assms} γ₁ γ₂) γ⊑))
+  ... | ψ_p , ϕ , υ⊑ϕ , _ , _ , cls =
+        ψ_p , ϕ , υ⊑ϕ , _ , _ , sdef₂ d'' cls
+
+  lift-syn (minScase₁ {τ₀ = τ₀} {D = D} {eq = eq} {con = con} {ς₁ = ς₁} {γ₁ = γ₁} {σ₀ = σ₀} {γ₀ = γ₀} c f) Γ'' γ⊑
+    with FC.extract-ctx f | static-gradual-syn (Γ'' .proof) (σ₀ .proof) D
+  ... | ψγ , dγ , q⊑ψγ | ψ₀'' , d₀'' , ψ₀''⊑τ₀
+    with unmatch+-min-cov τ₀ eq ς₁ ⊥ₛ
+           (⊑.trans {A = Typ} q⊑ψγ
+              (syn-precision
+                 (⊑.trans {A = Assms} (⊑ₛLat.x⊑ₛx⊔ₛy {A = Assms} γ₀ γ₁) γ⊑)
+                 (⊑.refl {A = Exp}) d₀'' dγ))
+           (match+ₛ (_ isSlice ψ₀''⊑τ₀) eq)
+  ... | ς₁⊑fst , _
+    with lift-syn c ((fst+ₛ' (_ isSlice ψ₀''⊑τ₀) eq) ∷ₛ Γ'')
+           (⊑∷ ς₁⊑fst (⊑.trans {A = Assms} (⊑ₛLat.y⊑ₛx⊔ₛy {A = Assms} γ₀ γ₁) γ⊑))
+  ... | ψ₁' , ϕ , υ⊑ϕ , _ , _ , cls =
+        ↑ (⊔-mono-⊑ con (ψ₁' .proof) ⊑□) , ϕ , υ⊑ϕ , _ , _ ,
+        scase₁ d₀'' (match+ₛ (_ isSlice ψ₀''⊑τ₀) eq) cls ⇑□ ~?₁
+
+  lift-syn (minScase₂ {τ₀ = τ₀} {D = D} {eq = eq} {con = con} {ς₂ = ς₂} {γ₂ = γ₂} {σ₀ = σ₀} {γ₀ = γ₀} c f) Γ'' γ⊑
+    with FC.extract-ctx f | static-gradual-syn (Γ'' .proof) (σ₀ .proof) D
+  ... | ψγ , dγ , q⊑ψγ | ψ₀'' , d₀'' , ψ₀''⊑τ₀
+    with unmatch+-min-cov τ₀ eq ⊥ₛ ς₂
+           (⊑.trans {A = Typ} q⊑ψγ
+              (syn-precision
+                 (⊑.trans {A = Assms} (⊑ₛLat.x⊑ₛx⊔ₛy {A = Assms} γ₀ γ₂) γ⊑)
+                 (⊑.refl {A = Exp}) d₀'' dγ))
+           (match+ₛ (_ isSlice ψ₀''⊑τ₀) eq)
+  ... | _ , ς₂⊑snd
+    with lift-syn c ((snd+ₛ' (_ isSlice ψ₀''⊑τ₀) eq) ∷ₛ Γ'')
+           (⊑∷ ς₂⊑snd (⊑.trans {A = Assms} (⊑ₛLat.y⊑ₛx⊔ₛy {A = Assms} γ₀ γ₂) γ⊑))
+  ... | ψ₂' , ϕ , υ⊑ϕ , _ , _ , cls =
+        ↑ (⊔-mono-⊑ con ⊑□ (ψ₂' .proof)) , ϕ , υ⊑ϕ , _ , _ ,
+        scase₂ d₀'' (match+ₛ (_ isSlice ψ₀''⊑τ₀) eq) ⇑□ cls ~?₂
+
   lift-pos {Cls = Cls} min□Pos Γ'' _ υ_p _
     with static-gradual-ana-cls (Γ'' .proof) ((⊥ₛ {a = _}) .proof) (υ_p .proof) Cls
   ... | _ , _ , _ , _ , ⇐mode-⊑ ϕ⊑ , cls =
@@ -339,6 +417,76 @@ mutual
     with lift-pos c Γ'' γ⊑ (snd×ₛ υ_p eq) υ_b⊑snd
   ... | ϕ , υ⊑ϕ , _ , _ , cls =
         ϕ , υ⊑ϕ , _ , _ , a&₂ (match×ₛ υ_p eq) (⇓Sub ⇑□ ~?₁) cls
+
+  lift-pos (minAλ⇒ {τ = τ} {eq = eq} {ς₁ = ς₁} {υ_b = υ_b} c) Γ'' γ⊑ υ_p υo⊑
+    with unmatch⇒-min-cov τ eq ς₁ υ_b υo⊑ (match⇒ₛ υ_p eq)
+  ... | ς₁⊑dom , υ_b⊑cod
+    with lift-pos c ((dom⇒ₛ υ_p eq) ∷ₛ Γ'') (⊑∷ ς₁⊑dom γ⊑) (cod⇒ₛ υ_p eq) υ_b⊑cod
+  ... | ϕ , υ⊑ϕ , _ , _ , cls =
+        ϕ , υ⊑ϕ , _ , _ , aλ⇒ (match⇒ₛ υ_p eq) cls
+
+  lift-pos (minAλ: {τ = τ} {τ₁ = τ₁} {con = con} {eq = eq} {wf = wf} {ς₁ = ς₁} {υ_b = υ_b} c) Γ'' γ⊑ υ_p υo⊑
+    with ⊔-ann-⇒-⊑ (υ_p .proof) (ς₁ .proof) eq
+  ... | _ , b_p , eq_p , b_p⊑τ₂
+    with unmatch⇒-min-cov τ (proj₂ (ann-⇒-plain {τ} {τ₁} eq)) ⊥ₛ υ_b υo⊑
+           (proj₂ (ann-⇒-plain {υ_p .↓} {ς₁ .↓} eq_p))
+  ... | _ , υ_b⊑b_p
+    with lift-pos c (ς₁ ∷ₛ Γ'') (⊑∷ (⊑.refl {A = Typ}) γ⊑) (_ isSlice b_p⊑τ₂) υ_b⊑b_p
+  ... | ϕ , υ⊑ϕ , _ , _ , cls =
+        ϕ , υ⊑ϕ , _ , _ ,
+        aλ: (~-⊑-down con (υ_p .proof) (⊑⇒ (ς₁ .proof) ⊑□)) eq_p (wf-⊑ wf (ς₁ .proof)) cls
+
+  lift-pos (minAdef₁ c) Γ'' γ⊑ υ_p _
+    with lift-syn c Γ'' γ⊑
+  ... | ψ_p , ϕ , υ⊑ϕ , _ , _ , cls =
+        ϕ , υ⊑ϕ , _ , _ , adef₁ cls (⇓Sub ⇑□ ~?₁)
+
+  lift-pos (minAdef₂ {τ' = τ'} {D = D} {ς = ς} {γ₂ = γ₂} {σ₁ = σ₁} {γ₁ = γ₁} c f) Γ'' γ⊑ υ_p υo⊑
+    with FC.extract-ctx f | static-gradual-syn (Γ'' .proof) (σ₁ .proof) D
+  ... | ψγ , dγ , ς⊑ψγ | ψ'' , d'' , ψ''⊑τ'
+    with lift-pos c ((_ isSlice ψ''⊑τ') ∷ₛ Γ'')
+           (⊑∷ (⊑.trans {A = Typ} ς⊑ψγ
+                  (syn-precision
+                     (⊑.trans {A = Assms} (⊑ₛLat.x⊑ₛx⊔ₛy {A = Assms} γ₁ γ₂) γ⊑)
+                     (⊑.refl {A = Exp}) d'' dγ))
+               (⊑.trans {A = Assms} (⊑ₛLat.y⊑ₛx⊔ₛy {A = Assms} γ₁ γ₂) γ⊑))
+           υ_p υo⊑
+  ... | ϕ , υ⊑ϕ , _ , _ , cls =
+        ϕ , υ⊑ϕ , _ , _ , adef₂ d'' cls
+
+  lift-pos (minAcase₁ {τ₀ = τ₀} {D = D} {eq = eq} {ς₁ = ς₁} {γ₁ = γ₁} {σ₀ = σ₀} {γ₀ = γ₀} c f) Γ'' γ⊑ υ_p υo⊑
+    with FC.extract-ctx f | static-gradual-syn (Γ'' .proof) (σ₀ .proof) D
+  ... | ψγ , dγ , q⊑ψγ | ψ₀'' , d₀'' , ψ₀''⊑τ₀
+    with unmatch+-min-cov τ₀ eq ς₁ ⊥ₛ
+           (⊑.trans {A = Typ} q⊑ψγ
+              (syn-precision
+                 (⊑.trans {A = Assms} (⊑ₛLat.x⊑ₛx⊔ₛy {A = Assms} γ₀ γ₁) γ⊑)
+                 (⊑.refl {A = Exp}) d₀'' dγ))
+           (match+ₛ (_ isSlice ψ₀''⊑τ₀) eq)
+  ... | ς₁⊑fst , _
+    with lift-pos c ((fst+ₛ' (_ isSlice ψ₀''⊑τ₀) eq) ∷ₛ Γ'')
+           (⊑∷ ς₁⊑fst (⊑.trans {A = Assms} (⊑ₛLat.y⊑ₛx⊔ₛy {A = Assms} γ₀ γ₁) γ⊑))
+           υ_p υo⊑
+  ... | ϕ , υ⊑ϕ , _ , _ , cls =
+        ϕ , υ⊑ϕ , _ , _ ,
+        acase₁ d₀'' (match+ₛ (_ isSlice ψ₀''⊑τ₀) eq) cls (⇓Sub ⇑□ ~?₁)
+
+  lift-pos (minAcase₂ {τ₀ = τ₀} {D = D} {eq = eq} {ς₂ = ς₂} {γ₂ = γ₂} {σ₀ = σ₀} {γ₀ = γ₀} c f) Γ'' γ⊑ υ_p υo⊑
+    with FC.extract-ctx f | static-gradual-syn (Γ'' .proof) (σ₀ .proof) D
+  ... | ψγ , dγ , q⊑ψγ | ψ₀'' , d₀'' , ψ₀''⊑τ₀
+    with unmatch+-min-cov τ₀ eq ⊥ₛ ς₂
+           (⊑.trans {A = Typ} q⊑ψγ
+              (syn-precision
+                 (⊑.trans {A = Assms} (⊑ₛLat.x⊑ₛx⊔ₛy {A = Assms} γ₀ γ₂) γ⊑)
+                 (⊑.refl {A = Exp}) d₀'' dγ))
+           (match+ₛ (_ isSlice ψ₀''⊑τ₀) eq)
+  ... | _ , ς₂⊑snd
+    with lift-pos c ((snd+ₛ' (_ isSlice ψ₀''⊑τ₀) eq) ∷ₛ Γ'')
+           (⊑∷ ς₂⊑snd (⊑.trans {A = Assms} (⊑ₛLat.y⊑ₛx⊔ₛy {A = Assms} γ₀ γ₂) γ⊑))
+           υ_p υo⊑
+  ... | ϕ , υ⊑ϕ , _ , _ , cls =
+        ϕ , υ⊑ϕ , _ , _ ,
+        acase₂ d₀'' (match+ₛ (_ isSlice ψ₀''⊑τ₀) eq) (⇓Sub ⇑□ ~?₁) cls
 
 extract : ∀ {n Γ₀ C n_f Γ τ τ_p}
             {Cls : n , Γ₀ ⊢ C at synPos τ_p ▷ n_f , Γ [ ⇐mode τ ]}
@@ -420,6 +568,148 @@ mutual
     with extract-least c (_ isSlice κ_r₁⊑C) Γ_r κ_r₁⊑κ υ⊑ϕ ϕ⊑τ cls_r
   ... | ih-κ , ih-γ = ⊑<>₁ ih-κ ⊑□ , ih-γ
 
+  extract-least (minSλ: c) (_ isSlice ⊑λ t_r⊑τ₁ κ_r₁⊑C) Γ_r (⊑λ t_r⊑ϕ₁ κ_r₁⊑κ) υ⊑ϕ ϕ⊑τ (sλ: wf_r cls_r)
+    with extract-least c (_ isSlice κ_r₁⊑C) ((↑ t_r⊑τ₁) ∷ₛ Γ_r) κ_r₁⊑κ υ⊑ϕ ϕ⊑τ cls_r
+  ... | ih-κ , ⊑∷ ih-hd ih-tl = ⊑λ ih-hd ih-κ , ih-tl
+
+  extract-least (minSΛ c) (_ isSlice ⊑Λ κ_r₁⊑C) Γ_r (⊑Λ κ_r₁⊑κ) υ⊑ϕ ϕ⊑τ (sΛ cls_r)
+    with extract-least c (_ isSlice κ_r₁⊑C) (shiftΓₛ Γ_r) κ_r₁⊑κ υ⊑ϕ ϕ⊑τ cls_r
+  ... | ih-κ , ih-γ =
+        ⊑Λ ih-κ ,
+        ⊑.trans {A = Assms} (unshiftΓ-⊑ ih-γ)
+          (⊑.reflexive {A = Assms} (unshiftΓ-shiftΓ (Γ_r .↓)))
+
+  extract-least {Γ₀ = Γ₀}
+      (minS∘₂ {τ₀ = τ₀} {D₁ = D₁} {eq = eq} {υ_outer = υ_outer} {γ' = γ'} {σ = σ} {γ₁ = γ₁} cₚ f)
+      ((σ_r₀ ∘₂ _) isSlice ⊑∘₂ σ_r⊑e κ_r₁⊑C) Γ_r (⊑∘₂ σ_r⊑σ κ_r₁⊑κ) υ⊑ϕ ϕ⊑τ (s∘₂ D_r eq_r cls_r)
+    with syn-precision (Γ_r .proof) σ_r⊑e D₁ D_r
+  ... | τ₀r⊑τ₀
+    with ⊔-⇒-⊑ τ₀r⊑τ₀ eq
+  ... | _ , _ , eq_ra , a⊑τ₁ , _
+    with refl ← ⇒-inj-fst (trans (sym eq_ra) eq_r)
+    with refl ← ⇒-inj-snd (trans (sym eq_ra) eq_r)
+    with extract-pos-least cₚ (_ isSlice κ_r₁⊑C) Γ_r (_ isSlice a⊑τ₁) κ_r₁⊑κ υ⊑ϕ ϕ⊑τ cls_r
+  ... | ih-κ , ih-γ' , ih-υ
+    with static-gradual-syn (⊑.refl {A = Assms}) σ_r⊑e D₁
+  ... | ψ_rf , d_rf , ψ_rf⊑τ₀
+    with ⊔-⇒-⊑ ψ_rf⊑τ₀ eq
+  ... | a_f , _ , eq_f , _ , _
+    with ⊔-⇒-⊑ (syn-precision (Γ_r .proof) (⊑.refl {A = Exp}) d_rf D_r) eq_f
+  ... | _ , _ , eq_f2 , a⊑a_f , _
+    with refl ← ⇒-inj-fst (trans (sym eq_f2) eq_r)
+    with refl ← ⇒-inj-snd (trans (sym eq_f2) eq_r)
+    with FC.extract-minimal f
+           ((_ isSlice σ_r⊑e) ⇑ (_ isSlice ψ_rf⊑τ₀) ∈ d_rf ⊒
+              unmatch⇒-min-least τ₀ eq υ_outer ⊥ₛ ψ_rf⊑τ₀ eq_f
+                (⊑.trans {A = Typ} ih-υ a⊑a_f) ⊑□)
+           (subst (σ_r₀ ⊑e_) (sym (cong (λ x → x .↓) (FC.extract-σ f))) σ_r⊑σ)
+  ... | ih-fix
+    with trans (sym (cong (λ x → x .↓) (FC.extract-σ f))) ih-fix
+  ... | eqσ =
+        ⊑∘₂ (⊑.reflexive {A = Exp} eqσ) ih-κ ,
+        ⊑ₛLat.⊔ₛ-least {A = Assms} {a = Γ₀} {γ₁} {γ'} {Γ_r}
+          (FC.extract-ctx-min f
+             (subst (λ x → _ , Γ_r .↓ ⊢ x ⇑ _) (sym eqσ) D_r)
+             (unmatch⇒-min-least τ₀ eq υ_outer ⊥ₛ τ₀r⊑τ₀ eq_r ih-υ ⊑□)
+             (Γ_r .proof))
+          ih-γ'
+
+  extract-least (minSdef₁ c) (_ isSlice ⊑def₁ κ_r₁⊑C _) Γ_r (⊑def₁ κ_r₁⊑κ _) υ⊑ϕ ϕ⊑τ (sdef₁ cls_r d_r)
+    with extract-least c (_ isSlice κ_r₁⊑C) Γ_r κ_r₁⊑κ υ⊑ϕ ϕ⊑τ cls_r
+  ... | ih-κ , ih-γ = ⊑def₁ ih-κ ⊑□ , ih-γ
+
+  extract-least {Γ₀ = Γ₀} (minSdef₂ {τ' = τ'} {D = D} {ς = ς} {γ₂ = γ₂} {σ₁ = σ₁} {γ₁ = γ₁} c f)
+      ((def σ_r₀ ⊢₂ _) isSlice ⊑def₂ σ_r⊑e κ_r₁⊑C) Γ_r (⊑def₂ σ_r⊑σ κ_r₁⊑κ) υ⊑ϕ ϕ⊑τ (sdef₂ D_r cls_r)
+    with syn-precision (Γ_r .proof) σ_r⊑e D D_r
+  ... | τ'r⊑τ'
+    with extract-least c (_ isSlice κ_r₁⊑C) ((_ isSlice τ'r⊑τ') ∷ₛ Γ_r) κ_r₁⊑κ υ⊑ϕ ϕ⊑τ cls_r
+  ... | ih-κ , ⊑∷ ih-hd ih-tl
+    with static-gradual-syn (⊑.refl {A = Assms}) σ_r⊑e D
+  ... | ψ_rf , d_rf , ψ_rf⊑τ'
+    with FC.extract-minimal f
+           ((_ isSlice σ_r⊑e) ⇑ (_ isSlice ψ_rf⊑τ') ∈ d_rf ⊒
+              ⊑.trans {A = Typ} ih-hd (syn-precision (Γ_r .proof) (⊑.refl {A = Exp}) d_rf D_r))
+           (subst (σ_r₀ ⊑e_) (sym (cong (λ x → x .↓) (FC.extract-σ f))) σ_r⊑σ)
+  ... | ih-fix
+    with trans (sym (cong (λ x → x .↓) (FC.extract-σ f))) ih-fix
+  ... | eqσ =
+        ⊑def₂ (⊑.reflexive {A = Exp} eqσ) ih-κ ,
+        ⊑ₛLat.⊔ₛ-least {A = Assms} {a = Γ₀} {γ₁} {γ₂} {Γ_r}
+          (FC.extract-ctx-min f
+             (subst (λ x → _ , Γ_r .↓ ⊢ x ⇑ _) (sym eqσ) D_r)
+             ih-hd (Γ_r .proof))
+          ih-tl
+
+  extract-least {Γ₀ = Γ₀} (minScase₁ {τ₀ = τ₀} {D = D} {eq = eq} {ς₁ = ς₁} {γ₁ = γ₁} {σ₀ = σ₀} {γ₀ = γ₀} c f)
+      ((case σ_r₀ of _ ·₁ _) isSlice ⊑case₁ σ₀_r⊑e κ_r₁⊑C _) Γ_r
+      (⊑case₁ σ_r⊑σ₀ κ_r₁⊑κ _) υ⊑ϕ ϕ⊑τ (scase₁ D_r eq_r cls_r d₂_r con_r)
+    with syn-precision (Γ_r .proof) σ₀_r⊑e D D_r
+  ... | τ₀r⊑τ₀
+    with ⊔-+-⊑ τ₀r⊑τ₀ eq
+  ... | _ , _ , eq_ra , a⊑τ₁ , _
+    with refl ← +-inj-fst (trans (sym eq_ra) eq_r)
+    with refl ← +-inj-snd (trans (sym eq_ra) eq_r)
+    with extract-least c (_ isSlice κ_r₁⊑C) ((_ isSlice a⊑τ₁) ∷ₛ Γ_r) κ_r₁⊑κ υ⊑ϕ ϕ⊑τ cls_r
+  ... | ih-κ , ⊑∷ ih-hd ih-tl
+    with static-gradual-syn (⊑.refl {A = Assms}) σ₀_r⊑e D
+  ... | ψ_rf , d_rf , ψ_rf⊑τ₀
+    with ⊔-+-⊑ ψ_rf⊑τ₀ eq
+  ... | a_f , _ , eq_f , _ , _
+    with ⊔-+-⊑ (syn-precision (Γ_r .proof) (⊑.refl {A = Exp}) d_rf D_r) eq_f
+  ... | _ , _ , eq_f2 , a⊑a_f , _
+    with refl ← +-inj-fst (trans (sym eq_f2) eq_r)
+    with refl ← +-inj-snd (trans (sym eq_f2) eq_r)
+    with FC.extract-minimal f
+           ((_ isSlice σ₀_r⊑e) ⇑ (_ isSlice ψ_rf⊑τ₀) ∈ d_rf ⊒
+              unmatch+-min-least τ₀ eq ς₁ ⊥ₛ ψ_rf⊑τ₀ eq_f
+                (⊑.trans {A = Typ} ih-hd a⊑a_f) ⊑□)
+           (subst (σ_r₀ ⊑e_) (sym (cong (λ x → x .↓) (FC.extract-σ f))) σ_r⊑σ₀)
+  ... | ih-fix
+    with trans (sym (cong (λ x → x .↓) (FC.extract-σ f))) ih-fix
+  ... | eqσ =
+        ⊑case₁ (⊑.reflexive {A = Exp} eqσ) ih-κ ⊑□ ,
+        ⊑ₛLat.⊔ₛ-least {A = Assms} {a = Γ₀} {γ₀} {γ₁} {Γ_r}
+          (FC.extract-ctx-min f
+             (subst (λ x → _ , Γ_r .↓ ⊢ x ⇑ _) (sym eqσ) D_r)
+             (unmatch+-min-least τ₀ eq ς₁ ⊥ₛ τ₀r⊑τ₀ eq_r ih-hd ⊑□)
+             (Γ_r .proof))
+          ih-tl
+
+  extract-least {Γ₀ = Γ₀} (minScase₂ {τ₀ = τ₀} {D = D} {eq = eq} {ς₂ = ς₂} {γ₂ = γ₂} {σ₀ = σ₀} {γ₀ = γ₀} c f)
+      ((case σ_r₀ of₂ _ · _) isSlice ⊑case₂ σ₀_r⊑e _ κ_r₁⊑C) Γ_r
+      (⊑case₂ σ_r⊑σ₀ _ κ_r₁⊑κ) υ⊑ϕ ϕ⊑τ (scase₂ D_r eq_r d₁_r cls_r con_r)
+    with syn-precision (Γ_r .proof) σ₀_r⊑e D D_r
+  ... | τ₀r⊑τ₀
+    with ⊔-+-⊑ τ₀r⊑τ₀ eq
+  ... | _ , _ , eq_ra , _ , b⊑τ₂
+    with refl ← +-inj-fst (trans (sym eq_ra) eq_r)
+    with refl ← +-inj-snd (trans (sym eq_ra) eq_r)
+    with extract-least c (_ isSlice κ_r₁⊑C) ((_ isSlice b⊑τ₂) ∷ₛ Γ_r) κ_r₁⊑κ υ⊑ϕ ϕ⊑τ cls_r
+  ... | ih-κ , ⊑∷ ih-hd ih-tl
+    with static-gradual-syn (⊑.refl {A = Assms}) σ₀_r⊑e D
+  ... | ψ_rf , d_rf , ψ_rf⊑τ₀
+    with ⊔-+-⊑ ψ_rf⊑τ₀ eq
+  ... | _ , b_f , eq_f , _ , _
+    with ⊔-+-⊑ (syn-precision (Γ_r .proof) (⊑.refl {A = Exp}) d_rf D_r) eq_f
+  ... | _ , _ , eq_f2 , _ , b⊑b_f
+    with refl ← +-inj-fst (trans (sym eq_f2) eq_r)
+    with refl ← +-inj-snd (trans (sym eq_f2) eq_r)
+    with FC.extract-minimal f
+           ((_ isSlice σ₀_r⊑e) ⇑ (_ isSlice ψ_rf⊑τ₀) ∈ d_rf ⊒
+              unmatch+-min-least τ₀ eq ⊥ₛ ς₂ ψ_rf⊑τ₀ eq_f ⊑□
+                (⊑.trans {A = Typ} ih-hd b⊑b_f))
+           (subst (σ_r₀ ⊑e_) (sym (cong (λ x → x .↓) (FC.extract-σ f))) σ_r⊑σ₀)
+  ... | ih-fix
+    with trans (sym (cong (λ x → x .↓) (FC.extract-σ f))) ih-fix
+  ... | eqσ =
+        ⊑case₂ (⊑.reflexive {A = Exp} eqσ) ⊑□ ih-κ ,
+        ⊑ₛLat.⊔ₛ-least {A = Assms} {a = Γ₀} {γ₀} {γ₂} {Γ_r}
+          (FC.extract-ctx-min f
+             (subst (λ x → _ , Γ_r .↓ ⊢ x ⇑ _) (sym eqσ) D_r)
+             (unmatch+-min-least τ₀ eq ⊥ₛ ς₂ τ₀r⊑τ₀ eq_r ⊑□ ih-hd)
+             (Γ_r .proof))
+          ih-tl
+
   extract-pos-least min□Pos κ_r Γ_r υ_or _ _ _ _ =
     ⊑ₛLat.⊥ₛ-min {A = Ctx} κ_r , ⊑ₛLat.⊥ₛ-min {A = Assms} Γ_r ,
     ⊑ₛLat.⊥ₛ-min {A = Typ} υ_or
@@ -500,6 +790,241 @@ mutual
   ... | ih-κ , ih-γ , ih-υ =
         ⊑&₂ ⊑□ ih-κ , ih-γ ,
         unmatch×-min-least τ' eq ⊥ₛ υ_b (υ_or .proof) eq_r ⊑□ ih-υ
+
+  extract-pos-least (minAλ⇒ {τ = τ'} {eq = eq} {ς₁ = ς₁} {υ_b = υ_b} c)
+      (_ isSlice ⊑λu κ_r₁⊑C) Γ_r υ_or (⊑λu κ_r₁⊑κ) υ⊑ϕ ϕ⊑τ (aλ⇒ eq_r cls_r)
+    with ⊔-⇒-⊑ (υ_or .proof) eq
+  ... | _ , _ , eq'' , a⊑τ₁ , b⊑τ₂
+    with refl ← ⇒-inj-fst (trans (sym eq'') eq_r)
+    with refl ← ⇒-inj-snd (trans (sym eq'') eq_r)
+    with extract-pos-least c (_ isSlice κ_r₁⊑C) ((_ isSlice a⊑τ₁) ∷ₛ Γ_r) (_ isSlice b⊑τ₂)
+           κ_r₁⊑κ υ⊑ϕ ϕ⊑τ cls_r
+  ... | ih-κ , ⊑∷ ih-hd ih-tl , ih-υ =
+        ⊑λu ih-κ , ih-tl ,
+        unmatch⇒-min-least τ' eq ς₁ υ_b (υ_or .proof) eq_r ih-hd ih-υ
+
+  extract-pos-least (minAλ: {τ = τ'} {τ₁ = τ₁} {eq = eq} {ς₁ = ς₁} {υ_b = υ_b} c)
+      ((λ: t_r ⇒ _) isSlice ⊑λ t_r⊑τ₁ κ_r₁⊑C) Γ_r υ_or (⊑λ t_r⊑ς₁ κ_r₁⊑κ) υ⊑ϕ ϕ⊑τ
+      (aSub (sλ: wf_r scls_r) con_r)
+    with extract-pos-least c (_ isSlice κ_r₁⊑C) ((↑ t_r⊑τ₁) ∷ₛ Γ_r) ⊥ₛ
+           κ_r₁⊑κ υ⊑ϕ ϕ⊑τ (aSub scls_r ~?₂)
+  ... | ih-κ , ⊑∷ ih-hd ih-tl , ih-υ =
+        ⊑λ ih-hd ih-κ , ih-tl ,
+        subst (_⊑t (υ_or .↓))
+              (sym (unmatch⇒-min-□ (proj₂ (ann-⇒-plain {τ'} {τ₁} eq)) ⊥ₛ υ_b refl (⊑□-inv ih-υ))) ⊑□
+  extract-pos-least (minAλ: {τ = τ'} {τ₁ = τ₁} {eq = eq} {ς₁ = ς₁} {υ_b = υ_b} c)
+      ((λ: t_r ⇒ _) isSlice ⊑λ t_r⊑τ₁ κ_r₁⊑C) Γ_r υ_or (⊑λ t_r⊑ς₁ κ_r₁⊑κ) υ⊑ϕ ϕ⊑τ
+      (aλ: con_r eq_r wf_r cls_r)
+    with ⊔-ann-⇒-⊑ (υ_or .proof) t_r⊑τ₁ eq
+  ... | _ , b_x , eq_x , b_x⊑τ₂
+    with refl ← ⇒-inj-snd (trans (sym eq_x) eq_r)
+    with extract-pos-least c (_ isSlice κ_r₁⊑C) ((↑ t_r⊑τ₁) ∷ₛ Γ_r) (_ isSlice b_x⊑τ₂)
+           κ_r₁⊑κ υ⊑ϕ ϕ⊑τ cls_r
+  ... | ih-κ , ⊑∷ ih-hd ih-tl , ih-υ =
+        ⊑λ ih-hd ih-κ , ih-tl ,
+        unmatch⇒-min-least τ' (proj₂ (ann-⇒-plain {τ'} {τ₁} eq)) ⊥ₛ υ_b
+          (υ_or .proof) (proj₂ (ann-⇒-plain {υ_or .↓} {t_r} eq_r)) ⊑□ ih-υ
+
+  extract-pos-least (minAdef₁ c) (_ isSlice ⊑def₁ κ_r₁⊑C _) Γ_r υ_or (⊑def₁ κ_r₁⊑κ _) υ⊑ϕ ϕ⊑τ
+      (adef₁ scls_r d_r)
+    with extract-least c (_ isSlice κ_r₁⊑C) Γ_r κ_r₁⊑κ υ⊑ϕ ϕ⊑τ scls_r
+  ... | ih-κ , ih-γ = ⊑def₁ ih-κ ⊑□ , ih-γ , ⊑ₛLat.⊥ₛ-min {A = Typ} υ_or
+  extract-pos-least (minAdef₁ c) (_ isSlice ⊑def₁ κ_r₁⊑C _) Γ_r υ_or (⊑def₁ κ_r₁⊑κ _) υ⊑ϕ ϕ⊑τ
+      (aSub (sdef₁ scls_r d_r) con_r)
+    with extract-least c (_ isSlice κ_r₁⊑C) Γ_r κ_r₁⊑κ υ⊑ϕ ϕ⊑τ scls_r
+  ... | ih-κ , ih-γ = ⊑def₁ ih-κ ⊑□ , ih-γ , ⊑ₛLat.⊥ₛ-min {A = Typ} υ_or
+
+  extract-pos-least {Γ₀ = Γ₀} (minAdef₂ {τ' = τ'} {D = D} {ς = ς} {γ₂ = γ₂} {σ₁ = σ₁} {γ₁ = γ₁} c f)
+      ((def σ_r₀ ⊢₂ _) isSlice ⊑def₂ σ_r⊑e κ_r₁⊑C) Γ_r υ_or (⊑def₂ σ_r⊑σ κ_r₁⊑κ) υ⊑ϕ ϕ⊑τ
+      (adef₂ D_r cls_r)
+    with syn-precision (Γ_r .proof) σ_r⊑e D D_r
+  ... | τ'r⊑τ'
+    with extract-pos-least c (_ isSlice κ_r₁⊑C) ((_ isSlice τ'r⊑τ') ∷ₛ Γ_r) υ_or κ_r₁⊑κ υ⊑ϕ ϕ⊑τ cls_r
+  ... | ih-κ , ⊑∷ ih-hd ih-tl , ih-υ
+    with static-gradual-syn (⊑.refl {A = Assms}) σ_r⊑e D
+  ... | ψ_rf , d_rf , ψ_rf⊑τ'
+    with FC.extract-minimal f
+           ((_ isSlice σ_r⊑e) ⇑ (_ isSlice ψ_rf⊑τ') ∈ d_rf ⊒
+              ⊑.trans {A = Typ} ih-hd (syn-precision (Γ_r .proof) (⊑.refl {A = Exp}) d_rf D_r))
+           (subst (σ_r₀ ⊑e_) (sym (cong (λ x → x .↓) (FC.extract-σ f))) σ_r⊑σ)
+  ... | ih-fix
+    with trans (sym (cong (λ x → x .↓) (FC.extract-σ f))) ih-fix
+  ... | eqσ =
+        ⊑def₂ (⊑.reflexive {A = Exp} eqσ) ih-κ ,
+        ⊑ₛLat.⊔ₛ-least {A = Assms} {a = Γ₀} {γ₁} {γ₂} {Γ_r}
+          (FC.extract-ctx-min f
+             (subst (λ x → _ , Γ_r .↓ ⊢ x ⇑ _) (sym eqσ) D_r)
+             ih-hd (Γ_r .proof))
+          ih-tl ,
+        ih-υ
+  extract-pos-least {Γ₀ = Γ₀} (minAdef₂ {τ' = τ'} {D = D} {ς = ς} {γ₂ = γ₂} {σ₁ = σ₁} {γ₁ = γ₁} c f)
+      ((def σ_r₀ ⊢₂ _) isSlice ⊑def₂ σ_r⊑e κ_r₁⊑C) Γ_r υ_or (⊑def₂ σ_r⊑σ κ_r₁⊑κ) υ⊑ϕ ϕ⊑τ
+      (aSub (sdef₂ D_r cls_r) con_r)
+    with syn-precision (Γ_r .proof) σ_r⊑e D D_r
+  ... | τ'r⊑τ'
+    with extract-pos-least c (_ isSlice κ_r₁⊑C) ((_ isSlice τ'r⊑τ') ∷ₛ Γ_r) ⊥ₛ κ_r₁⊑κ υ⊑ϕ ϕ⊑τ
+           (aSub cls_r ~?₂)
+  ... | ih-κ , ⊑∷ ih-hd ih-tl , ih-υ
+    with static-gradual-syn (⊑.refl {A = Assms}) σ_r⊑e D
+  ... | ψ_rf , d_rf , ψ_rf⊑τ'
+    with FC.extract-minimal f
+           ((_ isSlice σ_r⊑e) ⇑ (_ isSlice ψ_rf⊑τ') ∈ d_rf ⊒
+              ⊑.trans {A = Typ} ih-hd (syn-precision (Γ_r .proof) (⊑.refl {A = Exp}) d_rf D_r))
+           (subst (σ_r₀ ⊑e_) (sym (cong (λ x → x .↓) (FC.extract-σ f))) σ_r⊑σ)
+  ... | ih-fix
+    with trans (sym (cong (λ x → x .↓) (FC.extract-σ f))) ih-fix
+  ... | eqσ =
+        ⊑def₂ (⊑.reflexive {A = Exp} eqσ) ih-κ ,
+        ⊑ₛLat.⊔ₛ-least {A = Assms} {a = Γ₀} {γ₁} {γ₂} {Γ_r}
+          (FC.extract-ctx-min f
+             (subst (λ x → _ , Γ_r .↓ ⊢ x ⇑ _) (sym eqσ) D_r)
+             ih-hd (Γ_r .proof))
+          ih-tl ,
+        subst (_⊑t (υ_or .↓)) (sym (⊑□-inv ih-υ)) ⊑□
+
+  extract-pos-least {Γ₀ = Γ₀} (minAcase₁ {τ₀ = τ₀} {D = D} {eq = eq} {ς₁ = ς₁} {γ₁ = γ₁} {σ₀ = σ₀} {γ₀ = γ₀} c f)
+      ((case σ_r₀ of _ ·₁ _) isSlice ⊑case₁ σ₀_r⊑e κ_r₁⊑C _) Γ_r υ_or
+      (⊑case₁ σ_r⊑σ₀ κ_r₁⊑κ _) υ⊑ϕ ϕ⊑τ (acase₁ D_r eq_r cls_r d₂_r)
+    with syn-precision (Γ_r .proof) σ₀_r⊑e D D_r
+  ... | τ₀r⊑τ₀
+    with ⊔-+-⊑ τ₀r⊑τ₀ eq
+  ... | _ , _ , eq_ra , a⊑τ₁ , _
+    with refl ← +-inj-fst (trans (sym eq_ra) eq_r)
+    with refl ← +-inj-snd (trans (sym eq_ra) eq_r)
+    with extract-pos-least c (_ isSlice κ_r₁⊑C) ((_ isSlice a⊑τ₁) ∷ₛ Γ_r) υ_or κ_r₁⊑κ υ⊑ϕ ϕ⊑τ cls_r
+  ... | ih-κ , ⊑∷ ih-hd ih-tl , ih-υ
+    with static-gradual-syn (⊑.refl {A = Assms}) σ₀_r⊑e D
+  ... | ψ_rf , d_rf , ψ_rf⊑τ₀
+    with ⊔-+-⊑ ψ_rf⊑τ₀ eq
+  ... | a_f , _ , eq_f , _ , _
+    with ⊔-+-⊑ (syn-precision (Γ_r .proof) (⊑.refl {A = Exp}) d_rf D_r) eq_f
+  ... | _ , _ , eq_f2 , a⊑a_f , _
+    with refl ← +-inj-fst (trans (sym eq_f2) eq_r)
+    with refl ← +-inj-snd (trans (sym eq_f2) eq_r)
+    with FC.extract-minimal f
+           ((_ isSlice σ₀_r⊑e) ⇑ (_ isSlice ψ_rf⊑τ₀) ∈ d_rf ⊒
+              unmatch+-min-least τ₀ eq ς₁ ⊥ₛ ψ_rf⊑τ₀ eq_f
+                (⊑.trans {A = Typ} ih-hd a⊑a_f) ⊑□)
+           (subst (σ_r₀ ⊑e_) (sym (cong (λ x → x .↓) (FC.extract-σ f))) σ_r⊑σ₀)
+  ... | ih-fix
+    with trans (sym (cong (λ x → x .↓) (FC.extract-σ f))) ih-fix
+  ... | eqσ =
+        ⊑case₁ (⊑.reflexive {A = Exp} eqσ) ih-κ ⊑□ ,
+        ⊑ₛLat.⊔ₛ-least {A = Assms} {a = Γ₀} {γ₀} {γ₁} {Γ_r}
+          (FC.extract-ctx-min f
+             (subst (λ x → _ , Γ_r .↓ ⊢ x ⇑ _) (sym eqσ) D_r)
+             (unmatch+-min-least τ₀ eq ς₁ ⊥ₛ τ₀r⊑τ₀ eq_r ih-hd ⊑□)
+             (Γ_r .proof))
+          ih-tl ,
+        ih-υ
+  extract-pos-least {Γ₀ = Γ₀} (minAcase₁ {τ₀ = τ₀} {D = D} {eq = eq} {ς₁ = ς₁} {γ₁ = γ₁} {σ₀ = σ₀} {γ₀ = γ₀} c f)
+      ((case σ_r₀ of _ ·₁ _) isSlice ⊑case₁ σ₀_r⊑e κ_r₁⊑C _) Γ_r υ_or
+      (⊑case₁ σ_r⊑σ₀ κ_r₁⊑κ _) υ⊑ϕ ϕ⊑τ (aSub (scase₁ D_r eq_r cls_r d₂_r con_r) con')
+    with syn-precision (Γ_r .proof) σ₀_r⊑e D D_r
+  ... | τ₀r⊑τ₀
+    with ⊔-+-⊑ τ₀r⊑τ₀ eq
+  ... | _ , _ , eq_ra , a⊑τ₁ , _
+    with refl ← +-inj-fst (trans (sym eq_ra) eq_r)
+    with refl ← +-inj-snd (trans (sym eq_ra) eq_r)
+    with extract-pos-least c (_ isSlice κ_r₁⊑C) ((_ isSlice a⊑τ₁) ∷ₛ Γ_r) ⊥ₛ κ_r₁⊑κ υ⊑ϕ ϕ⊑τ
+           (aSub cls_r ~?₂)
+  ... | ih-κ , ⊑∷ ih-hd ih-tl , ih-υ
+    with static-gradual-syn (⊑.refl {A = Assms}) σ₀_r⊑e D
+  ... | ψ_rf , d_rf , ψ_rf⊑τ₀
+    with ⊔-+-⊑ ψ_rf⊑τ₀ eq
+  ... | a_f , _ , eq_f , _ , _
+    with ⊔-+-⊑ (syn-precision (Γ_r .proof) (⊑.refl {A = Exp}) d_rf D_r) eq_f
+  ... | _ , _ , eq_f2 , a⊑a_f , _
+    with refl ← +-inj-fst (trans (sym eq_f2) eq_r)
+    with refl ← +-inj-snd (trans (sym eq_f2) eq_r)
+    with FC.extract-minimal f
+           ((_ isSlice σ₀_r⊑e) ⇑ (_ isSlice ψ_rf⊑τ₀) ∈ d_rf ⊒
+              unmatch+-min-least τ₀ eq ς₁ ⊥ₛ ψ_rf⊑τ₀ eq_f
+                (⊑.trans {A = Typ} ih-hd a⊑a_f) ⊑□)
+           (subst (σ_r₀ ⊑e_) (sym (cong (λ x → x .↓) (FC.extract-σ f))) σ_r⊑σ₀)
+  ... | ih-fix
+    with trans (sym (cong (λ x → x .↓) (FC.extract-σ f))) ih-fix
+  ... | eqσ =
+        ⊑case₁ (⊑.reflexive {A = Exp} eqσ) ih-κ ⊑□ ,
+        ⊑ₛLat.⊔ₛ-least {A = Assms} {a = Γ₀} {γ₀} {γ₁} {Γ_r}
+          (FC.extract-ctx-min f
+             (subst (λ x → _ , Γ_r .↓ ⊢ x ⇑ _) (sym eqσ) D_r)
+             (unmatch+-min-least τ₀ eq ς₁ ⊥ₛ τ₀r⊑τ₀ eq_r ih-hd ⊑□)
+             (Γ_r .proof))
+          ih-tl ,
+        subst (_⊑t (υ_or .↓)) (sym (⊑□-inv ih-υ)) ⊑□
+
+  extract-pos-least {Γ₀ = Γ₀} (minAcase₂ {τ₀ = τ₀} {D = D} {eq = eq} {ς₂ = ς₂} {γ₂ = γ₂} {σ₀ = σ₀} {γ₀ = γ₀} c f)
+      ((case σ_r₀ of₂ _ · _) isSlice ⊑case₂ σ₀_r⊑e _ κ_r₁⊑C) Γ_r υ_or
+      (⊑case₂ σ_r⊑σ₀ _ κ_r₁⊑κ) υ⊑ϕ ϕ⊑τ (acase₂ D_r eq_r d₁_r cls_r)
+    with syn-precision (Γ_r .proof) σ₀_r⊑e D D_r
+  ... | τ₀r⊑τ₀
+    with ⊔-+-⊑ τ₀r⊑τ₀ eq
+  ... | _ , _ , eq_ra , _ , b⊑τ₂
+    with refl ← +-inj-fst (trans (sym eq_ra) eq_r)
+    with refl ← +-inj-snd (trans (sym eq_ra) eq_r)
+    with extract-pos-least c (_ isSlice κ_r₁⊑C) ((_ isSlice b⊑τ₂) ∷ₛ Γ_r) υ_or κ_r₁⊑κ υ⊑ϕ ϕ⊑τ cls_r
+  ... | ih-κ , ⊑∷ ih-hd ih-tl , ih-υ
+    with static-gradual-syn (⊑.refl {A = Assms}) σ₀_r⊑e D
+  ... | ψ_rf , d_rf , ψ_rf⊑τ₀
+    with ⊔-+-⊑ ψ_rf⊑τ₀ eq
+  ... | _ , b_f , eq_f , _ , _
+    with ⊔-+-⊑ (syn-precision (Γ_r .proof) (⊑.refl {A = Exp}) d_rf D_r) eq_f
+  ... | _ , _ , eq_f2 , _ , b⊑b_f
+    with refl ← +-inj-fst (trans (sym eq_f2) eq_r)
+    with refl ← +-inj-snd (trans (sym eq_f2) eq_r)
+    with FC.extract-minimal f
+           ((_ isSlice σ₀_r⊑e) ⇑ (_ isSlice ψ_rf⊑τ₀) ∈ d_rf ⊒
+              unmatch+-min-least τ₀ eq ⊥ₛ ς₂ ψ_rf⊑τ₀ eq_f ⊑□
+                (⊑.trans {A = Typ} ih-hd b⊑b_f))
+           (subst (σ_r₀ ⊑e_) (sym (cong (λ x → x .↓) (FC.extract-σ f))) σ_r⊑σ₀)
+  ... | ih-fix
+    with trans (sym (cong (λ x → x .↓) (FC.extract-σ f))) ih-fix
+  ... | eqσ =
+        ⊑case₂ (⊑.reflexive {A = Exp} eqσ) ⊑□ ih-κ ,
+        ⊑ₛLat.⊔ₛ-least {A = Assms} {a = Γ₀} {γ₀} {γ₂} {Γ_r}
+          (FC.extract-ctx-min f
+             (subst (λ x → _ , Γ_r .↓ ⊢ x ⇑ _) (sym eqσ) D_r)
+             (unmatch+-min-least τ₀ eq ⊥ₛ ς₂ τ₀r⊑τ₀ eq_r ⊑□ ih-hd)
+             (Γ_r .proof))
+          ih-tl ,
+        ih-υ
+  extract-pos-least {Γ₀ = Γ₀} (minAcase₂ {τ₀ = τ₀} {D = D} {eq = eq} {ς₂ = ς₂} {γ₂ = γ₂} {σ₀ = σ₀} {γ₀ = γ₀} c f)
+      ((case σ_r₀ of₂ _ · _) isSlice ⊑case₂ σ₀_r⊑e _ κ_r₁⊑C) Γ_r υ_or
+      (⊑case₂ σ_r⊑σ₀ _ κ_r₁⊑κ) υ⊑ϕ ϕ⊑τ (aSub (scase₂ D_r eq_r d₁_r cls_r con_r) con')
+    with syn-precision (Γ_r .proof) σ₀_r⊑e D D_r
+  ... | τ₀r⊑τ₀
+    with ⊔-+-⊑ τ₀r⊑τ₀ eq
+  ... | _ , _ , eq_ra , _ , b⊑τ₂
+    with refl ← +-inj-fst (trans (sym eq_ra) eq_r)
+    with refl ← +-inj-snd (trans (sym eq_ra) eq_r)
+    with extract-pos-least c (_ isSlice κ_r₁⊑C) ((_ isSlice b⊑τ₂) ∷ₛ Γ_r) ⊥ₛ κ_r₁⊑κ υ⊑ϕ ϕ⊑τ
+           (aSub cls_r ~?₂)
+  ... | ih-κ , ⊑∷ ih-hd ih-tl , ih-υ
+    with static-gradual-syn (⊑.refl {A = Assms}) σ₀_r⊑e D
+  ... | ψ_rf , d_rf , ψ_rf⊑τ₀
+    with ⊔-+-⊑ ψ_rf⊑τ₀ eq
+  ... | _ , b_f , eq_f , _ , _
+    with ⊔-+-⊑ (syn-precision (Γ_r .proof) (⊑.refl {A = Exp}) d_rf D_r) eq_f
+  ... | _ , _ , eq_f2 , _ , b⊑b_f
+    with refl ← +-inj-fst (trans (sym eq_f2) eq_r)
+    with refl ← +-inj-snd (trans (sym eq_f2) eq_r)
+    with FC.extract-minimal f
+           ((_ isSlice σ₀_r⊑e) ⇑ (_ isSlice ψ_rf⊑τ₀) ∈ d_rf ⊒
+              unmatch+-min-least τ₀ eq ⊥ₛ ς₂ ψ_rf⊑τ₀ eq_f ⊑□
+                (⊑.trans {A = Typ} ih-hd b⊑b_f))
+           (subst (σ_r₀ ⊑e_) (sym (cong (λ x → x .↓) (FC.extract-σ f))) σ_r⊑σ₀)
+  ... | ih-fix
+    with trans (sym (cong (λ x → x .↓) (FC.extract-σ f))) ih-fix
+  ... | eqσ =
+        ⊑case₂ (⊑.reflexive {A = Exp} eqσ) ⊑□ ih-κ ,
+        ⊑ₛLat.⊔ₛ-least {A = Assms} {a = Γ₀} {γ₀} {γ₂} {Γ_r}
+          (FC.extract-ctx-min f
+             (subst (λ x → _ , Γ_r .↓ ⊢ x ⇑ _) (sym eqσ) D_r)
+             (unmatch+-min-least τ₀ eq ⊥ₛ ς₂ τ₀r⊑τ₀ eq_r ⊑□ ih-hd)
+             (Γ_r .proof))
+          ih-tl ,
+        subst (_⊑t (υ_or .↓)) (sym (⊑□-inv ih-υ)) ⊑□
 
 extract-minimal : ∀ {n Γ₀ C n_f Γ τ τ_p}
                     {Cls : n , Γ₀ ⊢ C at synPos τ_p ▷ n_f , Γ [ ⇐mode τ ]}
